@@ -40,13 +40,14 @@ body{font-family:'MS Sans Serif',Tahoma,Arial,sans-serif;font-size:11px;backgrou
 .sb-link{padding:1px 4px 1px 12px;cursor:pointer;color:#000066;text-decoration:underline;display:block;font-size:11px;white-space:nowrap;}
 .sb-link:hover{background:#00007e;color:#fff;}
 .sb-link.active{font-weight:bold;color:#000;text-decoration:none;background:#b8b4ac;}
+.sb-link.hidden{display:none;}
 .content{flex:1;padding:6px;min-width:0;}
 .ptitle{background:#000080;color:#fff;padding:2px 6px;font-weight:bold;font-size:11px;margin-bottom:5px;}
 .sbox{border:1px solid #606060;margin-bottom:6px;}
 .stitle{background:#c0bcb4;border-bottom:1px solid #606060;padding:1px 5px;font-weight:bold;font-size:11px;color:#000;}
 .sbody{padding:4px 6px;}
 .row{display:flex;align-items:center;margin-bottom:2px;font-size:11px;}
-.row label{width:120px;flex-shrink:0;color:#000;}
+.row label{width:130px;flex-shrink:0;color:#000;}
 .row span,.row b{color:#000;}
 input[type=text],input[type=password]{height:16px;border-top:1px solid #707070;border-left:1px solid #707070;border-right:1px solid #e0e0e0;border-bottom:1px solid #e0e0e0;background:#fff;padding:0 2px;font-size:11px;font-family:inherit;outline:none;border-radius:0;color:#000;}
 textarea{border-top:1px solid #707070;border-left:1px solid #707070;border-right:1px solid #e0e0e0;border-bottom:1px solid #e0e0e0;background:#fff;font-size:11px;font-family:inherit;outline:none;border-radius:0;padding:2px;resize:vertical;color:#000;}
@@ -62,7 +63,7 @@ select{height:16px;border-top:1px solid #707070;border-left:1px solid #707070;bo
 .ok{color:#006600;font-weight:bold;}
 .sus{color:#995500;font-weight:bold;}
 .ban{color:#880000;font-weight:bold;}
-.badge{display:inline-block;padding:0 4px;font-size:10px;font-weight:bold;border:1px solid #707070;}
+.badge{display:inline-block;padding:1px 4px;font-size:10px;font-weight:bold;border:1px solid #707070;white-space:nowrap;max-width:100%;}
 .badge.intern{background:#c8e0c8;color:#003300;}
 .badge.moderator{background:#c8d0e8;color:#000055;}
 .badge.administrator{background:#e8d0a0;color:#553300;}
@@ -73,6 +74,8 @@ select{height:16px;border-top:1px solid #707070;border-left:1px solid #707070;bo
 .overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.45);z-index:999;align-items:center;justify-content:center;}
 .overlay.show{display:flex;}
 .dialog{background:#d4d0c8;border-top:2px solid #fff;border-left:2px solid #fff;border-right:2px solid #404040;border-bottom:2px solid #404040;width:300px;box-shadow:3px 3px 6px rgba(0,0,0,0.4);}
+.perm-row{display:flex;align-items:center;margin-bottom:4px;font-size:11px;gap:6px;}
+.perm-row label{width:140px;flex-shrink:0;color:#000;}
 </style>
 </head>
 <body>
@@ -118,7 +121,7 @@ select{height:16px;border-top:1px solid #707070;border-left:1px solid #707070;bo
           <span class="sb-link" id="nav-moderate">&#9658; Moderate User</span>
           <span class="sb-link" id="nav-accounts">&#9658; All Accounts</span>
         </div>
-        <div class="sb-section">
+        <div class="sb-section" id="sb-staff-section">
           <div class="sb-title">Staff</div>
           <span class="sb-link" id="nav-staff">&#9658; Staff Registry</span>
         </div>
@@ -127,6 +130,7 @@ select{height:16px;border-top:1px solid #707070;border-left:1px solid #707070;bo
           <span class="sb-link" id="nav-revokelog">&#9658; Revoke Log</span>
           <span class="sb-link" id="nav-suspendlog">&#9658; Suspension Log</span>
           <span class="sb-link" id="nav-deletelog">&#9658; Deletion Log</span>
+          <span class="sb-link" id="nav-adminlog">&#9658; Administrator</span>
         </div>
       </div>
       <div class="content" id="content"><div style="padding:10px;color:#444;font-style:italic;">Loading data...</div></div>
@@ -154,6 +158,7 @@ select{height:16px;border-top:1px solid #707070;border-left:1px solid #707070;bo
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, set, get, push, remove, update, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updatePassword, deleteUser, signOut, getIdToken } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC1UlyaYYUrnPH1P77m7uXbZ7eHcYM4bj0",
@@ -167,24 +172,42 @@ const firebaseConfig = {
 
 const fbApp = initializeApp(firebaseConfig);
 const db = getDatabase(fbApp);
+const auth = getAuth(fbApp);
 
-// ── STAFF LOGIN CREDENTIALS ──
-// Add { username, password, level } here for each staff member who can log in
-const STAFF_ACCOUNTS = [
-  { username: 'rpatoff', password: '6445229', level: 'SUPER ADMINISTRATOR' },
-];
+// ── DEFAULT PERMISSIONS ──
+const DEFAULT_PERMS = {
+  canViewUserAdmin: 'INTERN',
+  canModerateUsers: 'MODERATOR',
+  canViewStaff: 'SUPER ADMINISTRATOR',
+  canManageStaff: 'SUPER ADMINISTRATOR',
+  canSuspendStaff: 'ADMINISTRATOR',
+  canTerminateStaff: 'SUPER ADMINISTRATOR',
+  canViewRevokeLogs: 'MODERATOR',
+  canViewSuspendLogs: 'ADMINISTRATOR',
+  canViewDeleteLogs: 'ADMINISTRATOR',
+  canViewAdminLog: 'ADMINISTRATOR',
+};
 
-let ME = '', MY_LEVEL = '', page = 'useradmin', dlgCallback = null;
+const LEVEL_RANK = { 'INTERN': 1, 'MODERATOR': 2, 'ADMINISTRATOR': 3, 'SUPER ADMINISTRATOR': 4 };
+
+let ME = '', MY_LEVEL = '', MY_AUTH_USER = null;
+let page = 'useradmin', dlgCallback = null;
 let currentUserId = null, currentStaffId = null;
 let USERS = {}, STAFF = {}, REVOKE_LOG = {}, SUSPEND_LOG = {}, DELETE_LOG = {};
+let PERMS = { ...DEFAULT_PERMS };
 
 function today() { return new Date().toLocaleDateString(); }
-function isSuperAdmin() { return MY_LEVEL === 'SUPER ADMINISTRATOR' || MY_LEVEL === 'ADMINISTRATOR'; }
+
+function rankOf(level) { return LEVEL_RANK[level] || 0; }
+function canDo(permKey) {
+  const required = PERMS[permKey] || 'SUPER ADMINISTRATOR';
+  return rankOf(MY_LEVEL) >= rankOf(required);
+}
 
 function statusBadge(s) {
-  if (s === 'active') return '<span class="ok">OK</span>';
-  if (s === 'suspended') return '<span class="sus">SUSPENDED</span>';
-  if (s === 'banned') return '<span class="ban">BANNED</span>';
+  if (s==='active') return '<span class="ok">OK</span>';
+  if (s==='suspended') return '<span class="sus">SUSPENDED</span>';
+  if (s==='banned') return '<span class="ban">BANNED</span>';
   return s;
 }
 function levelBadge(l) {
@@ -192,39 +215,48 @@ function levelBadge(l) {
   return `<span class="badge ${cls}">${l}</span>`;
 }
 function avatarHTML(u, size) {
-  const sz = size || 60;
+  const sz = size||60;
   if (u && u.avatarUrl) return `<img src="${u.avatarUrl}" width="${sz}" height="${sz}" onerror="this.style.display='none'"/>`;
   return `<span style="font-size:9px;color:#555;">NO AVATAR</span>`;
 }
 
-// ── ROBLOX API via CORS proxy ──
+function accountAge(dateStr) {
+  if (!dateStr || dateStr === 'Never') return 'Unknown';
+  const created = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now - created;
+  if (diffMs < 0) return 'Just now';
+  const days = Math.floor(diffMs / (1000*60*60*24));
+  const years = Math.floor(days / 365);
+  const months = Math.floor((days % 365) / 30);
+  const remDays = days % 30;
+  let parts = [];
+  if (years > 0) parts.push(`${years} year${years>1?'s':''}`);
+  if (months > 0) parts.push(`${months} month${months>1?'s':''}`);
+  if (remDays > 0 || parts.length===0) parts.push(`${remDays} day${remDays!==1?'s':''}`);
+  return parts.join(', ') + ' old';
+}
+
 async function fetchRobloxInfo(username) {
   try {
     const proxy = 'https://corsproxy.io/?';
-    const userUrl = proxy + encodeURIComponent('https://users.roblox.com/v1/usernames/users');
-    const r1 = await fetch(userUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ usernames: [username], excludeBannedUsers: false })
+    const r1 = await fetch(proxy + encodeURIComponent('https://users.roblox.com/v1/usernames/users'), {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({usernames:[username],excludeBannedUsers:false})
     });
     const d1 = await r1.json();
-    if (!d1.data || !d1.data.length) return null;
+    if (!d1.data||!d1.data.length) return null;
     const robloxId = d1.data[0].id;
-    const thumbUrl = proxy + encodeURIComponent(`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${robloxId}&size=150x150&format=Png&isCircular=false`);
-    const r2 = await fetch(thumbUrl);
+    const r2 = await fetch(proxy + encodeURIComponent(`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${robloxId}&size=150x150&format=Png&isCircular=false`));
     const d2 = await r2.json();
-    return {
-      robloxId: String(robloxId),
-      avatarUrl: d2.data && d2.data[0] ? d2.data[0].imageUrl : ''
-    };
+    return { robloxId: String(robloxId), avatarUrl: d2.data&&d2.data[0]?d2.data[0].imageUrl:'' };
   } catch(e) { return null; }
 }
 
-// ── PLAYER ID COUNTER ──
 async function getNextPlayerId() {
-  const counterRef = ref(db, 'meta/playerCounter');
+  const counterRef = ref(db,'meta/playerCounter');
   const snap = await get(counterRef);
-  const next = snap.exists() ? snap.val() + 1 : 1;
+  const next = snap.exists() ? snap.val()+1 : 1;
   await set(counterRef, next);
   return next;
 }
@@ -235,33 +267,50 @@ function updateTopInfo() {
     `Players: <b>${ua.filter(u=>u.status==='active').length}</b> &nbsp;|&nbsp; Suspended: <b>${ua.filter(u=>u.status==='suspended').length}</b> &nbsp;|&nbsp; Banned: <b>${ua.filter(u=>u.status==='banned').length}</b> &nbsp;|&nbsp; Staff: <b>${Object.keys(STAFF).length}</b>`;
 }
 
+function updateSidebar() {
+  const staffSection = document.getElementById('sb-staff-section');
+  if (staffSection) staffSection.style.display = canDo('canViewStaff') ? '' : 'none';
+  const adminLog = document.getElementById('nav-adminlog');
+  if (adminLog) adminLog.style.display = canDo('canViewAdminLog') ? '' : 'none';
+  const suspLog = document.getElementById('nav-suspendlog');
+  if (suspLog) suspLog.style.display = canDo('canViewSuspendLogs') ? '' : 'none';
+  const delLog = document.getElementById('nav-deletelog');
+  if (delLog) delLog.style.display = canDo('canViewDeleteLogs') ? '' : 'none';
+  const modLink = document.getElementById('nav-moderate');
+  if (modLink) modLink.style.display = canDo('canModerateUsers') ? '' : 'none';
+}
+
 function nav(p) {
   page = p;
-  document.querySelectorAll('.sb-link').forEach(l => l.classList.remove('active'));
-  const el = document.getElementById('nav-' + p);
+  document.querySelectorAll('.sb-link').forEach(l=>l.classList.remove('active'));
+  const el = document.getElementById('nav-'+p);
   if (el) el.classList.add('active');
   render();
 }
 
 function render() {
   updateTopInfo();
+  updateSidebar();
   const c = document.getElementById('content');
-  if (page==='useradmin') renderUA(c);
-  else if (page==='moderate') renderMod(c);
+  if (page==='useradmin') { if(canDo('canViewUserAdmin')) renderUA(c); else c.innerHTML='<div class="ptitle">Access Denied</div><i style="padding:8px;display:block;color:#880000;">You do not have permission to view this page.</i>'; }
+  else if (page==='moderate') { if(canDo('canModerateUsers')) renderMod(c); else c.innerHTML='<div class="ptitle">Access Denied</div>'; }
   else if (page==='accounts') renderAccounts(c);
-  else if (page==='staff') renderStaff(c);
-  else if (page==='revokelog') renderLog(c,'revoke');
-  else if (page==='suspendlog') renderLog(c,'suspend');
-  else if (page==='deletelog') renderLog(c,'delete');
+  else if (page==='staff') { if(canDo('canViewStaff')) renderStaff(c); else c.innerHTML='<div class="ptitle">Access Denied</div>'; }
+  else if (page==='revokelog') { if(canDo('canViewRevokeLogs')) renderLog(c,'revoke'); else c.innerHTML='<div class="ptitle">Access Denied</div>'; }
+  else if (page==='suspendlog') { if(canDo('canViewSuspendLogs')) renderLog(c,'suspend'); else c.innerHTML='<div class="ptitle">Access Denied</div>'; }
+  else if (page==='deletelog') { if(canDo('canViewDeleteLogs')) renderLog(c,'delete'); else c.innerHTML='<div class="ptitle">Access Denied</div>'; }
+  else if (page==='adminlog') { if(canDo('canViewAdminLog')) renderAdminLog(c); else c.innerHTML='<div class="ptitle">Access Denied</div>'; }
 }
 
 // ── USER ADMIN ──
 function renderUA(c) {
-  const uArr = Object.entries(USERS).sort((a,b) => (a[1].playerId||0) - (b[1].playerId||0));
-  if (!currentUserId || !USERS[currentUserId]) currentUserId = uArr.length ? uArr[0][0] : null;
-  if (!currentUserId) { c.innerHTML='<div class="ptitle">User Admin</div><i style="padding:8px;display:block;color:#444;">No players yet. Add one in All Accounts.</i>'; return; }
+  const uArr = Object.entries(USERS).sort((a,b)=>(a[1].playerId||0)-(b[1].playerId||0));
+  if (!currentUserId||!USERS[currentUserId]) currentUserId = uArr.length?uArr[0][0]:null;
+  if (!currentUserId) { c.innerHTML='<div class="ptitle">User Admin</div><i style="padding:8px;display:block;color:#444;">No players yet.</i>'; return; }
   const u = USERS[currentUserId];
-  const punishments = u.punishments ? Object.entries(u.punishments) : [];
+  const punishments = u.punishments?Object.entries(u.punishments):[];
+  const robloxCreated = u.robloxAccountCreated || null;
+
   c.innerHTML = `
   <div class="ptitle">User Admin &mdash; ${u.username}</div>
   <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -269,18 +318,19 @@ function renderUA(c) {
       <div class="sbox"><div class="stitle">Account Summary</div><div class="sbody">
         <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:5px;">
           <div class="avatar-box" id="uaAvatar">${avatarHTML(u)}</div>
-          <div>
+          <div style="min-width:0;">
             <div class="row"><label>Username:</label><b>${u.username}</b></div>
             <div class="row"><label>Roblox Username:</label><span>${u.robloxUsername||'N/A'}</span></div>
             <div class="row"><label>Player ID:</label><span>${u.playerId||'—'}</span></div>
             <div class="row"><label>User ID (Roblox):</label><span>${u.robloxId||'—'}</span></div>
             <div class="row"><label>Status:</label>${statusBadge(u.status)}</div>
-            <div class="row"><label>Created:</label><span>${u.created}</span></div>
+            <div class="row"><label>System Entry:</label><span>${u.created}</span></div>
+            ${robloxCreated?`<div class="row"><label>Account Created:</label><span>${robloxCreated} &mdash; ${accountAge(robloxCreated)}</span></div>`:''}
             <div class="row"><label>Last Login:</label><span>${u.lastLogin}</span></div>
           </div>
         </div>
         <div style="display:flex;gap:3px;flex-wrap:wrap;align-items:center;">
-          <button class="btn" id="btn-moduser">Moderate User</button>
+          ${canDo('canModerateUsers')?'<button class="btn" id="btn-moduser">Moderate User</button>':''}
           <button class="btn" id="btn-refresh">Refresh Roblox Data</button>
           <span id="refreshMsg" style="font-size:11px;color:#006600;"></span>
         </div>
@@ -288,10 +338,10 @@ function renderUA(c) {
       <div class="sbox"><div class="stitle">Punishments</div><div class="sbody">
         ${punishments.length===0?'<i style="color:#444;">No punishments on record.</i>':`
         <div class="tbl-wrap"><table class="tbl">
-          <tr><th>Action</th><th>Moderator</th><th>Created</th><th>Expiry</th><th>Note</th><th>Revoke</th></tr>
+          <tr><th>Action</th><th>Moderator</th><th>Created</th><th>Expiry</th><th>Note</th>${canDo('canModerateUsers')?'<th>Revoke</th>':''}</tr>
           ${punishments.map(([pid,p])=>`<tr>
             <td>${p.action}</td><td>${p.mod}</td><td>${p.created}</td><td>${p.expiry}</td><td>${p.note||''}</td>
-            <td><button class="btn red revoke-btn" data-uid="${currentUserId}" data-pid="${pid}">REVOKE</button></td>
+            ${canDo('canModerateUsers')?`<td><button class="btn red revoke-btn" data-uid="${currentUserId}" data-pid="${pid}">REVOKE</button></td>`:''}
           </tr>`).join('')}
         </table></div>`}
       </div></div>
@@ -304,37 +354,101 @@ function renderUA(c) {
       </div></div>
       <div class="sbox"><div class="stitle">Find Player</div><div class="sbody">
         <div style="display:flex;gap:3px;">
-          <input type="text" id="fuInput" style="width:105px;" placeholder="username or ID"/>
+          <input type="text" id="fuInput" style="width:95px;" placeholder="username or ID"/>
           <button class="btn" id="btn-find">Go</button>
         </div>
         <div id="fuErr" style="color:#880000;font-size:11px;margin-top:2px;"></div>
+        <div id="fuResult" style="margin-top:4px;"></div>
       </div></div>
     </div>
   </div>`;
 
-  document.getElementById('btn-moduser').onclick = () => nav('moderate');
-  document.getElementById('btn-refresh').onclick = () => refreshRoblox(currentUserId);
-  document.getElementById('btn-savenote').onclick = () => saveNote(currentUserId);
-  document.getElementById('btn-find').onclick = doFindU;
-  document.querySelectorAll('.revoke-btn').forEach(btn => {
-    btn.onclick = () => revokeP(btn.dataset.uid, btn.dataset.pid);
+  if (canDo('canModerateUsers')) document.getElementById('btn-moduser').onclick=()=>nav('moderate');
+  document.getElementById('btn-refresh').onclick=()=>refreshRoblox(currentUserId);
+  document.getElementById('btn-savenote').onclick=()=>saveNote(currentUserId);
+  document.getElementById('btn-find').onclick=doFindU;
+  document.getElementById('fuInput').onkeydown=e=>{ if(e.key==='Enter') doFindU(); };
+  document.querySelectorAll('.revoke-btn').forEach(btn=>{
+    btn.onclick=()=>revokeP(btn.dataset.uid,btn.dataset.pid);
   });
 }
 
 async function refreshRoblox(uid) {
   const u = USERS[uid]; if (!u) return;
   const el = document.getElementById('refreshMsg');
-  if (el) el.textContent = 'Fetching...';
-  const info = await fetchRobloxInfo(u.robloxUsername || u.username);
-  if (!info) { if (el) el.textContent = 'Not found on Roblox.'; return; }
-  await update(ref(db,`users/${uid}`), {robloxId:info.robloxId, avatarUrl:info.avatarUrl});
+  if (el) el.textContent='Fetching...';
+  const info = await fetchRobloxInfo(u.robloxUsername||u.username);
+  if (!info) { if(el) el.textContent='Not found on Roblox.'; return; }
+  await update(ref(db,`users/${uid}`),{robloxId:info.robloxId,avatarUrl:info.avatarUrl});
   if (el) { el.textContent='Updated!'; setTimeout(()=>{ if(el) el.textContent=''; },2000); }
+}
+
+function doFindU() {
+  const q = document.getElementById('fuInput').value.trim();
+  const resultEl = document.getElementById('fuResult');
+  const errEl = document.getElementById('fuErr');
+  errEl.textContent='';
+  resultEl.innerHTML='';
+  if (!q) return;
+
+  const entry = Object.entries(USERS).find(([,u])=>u.username.toLowerCase()===q.toLowerCase()||String(u.playerId)===q);
+  if (entry) {
+    // Found — navigate to their profile
+    currentUserId=entry[0]; render(); return;
+  }
+
+  // Not found locally — show option to look up on Roblox and add
+  errEl.textContent='';
+  resultEl.innerHTML=`
+    <div style="font-size:11px;color:#880000;margin-bottom:3px;">Not found in system.</div>
+    <div style="font-size:11px;color:#000;margin-bottom:3px;">Search Roblox for "<b>${q}</b>"?</div>
+    <button class="btn" id="btn-lookupAdd">Look Up &amp; Add User</button>
+    <div id="lookupMsg" style="font-size:11px;margin-top:3px;"></div>
+    <div id="lookupPreview" style="margin-top:4px;display:none;align-items:center;gap:6px;">
+      <div class="avatar-box" id="lookupAvatar" style="width:36px;height:36px;"></div>
+      <div id="lookupInfo" style="font-size:11px;color:#000;"></div>
+    </div>`;
+
+  document.getElementById('btn-lookupAdd').onclick=()=>lookupAndAdd(q);
+}
+
+async function lookupAndAdd(username) {
+  const msgEl = document.getElementById('lookupMsg');
+  const preview = document.getElementById('lookupPreview');
+  const avatarBox = document.getElementById('lookupAvatar');
+  const infoEl = document.getElementById('lookupInfo');
+  msgEl.style.color='#000080'; msgEl.textContent='Looking up on Roblox...';
+  preview.style.display='flex';
+  avatarBox.innerHTML='<span style="font-size:8px;">...</span>';
+
+  const [info, playerId] = await Promise.all([fetchRobloxInfo(username), getNextPlayerId()]);
+
+  const newUser = {
+    username, robloxUsername: username,
+    robloxId: info?info.robloxId:'',
+    avatarUrl: info?info.avatarUrl:'',
+    playerId,
+    status:'active', created:today(), lastLogin:'Never', notes:'', punishments:{}
+  };
+
+  if (info) {
+    avatarBox.innerHTML=`<img src="${info.avatarUrl}" width="36" height="36"/>`;
+    infoEl.innerHTML=`<b>${username}</b><br>Roblox ID: ${info.robloxId}<br>Player #${playerId}`;
+    msgEl.style.color='#006600'; msgEl.textContent='Found! Adding...';
+  } else {
+    preview.style.display='none';
+    msgEl.style.color='#995500'; msgEl.textContent=`Not on Roblox — adding as Player #${playerId} anyway.`;
+  }
+
+  const newRef = push(ref(db,'users'));
+  await set(newRef, newUser);
+  setTimeout(()=>{ currentUserId=newRef.key; nav('useradmin'); },1200);
 }
 
 // ── MODERATE ──
 function renderMod(c) {
-  const u = currentUserId && USERS[currentUserId] ? USERS[currentUserId] : (Object.values(USERS)[0]||null);
-  c.innerHTML = `
+  const u = currentUserId&&USERS[currentUserId]?USERS[currentUserId]:(Object.values(USERS)[0]||null);
+  c.innerHTML=`
   <div class="ptitle">Moderate User</div>
   <div style="display:flex;gap:6px;flex-wrap:wrap;">
     <div style="width:140px;flex-shrink:0;">
@@ -351,7 +465,7 @@ function renderMod(c) {
           <label>User:</label>
           <input type="text" id="modUserInput" style="width:120px;" value="${u?u.username:''}"/>
         </div>
-        <div id="modUserStatus" style="font-size:11px;margin-bottom:4px;margin-left:120px;"></div>
+        <div id="modUserStatus" style="font-size:11px;margin-bottom:4px;margin-left:130px;"></div>
         <div class="row" style="margin-bottom:3px;"><label>Reason:</label>
           <select id="mReason" style="width:130px;"><option>-- Select --</option><option>Spam</option><option>Harassment</option><option>Inappropriate Content</option><option>Scam</option><option>Cheating</option><option>Other</option></select>
         </div>
@@ -369,29 +483,27 @@ function renderMod(c) {
         <div class="sbody" id="modTargetInfo">
           ${u?`<div style="display:flex;gap:8px;align-items:center;">
             <div class="avatar-box" style="width:40px;height:40px;">${avatarHTML(u,40)}</div>
-            <div>
-              <div class="row"><label>Username:</label><b>${u.username}</b></div>
-              <div class="row"><label>Status:</label>${statusBadge(u.status)}</div>
-            </div>
+            <div><div class="row"><label>Username:</label><b>${u.username}</b></div>
+            <div class="row"><label>Status:</label>${statusBadge(u.status)}</div></div>
           </div>`:'<i style="color:#444;">No user.</i>'}
         </div>
       </div>
     </div>
   </div>`;
-  document.getElementById('btn-modsubmit').onclick = submitMod;
-  document.getElementById('btn-modcancel').onclick = () => nav('useradmin');
-  document.getElementById('modUserInput').oninput = e => checkModUser(e.target.value);
+  document.getElementById('btn-modsubmit').onclick=submitMod;
+  document.getElementById('btn-modcancel').onclick=()=>nav('useradmin');
+  document.getElementById('modUserInput').oninput=e=>checkModUser(e.target.value);
 }
 
 // ── ALL ACCOUNTS ──
 function renderAccounts(c) {
   const uArr = Object.entries(USERS).sort((a,b)=>(a[1].playerId||0)-(b[1].playerId||0));
-  c.innerHTML = `
+  c.innerHTML=`
   <div class="ptitle">All Accounts</div>
   <div class="sbox"><div class="stitle">Player List</div><div class="sbody">
     ${uArr.length===0?'<i style="color:#444;">No players yet.</i>':`
     <div class="tbl-wrap"><table class="tbl">
-      <tr><th>Player ID</th><th>Username</th><th>Roblox Username</th><th>Roblox ID</th><th>Status</th><th>Created</th><th>Action</th></tr>
+      <tr><th>Player ID</th><th>Username</th><th>Roblox Username</th><th>Roblox ID</th><th>Status</th><th>System Entry</th><th>Action</th></tr>
       ${uArr.map(([uid,u])=>`<tr>
         <td>${u.playerId||'—'}</td><td><b>${u.username}</b></td>
         <td>${u.robloxUsername||'N/A'}</td><td>${u.robloxId||'—'}</td>
@@ -413,10 +525,11 @@ function renderAccounts(c) {
     </div>
   </div></div>`;
 
-  document.querySelectorAll('.view-user-btn').forEach(btn => {
-    btn.onclick = () => { currentUserId = btn.dataset.uid; nav('useradmin'); };
+  document.querySelectorAll('.view-user-btn').forEach(btn=>{
+    btn.onclick=()=>{ currentUserId=btn.dataset.uid; nav('useradmin'); };
   });
-  document.getElementById('btn-adduser').onclick = addUser;
+  document.getElementById('btn-adduser').onclick=addUser;
+  document.getElementById('nuUser').onkeydown=e=>{ if(e.key==='Enter') addUser(); };
 }
 
 async function addUser() {
@@ -437,22 +550,21 @@ async function addUser() {
   const [info, playerId] = await Promise.all([fetchRobloxInfo(rawUsername), getNextPlayerId()]);
 
   const newUser = {
-    username: rawUsername, robloxUsername: rawUsername,
-    robloxId: info ? info.robloxId : '',
-    avatarUrl: info ? info.avatarUrl : '',
-    playerId: playerId,
-    status: 'active', created: today(), lastLogin: 'Never', notes: '', punishments: {}
+    username:rawUsername, robloxUsername:rawUsername,
+    robloxId:info?info.robloxId:'',
+    avatarUrl:info?info.avatarUrl:'',
+    playerId,
+    status:'active', created:today(), lastLogin:'Never', notes:'', punishments:{}
   };
 
   if (info) {
     avatarBox.innerHTML=`<img src="${info.avatarUrl}" width="40" height="40"/>`;
-    previewInfo.innerHTML=`<b>${rawUsername}</b><br>Roblox ID: ${info.robloxId}<br>Player ID: ${playerId}`;
+    previewInfo.innerHTML=`<b>${rawUsername}</b><br>Roblox ID: ${info.robloxId}<br>Player #${playerId}`;
     el.style.color='#006600'; el.textContent='Found! Adding player...';
   } else {
     preview.style.display='none';
-    el.style.color='#995500'; el.textContent=`Not found on Roblox — added as Player #${playerId} without Roblox data.`;
+    el.style.color='#995500'; el.textContent=`Not found on Roblox — added as Player #${playerId}.`;
   }
-
   const newRef = push(ref(db,'users'));
   await set(newRef, newUser);
   document.getElementById('nuUser').value='';
@@ -461,12 +573,18 @@ async function addUser() {
 
 // ── STAFF ──
 function renderStaff(c) {
-  const canAct = isSuperAdmin();
+  const canAct = canDo('canSuspendStaff');
+  const canTerminate = canDo('canTerminateStaff');
   const sArr = Object.entries(STAFF);
-  if (!currentStaffId || !STAFF[currentStaffId]) currentStaffId = sArr.length ? sArr[0][0] : null;
+  if (!currentStaffId||!STAFF[currentStaffId]) currentStaffId=sArr.length?sArr[0][0]:null;
   if (!currentStaffId) { c.innerHTML='<div class="ptitle">Staff Registry</div><i style="padding:8px;display:block;">No staff yet.</i>'; return; }
   const s = STAFF[currentStaffId];
-  c.innerHTML = `
+
+  // Count by level
+  const counts = {};
+  sArr.forEach(([,st])=>{ counts[st.level]=(counts[st.level]||0)+1; });
+
+  c.innerHTML=`
   <div class="ptitle">Staff Registry</div>
   <div style="display:flex;gap:6px;flex-wrap:wrap;">
     <div style="flex:1;min-width:220px;">
@@ -480,6 +598,7 @@ function renderStaff(c) {
           </tr>`).join('')}
         </table></div>
       </div></div>
+      ${canDo('canManageStaff')?`
       <div class="sbox"><div class="stitle">Add Staff Member</div><div class="sbody">
         <div class="row"><label>Username:</label><input type="text" id="nsUser" style="width:115px;"/></div>
         <div class="row"><label>Password:</label><input type="text" id="nsPass" style="width:115px;"/></div>
@@ -488,15 +607,14 @@ function renderStaff(c) {
             <option>INTERN</option><option>MODERATOR</option><option>ADMINISTRATOR</option><option>SUPER ADMINISTRATOR</option>
           </select>
         </div>
-        <div style="font-size:10px;color:#555;margin:3px 0 4px;">Also add their credentials to STAFF_ACCOUNTS in the code.</div>
-        <button class="btn" id="btn-addstaff">Add Member</button>
+        <button class="btn" id="btn-addstaff" style="margin-top:4px;">Add Member</button>
         <div id="nsMsg" style="font-size:11px;margin-top:2px;"></div>
-      </div></div>
+      </div></div>`:''}
     </div>
-    <div style="width:190px;flex-shrink:0;">
+    <div style="width:195px;flex-shrink:0;">
       <div class="sbox"><div class="stitle">Staff Profile &mdash; ${s.username}</div><div class="sbody">
         <div class="row"><label>Username:</label><b>${s.username}</b></div>
-        <div class="row"><label>Level:</label>${levelBadge(s.level)}</div>
+        <div class="row" style="align-items:flex-start;"><label>Level:</label><div>${levelBadge(s.level)}</div></div>
         <div class="row"><label>Joined:</label><span>${s.joined}</span></div>
         <div class="row"><label>Status:</label>${s.suspended?'<span class="sus">SUSPENDED</span>':'<span class="ok">OK</span>'}</div>
         <div style="font-size:11px;margin:3px 0 2px;color:#000;">Notes:</div>
@@ -515,236 +633,301 @@ function renderStaff(c) {
           <button class="btn" id="btn-setlevel">Set</button>
         </div>
         <div id="spMsg" style="font-size:11px;margin-top:2px;"></div>
-        ${canAct?`
+        ${canAct||canTerminate?`
         <hr style="border:none;border-top:1px solid #909090;margin:6px 0;">
         <div style="font-size:11px;font-weight:bold;color:#000;margin-bottom:3px;">Admin Actions</div>
-        <button class="btn" id="btn-togglesusp" style="margin-bottom:3px;width:100%;">${s.suspended?'Unsuspend Staff':'Suspend Staff'}</button>
-        <button class="btn red" id="btn-terminate" style="width:100%;">Terminate Account</button>
+        ${canAct?`<button class="btn" id="btn-togglesusp" style="margin-bottom:3px;width:100%;">${s.suspended?'Unsuspend Staff':'Suspend Staff'}</button>`:''}
+        ${canTerminate?`<button class="btn red" id="btn-terminate" style="width:100%;">Terminate Account</button>`:''}
         `:''}
       </div></div>
     </div>
   </div>`;
 
-  document.querySelectorAll('.view-staff-btn').forEach(btn => {
-    btn.onclick = () => { currentStaffId = btn.dataset.sid; nav('staff'); };
+  document.querySelectorAll('.view-staff-btn').forEach(btn=>{
+    btn.onclick=()=>{ currentStaffId=btn.dataset.sid; nav('staff'); };
   });
-  document.getElementById('btn-addstaff').onclick = addStaff;
-  document.getElementById('btn-savestaffnote').onclick = () => saveStaffNote(currentStaffId);
-  document.getElementById('btn-setpass').onclick = () => updateStaffPass(currentStaffId);
-  document.getElementById('btn-setlevel').onclick = () => updateStaffLevel(currentStaffId);
-  if (canAct) {
-    document.getElementById('btn-togglesusp').onclick = () => promptToggleSuspendStaff(currentStaffId);
-    document.getElementById('btn-terminate').onclick = () => promptDelete('staff', currentStaffId);
-  }
+  if (canDo('canManageStaff')) document.getElementById('btn-addstaff').onclick=addStaff;
+  document.getElementById('btn-savestaffnote').onclick=()=>saveStaffNote(currentStaffId);
+  document.getElementById('btn-setpass').onclick=()=>updateStaffPass(currentStaffId);
+  document.getElementById('btn-setlevel').onclick=()=>updateStaffLevel(currentStaffId);
+  if (canAct && document.getElementById('btn-togglesusp'))
+    document.getElementById('btn-togglesusp').onclick=()=>promptToggleSuspendStaff(currentStaffId);
+  if (canTerminate && document.getElementById('btn-terminate'))
+    document.getElementById('btn-terminate').onclick=()=>promptDelete('staff',currentStaffId);
 }
 
 // ── LOGS ──
 function renderLog(c, type) {
-  const titles = {revoke:'Revoke Log',suspend:'Suspension Log',delete:'Deletion Log'};
-  const data = type==='revoke'?REVOKE_LOG:type==='suspend'?SUSPEND_LOG:DELETE_LOG;
-  const entries = Object.values(data);
-  let tableHTML = '';
+  const titles={revoke:'Revoke Log',suspend:'Suspension Log',delete:'Deletion Log'};
+  const data=type==='revoke'?REVOKE_LOG:type==='suspend'?SUSPEND_LOG:DELETE_LOG;
+  const entries=Object.values(data);
+  let tableHTML='';
   if (type==='revoke') {
-    tableHTML = entries.length===0?'<i style="color:#444;">No revocations on record.</i>':`
+    tableHTML=entries.length===0?'<i style="color:#444;">No revocations on record.</i>':`
     <div class="tbl-wrap"><table class="tbl">
       <tr><th>Action</th><th>Orig. Mod</th><th>Revoked By</th><th>Date</th><th>Note</th></tr>
       ${entries.map(r=>`<tr><td>${r.action}</td><td>${r.origMod}</td><td><b>${r.revokedBy}</b></td><td>${r.date}</td><td>${r.note||''}</td></tr>`).join('')}
     </table></div>`;
   } else if (type==='suspend') {
-    tableHTML = entries.length===0?'<i style="color:#444;">No suspensions on record.</i>':`
+    tableHTML=entries.length===0?'<i style="color:#444;">No suspensions on record.</i>':`
     <div class="tbl-wrap"><table class="tbl">
       <tr><th>Username</th><th>Action</th><th>By</th><th>Date</th><th>Reason</th></tr>
       ${entries.map(r=>`<tr><td><b>${r.username}</b></td><td>${r.action}</td><td>${r.by}</td><td>${r.date}</td><td>${r.reason}</td></tr>`).join('')}
     </table></div>`;
   } else {
-    tableHTML = entries.length===0?'<i style="color:#444;">No deletions on record.</i>':`
+    tableHTML=entries.length===0?'<i style="color:#444;">No deletions on record.</i>':`
     <div class="tbl-wrap"><table class="tbl">
       <tr><th>Username</th><th>Type</th><th>Deleted By</th><th>Date</th><th>Reason</th></tr>
       ${entries.map(r=>`<tr><td><b>${r.username}</b></td><td>${r.type}</td><td>${r.by}</td><td>${r.date}</td><td>${r.reason}</td></tr>`).join('')}
     </table></div>`;
   }
-  c.innerHTML = `<div class="ptitle">${titles[type]}</div><div class="sbox"><div class="stitle">${titles[type]}</div><div class="sbody">${tableHTML}</div></div>`;
+  c.innerHTML=`<div class="ptitle">${titles[type]}</div><div class="sbox"><div class="stitle">${titles[type]}</div><div class="sbody">${tableHTML}</div></div>`;
+}
+
+// ── ADMIN LOG (permissions + staff level overview) ──
+function renderAdminLog(c) {
+  const sArr = Object.entries(STAFF);
+  const counts = {'INTERN':0,'MODERATOR':0,'ADMINISTRATOR':0,'SUPER ADMINISTRATOR':0};
+  sArr.forEach(([,s])=>{ if(counts[s.level]!==undefined) counts[s.level]++; });
+
+  const permKeys = Object.keys(DEFAULT_PERMS);
+  const levelOptions = ['INTERN','MODERATOR','ADMINISTRATOR','SUPER ADMINISTRATOR'];
+
+  c.innerHTML=`
+  <div class="ptitle">Administrator</div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;">
+    <div style="flex:1;min-width:200px;">
+      <div class="sbox"><div class="stitle">Staff Level Overview</div><div class="sbody">
+        <table class="tbl" style="width:100%;">
+          <tr><th>Level</th><th>Rank</th><th>Count</th></tr>
+          <tr><td>${levelBadge('INTERN')}</td><td>1</td><td>${counts['INTERN']}</td></tr>
+          <tr><td>${levelBadge('MODERATOR')}</td><td>2</td><td>${counts['MODERATOR']}</td></tr>
+          <tr><td>${levelBadge('ADMINISTRATOR')}</td><td>3</td><td>${counts['ADMINISTRATOR']}</td></tr>
+          <tr><td>${levelBadge('SUPER ADMINISTRATOR')}</td><td>4</td><td>${counts['SUPER ADMINISTRATOR']}</td></tr>
+        </table>
+      </div></div>
+    </div>
+    <div style="flex:2;min-width:260px;">
+      ${canDo('canTerminateStaff')?`
+      <div class="sbox"><div class="stitle">Permission Settings</div><div class="sbody">
+        <div style="font-size:11px;color:#555;margin-bottom:6px;">Set the minimum level required for each action.</div>
+        ${permKeys.map(key=>`
+          <div class="perm-row">
+            <label>${formatPermKey(key)}</label>
+            <select id="perm-${key}" style="width:145px;">
+              ${levelOptions.map(l=>`<option value="${l}" ${PERMS[key]===l?'selected':''}>${l}</option>`).join('')}
+            </select>
+          </div>`).join('')}
+        <button class="btn" id="btn-saveperms" style="margin-top:6px;">Save Permissions</button>
+        <div id="permMsg" style="font-size:11px;margin-top:3px;color:#006600;"></div>
+      </div></div>`:`<div class="sbox"><div class="stitle">Permission Settings</div><div class="sbody"><i style="color:#444;">Only Super Administrators can edit permissions.</i></div></div>`}
+    </div>
+  </div>`;
+
+  if (canDo('canTerminateStaff')) {
+    document.getElementById('btn-saveperms').onclick=savePerms;
+  }
+}
+
+function formatPermKey(key) {
+  return key.replace(/([A-Z])/g,' $1').replace(/^can /i,'Can ').trim();
+}
+
+async function savePerms() {
+  const permKeys = Object.keys(DEFAULT_PERMS);
+  const newPerms = {};
+  permKeys.forEach(key=>{
+    const el = document.getElementById('perm-'+key);
+    if (el) newPerms[key]=el.value;
+  });
+  await set(ref(db,'meta/permissions'), newPerms);
+  PERMS={...newPerms};
+  const el=document.getElementById('permMsg');
+  el.textContent='Permissions saved!';
+  updateSidebar();
+  setTimeout(()=>{ if(el) el.textContent=''; },2000);
 }
 
 // ── ACTIONS ──
-async function revokeP(uid, pid) {
-  const u = USERS[uid]; if (!u||!u.punishments||!u.punishments[pid]) return;
-  const p = u.punishments[pid];
-  await push(ref(db,'logs/revoke'), {action:p.action,origMod:p.mod,revokedBy:ME,date:today(),note:p.note||''});
+async function revokeP(uid,pid) {
+  const u=USERS[uid]; if(!u||!u.punishments||!u.punishments[pid]) return;
+  const p=u.punishments[pid];
+  await push(ref(db,'logs/revoke'),{action:p.action,origMod:p.mod,revokedBy:ME,date:today(),note:p.note||''});
   await remove(ref(db,`users/${uid}/punishments/${pid}`));
-  await update(ref(db,`users/${uid}`), {status:'active'});
+  await update(ref(db,`users/${uid}`),{status:'active'});
 }
 
 function checkModUser(val) {
-  const statusEl = document.getElementById('modUserStatus');
-  const infoEl = document.getElementById('modTargetInfo');
-  if (!val.trim()) { statusEl.innerHTML=''; return; }
-  const entry = Object.entries(USERS).find(([,u])=>u.username===val.trim());
-  if (!entry) {
+  const statusEl=document.getElementById('modUserStatus');
+  const infoEl=document.getElementById('modTargetInfo');
+  if(!val.trim()){statusEl.innerHTML='';return;}
+  const entry=Object.entries(USERS).find(([,u])=>u.username===val.trim());
+  if(!entry){
     statusEl.innerHTML='<span class="nonexistent">NON-EXISTENT</span>';
-    if (infoEl) infoEl.innerHTML='<span class="nonexistent">User not found.</span>';
+    if(infoEl) infoEl.innerHTML='<span class="nonexistent">User not found.</span>';
   } else {
-    const [,u] = entry;
+    const[,u]=entry;
     statusEl.innerHTML='<span class="ok">&#10003; Found</span>';
-    if (infoEl) infoEl.innerHTML=`
+    if(infoEl) infoEl.innerHTML=`
       <div style="display:flex;gap:8px;align-items:center;">
         <div class="avatar-box" style="width:40px;height:40px;">${avatarHTML(u,40)}</div>
-        <div>
-          <div class="row"><label>Username:</label><b>${u.username}</b></div>
-          <div class="row"><label>Status:</label>${statusBadge(u.status)}</div>
-        </div>
+        <div><div class="row"><label>Username:</label><b>${u.username}</b></div>
+        <div class="row"><label>Status:</label>${statusBadge(u.status)}</div></div>
       </div>`;
   }
 }
 
 async function submitMod() {
-  const val = document.getElementById('modUserInput').value.trim();
-  const entry = Object.entries(USERS).find(([,u])=>u.username===val);
-  const el = document.getElementById('mResult');
-  if (!entry) { el.style.color='#880000'; el.textContent='User does not exist.'; return; }
-  const [uid,u] = entry;
-  const action = document.querySelector('input[name="mact"]:checked').value;
-  const reason = document.getElementById('mReason').value;
-  const note = document.getElementById('mNote').value;
-  if (action!=='None') {
-    const newStatus = action==='Suspend'?'suspended':action.startsWith('Ban')?'banned':u.status;
-    await update(ref(db,`users/${uid}`), {status:newStatus});
-    await push(ref(db,`users/${uid}/punishments`), {action,mod:ME,created:today(),expiry:action.includes('Day')?'Varies':'Permanent',note:note||reason});
+  const val=document.getElementById('modUserInput').value.trim();
+  const entry=Object.entries(USERS).find(([,u])=>u.username===val);
+  const el=document.getElementById('mResult');
+  if(!entry){el.style.color='#880000';el.textContent='User does not exist.';return;}
+  const[uid,u]=entry;
+  const action=document.querySelector('input[name="mact"]:checked').value;
+  const reason=document.getElementById('mReason').value;
+  const note=document.getElementById('mNote').value;
+  if(action!=='None'){
+    const newStatus=action==='Suspend'?'suspended':action.startsWith('Ban')?'banned':u.status;
+    await update(ref(db,`users/${uid}`),{status:newStatus});
+    await push(ref(db,`users/${uid}/punishments`),{action,mod:ME,created:today(),expiry:action.includes('Day')?'Varies':'Permanent',note:note||reason});
   }
   currentUserId=uid;
-  el.style.color='#006600'; el.textContent=action==='None'?'No action taken.':`"${action}" applied to ${u.username}.`;
+  el.style.color='#006600';el.textContent=action==='None'?'No action taken.':`"${action}" applied to ${u.username}.`;
   setTimeout(()=>nav('useradmin'),1000);
 }
 
-function doFindU() {
-  const q = document.getElementById('fuInput').value.trim();
-  const entry = Object.entries(USERS).find(([,u])=>u.username===q||String(u.playerId)===q);
-  if (!entry) { document.getElementById('fuErr').textContent='User not found.'; return; }
-  document.getElementById('fuErr').textContent='';
-  currentUserId=entry[0]; render();
-}
-
 async function saveNote(uid) {
-  const note = document.getElementById('noteTA').value;
-  await update(ref(db,`users/${uid}`), {notes:note});
-  const el = document.getElementById('noteMsg');
-  el.textContent='Saved!'; setTimeout(()=>{ if(el) el.textContent=''; },1500);
+  const note=document.getElementById('noteTA').value;
+  await update(ref(db,`users/${uid}`),{notes:note});
+  const el=document.getElementById('noteMsg');
+  el.textContent='Saved!';setTimeout(()=>{if(el)el.textContent='';},1500);
 }
 
 async function addStaff() {
-  const u = document.getElementById('nsUser').value.trim();
-  const p = document.getElementById('nsPass').value.trim();
-  const l = document.getElementById('nsLevel').value;
-  const el = document.getElementById('nsMsg');
-  if (!u) { el.style.color='#880000'; el.textContent='Username required.'; return; }
-  if (!p) { el.style.color='#880000'; el.textContent='Password required.'; return; }
-  if (Object.values(STAFF).find(s=>s.username===u)) { el.style.color='#880000'; el.textContent='Already exists.'; return; }
-  await set(ref(db,`staff/${u}`), {username:u,level:l,joined:today(),notes:'',suspended:false,password:p});
-  el.style.color='#006600'; el.textContent=`${u} added as ${l}. Also add their credentials to STAFF_ACCOUNTS in the code!`;
-  setTimeout(()=>{ el.textContent=''; },4000);
+  const u=document.getElementById('nsUser').value.trim();
+  const p=document.getElementById('nsPass').value.trim();
+  const l=document.getElementById('nsLevel').value;
+  const el=document.getElementById('nsMsg');
+  if(!u){el.style.color='#880000';el.textContent='Username required.';return;}
+  if(!p){el.style.color='#880000';el.textContent='Password required.';return;}
+  if(Object.values(STAFF).find(s=>s.username===u)){el.style.color='#880000';el.textContent='Already exists.';return;}
+  el.style.color='#000080';el.textContent='Creating account...';
+  try {
+    const email=`${u}@admin.com`;
+    await createUserWithEmailAndPassword(auth,email,p);
+    await signInWithEmailAndPassword(auth,`${ME}@admin.com`,currentPassword);
+  } catch(e){}
+  await set(ref(db,`staff/${u}`),{username:u,level:l,joined:today(),notes:'',suspended:false,password:p});
+  el.style.color='#006600';el.textContent=`${u} added as ${l}.`;
+  setTimeout(()=>{el.textContent='';},3000);
 }
 
 async function saveStaffNote(sid) {
-  const note = document.getElementById('snTA').value;
-  await update(ref(db,`staff/${sid}`), {notes:note});
-  const el = document.getElementById('spMsg');
-  el.style.color='#006600'; el.textContent='Note saved!'; setTimeout(()=>{ if(el) el.textContent=''; },1500);
+  const note=document.getElementById('snTA').value;
+  await update(ref(db,`staff/${sid}`),{notes:note});
+  const el=document.getElementById('spMsg');
+  el.style.color='#006600';el.textContent='Note saved!';setTimeout(()=>{if(el)el.textContent='';},1500);
 }
 
 async function updateStaffPass(sid) {
-  const np = document.getElementById('spInput').value.trim();
-  const el = document.getElementById('spMsg');
-  if (!np) { el.style.color='#880000'; el.textContent='Enter a password.'; return; }
-  await update(ref(db,`staff/${sid}`), {password:np});
-  el.style.color='#006600'; el.textContent='Password updated! Remember to update STAFF_ACCOUNTS in code too.';
-  setTimeout(()=>{ if(el) el.textContent=''; },3000);
+  const np=document.getElementById('spInput').value.trim();
+  const el=document.getElementById('spMsg');
+  if(!np){el.style.color='#880000';el.textContent='Enter a password.';return;}
+  await update(ref(db,`staff/${sid}`),{password:np});
+  el.style.color='#006600';el.textContent='Password updated in database.';
+  setTimeout(()=>{if(el)el.textContent='';},2000);
 }
 
 async function updateStaffLevel(sid) {
-  const l = document.getElementById('slInput').value;
-  await update(ref(db,`staff/${sid}`), {level:l});
-  const el = document.getElementById('spMsg');
-  el.style.color='#006600'; el.textContent=`Level set to ${l}.`;
-  setTimeout(()=>{ if(el) el.textContent=''; },1500);
+  const l=document.getElementById('slInput').value;
+  await update(ref(db,`staff/${sid}`),{level:l});
+  const el=document.getElementById('spMsg');
+  el.style.color='#006600';el.textContent=`Level set to ${l}.`;
+  setTimeout(()=>{if(el)el.textContent='';},1500);
 }
 
-function promptDelete(type, id) {
-  const name = type==='staff'?(STAFF[id]?STAFF[id].username:id):(USERS[id]?USERS[id].username:id);
+function promptDelete(type,id) {
+  const name=type==='staff'?(STAFF[id]?STAFF[id].username:id):(USERS[id]?USERS[id].username:id);
   openDialog('Confirm Deletion',`Are you sure you'd like to delete <b>${name}</b>?<br>This action cannot be undone.`,
     `<div style="font-size:11px;color:#000;margin-bottom:3px;">Reason:</div><textarea id="dlgReason" style="width:100%;height:40px;"></textarea>`,
-    async () => {
-      const reason = document.getElementById('dlgReason').value.trim()||'No reason given.';
-      await push(ref(db,'logs/delete'), {username:name,type,by:ME,date:today(),reason});
-      if (type==='staff') { await remove(ref(db,`staff/${id}`)); currentStaffId=null; nav('staff'); }
-      else { await remove(ref(db,`users/${id}`)); currentUserId=null; nav('accounts'); }
+    async()=>{
+      const reason=document.getElementById('dlgReason').value.trim()||'No reason given.';
+      await push(ref(db,'logs/delete'),{username:name,type,by:ME,date:today(),reason});
+      if(type==='staff'){
+        await remove(ref(db,`staff/${id}`));
+        currentStaffId=null;nav('staff');
+      } else {
+        await remove(ref(db,`users/${id}`));
+        currentUserId=null;nav('accounts');
+      }
     }
   );
 }
 
 function promptToggleSuspendStaff(sid) {
-  const s = STAFF[sid]; if (!s) return;
-  const action = s.suspended?'Unsuspend':'Suspend';
+  const s=STAFF[sid];if(!s)return;
+  const action=s.suspended?'Unsuspend':'Suspend';
   openDialog(`${action} Staff`,`${action} staff member <b>${s.username}</b>?`,
     `<div style="font-size:11px;color:#000;margin-bottom:3px;">Reason:</div><textarea id="dlgReason" style="width:100%;height:36px;"></textarea>`,
-    async () => {
-      const reason = document.getElementById('dlgReason').value.trim()||'No reason given.';
-      await update(ref(db,`staff/${sid}`), {suspended:!s.suspended});
-      await push(ref(db,'logs/suspend'), {username:s.username,action,by:ME,date:today(),reason});
+    async()=>{
+      const reason=document.getElementById('dlgReason').value.trim()||'No reason given.';
+      await update(ref(db,`staff/${sid}`),{suspended:!s.suspended});
+      await push(ref(db,'logs/suspend'),{username:s.username,action,by:ME,date:today(),reason});
     }
   );
 }
 
-function openDialog(title, body, extraHTML, cb) {
+function openDialog(title,body,extraHTML,cb) {
   document.getElementById('dlgTitle').textContent=title;
   document.getElementById('dlgBody').innerHTML=body;
   document.getElementById('dlgExtra').innerHTML=extraHTML||'';
   dlgCallback=cb;
   document.getElementById('overlay').classList.add('show');
 }
-function closeDialog() { document.getElementById('overlay').classList.remove('show'); dlgCallback=null; }
+function closeDialog(){document.getElementById('overlay').classList.remove('show');dlgCallback=null;}
 
 document.getElementById('dlgClose').onclick=closeDialog;
 document.getElementById('dlgCancel').onclick=closeDialog;
-document.getElementById('dlgOK').onclick=()=>{ if(dlgCallback) dlgCallback(); closeDialog(); };
+document.getElementById('dlgOK').onclick=()=>{if(dlgCallback)dlgCallback();closeDialog();};
 
 // ── LOGIN / LOGOUT ──
+let currentPassword='';
 document.getElementById('loginBtn').onclick=doLogin;
-document.getElementById('loginPass').onkeydown=e=>{ if(e.key==='Enter') doLogin(); };
-document.getElementById('loginUser').onkeydown=e=>{ if(e.key==='Enter') doLogin(); };
+document.getElementById('loginPass').onkeydown=e=>{if(e.key==='Enter')doLogin();};
+document.getElementById('loginUser').onkeydown=e=>{if(e.key==='Enter')doLogin();};
 document.getElementById('logoutBtn').onclick=doLogout;
 
 async function doLogin() {
-  const u = document.getElementById('loginUser').value.trim();
-  const p = document.getElementById('loginPass').value;
-  const status = document.getElementById('loginStatus');
-
-  // First check hardcoded accounts
-  const account = STAFF_ACCOUNTS.find(a=>a.username===u && a.password===p);
-  if (!account) {
-    // Also check Firebase stored passwords as fallback
-    const staffSnap = await get(ref(db,`staff/${u}`));
-    if (!staffSnap.exists() || staffSnap.val().password !== p) {
-      status.textContent='INVALID!'; return;
-    }
-    const staffData = staffSnap.val();
-    if (staffData.suspended) { status.textContent='SUSPENDED'; return; }
-    ME=u; MY_LEVEL=staffData.level;
-  } else {
-    const staffData = STAFF[u];
-    if (staffData && staffData.suspended) { status.textContent='SUSPENDED'; return; }
-    ME=u; MY_LEVEL=account.level;
+  const u=document.getElementById('loginUser').value.trim();
+  const p=document.getElementById('loginPass').value;
+  const status=document.getElementById('loginStatus');
+  status.textContent='Signing in...';
+  try {
+    const email=`${u}@admin.com`;
+    const cred=await signInWithEmailAndPassword(auth,email,p);
+    MY_AUTH_USER=cred.user;
+    const staffSnap=await get(ref(db,`staff/${u}`));
+    if(!staffSnap.exists()){status.textContent='INVALID!';await signOut(auth);return;}
+    const staffData=staffSnap.val();
+    if(staffData.suspended){status.textContent='SUSPENDED';await signOut(auth);return;}
+    ME=u; MY_LEVEL=staffData.level; currentPassword=p;
+    const permsSnap=await get(ref(db,'meta/permissions'));
+    if(permsSnap.exists()) PERMS={...DEFAULT_PERMS,...permsSnap.val()};
+    else PERMS={...DEFAULT_PERMS};
+    status.textContent='';
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('adminScreen').style.display='block';
+    document.getElementById('topbarTitle').textContent=`Administration Panel \u2014 ${ME}`;
+    startListeners();
+    nav('useradmin');
+  } catch(e){
+    status.textContent='INVALID!';
   }
-
-  status.textContent='';
-  document.getElementById('loginScreen').style.display='none';
-  document.getElementById('adminScreen').style.display='block';
-  document.getElementById('topbarTitle').textContent=`Administration Panel \u2014 ${ME}`;
-  startListeners();
-  nav('useradmin');
 }
 
-function doLogout() {
-  ME=''; MY_LEVEL='';
+async function doLogout() {
+  await signOut(auth);
+  ME='';MY_LEVEL='';MY_AUTH_USER=null;currentPassword='';
   document.getElementById('adminScreen').style.display='none';
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('loginUser').value='';
@@ -752,25 +935,26 @@ function doLogout() {
 }
 
 function startListeners() {
-  onValue(ref(db,'users'), snap=>{ USERS=snap.val()||{}; if(page) render(); });
-  onValue(ref(db,'staff'), snap=>{ STAFF=snap.val()||{}; if(page) render(); });
-  onValue(ref(db,'logs/revoke'), snap=>{ REVOKE_LOG=snap.val()||{}; if(page==='revokelog') render(); });
-  onValue(ref(db,'logs/suspend'), snap=>{ SUSPEND_LOG=snap.val()||{}; if(page==='suspendlog') render(); });
-  onValue(ref(db,'logs/delete'), snap=>{ DELETE_LOG=snap.val()||{}; if(page==='deletelog') render(); });
+  onValue(ref(db,'users'),snap=>{USERS=snap.val()||{};if(page)render();});
+  onValue(ref(db,'staff'),snap=>{STAFF=snap.val()||{};if(page)render();});
+  onValue(ref(db,'logs/revoke'),snap=>{REVOKE_LOG=snap.val()||{};if(page==='revokelog')render();});
+  onValue(ref(db,'logs/suspend'),snap=>{SUSPEND_LOG=snap.val()||{};if(page==='suspendlog')render();});
+  onValue(ref(db,'logs/delete'),snap=>{DELETE_LOG=snap.val()||{};if(page==='deletelog')render();});
 }
 
-// ── SEED DEFAULT STAFF ──
+// ── SEED ──
 (async()=>{
-  const snap = await get(ref(db,'staff/rpatoff'));
-  if (!snap.exists()) {
-    await set(ref(db,'staff/rpatoff'), {username:'rpatoff',level:'SUPER ADMINISTRATOR',joined:today(),notes:'Founder.',suspended:false,password:'6445229'});
-  }
+  try {
+    const snap=await get(ref(db,'staff/rpatoff'));
+    if(!snap.exists()){
+      await set(ref(db,'staff/rpatoff'),{username:'rpatoff',level:'SUPER ADMINISTRATOR',joined:today(),notes:'Founder.',suspended:false,password:'6445229'});
+    }
+  } catch(e){}
 })();
 
-// ── SIDEBAR LINKS ──
-['useradmin','moderate','accounts','staff','revokelog','suspendlog','deletelog'].forEach(p=>{
-  const el = document.getElementById('nav-'+p);
-  if (el) el.onclick=()=>nav(p);
+['useradmin','moderate','accounts','staff','revokelog','suspendlog','deletelog','adminlog'].forEach(p=>{
+  const el=document.getElementById('nav-'+p);
+  if(el) el.onclick=()=>nav(p);
 });
 </script>
 </body>
