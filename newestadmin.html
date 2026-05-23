@@ -569,8 +569,8 @@ function renderUA(c){
         <div style="display:flex;gap:3px;flex-wrap:wrap;align-items:center;">
           ${canDo('canModerateUsers')?'<button class="btn" id="btn-moduser">Moderate User</button>':''}
           <button class="btn" id="btn-refresh">Refresh Roblox Data</button>
-          ${isSuperAdmin()?`<button class="btn red" id="btn-wipe">Delete Account</button>`:''}
           ${canDo('canViewCustomFields')&&CUSTOM_FIELDS.length?`<button class="btn" id="btn-manageuser">Manage User</button>`:''}
+          ${isSuperAdmin()?`<button class="btn red" id="btn-wipe">Delete Account</button>`:''}
           <span id="refreshMsg" style="font-size:11px;color:#006600;"></span>
         </div>
       </div></div>
