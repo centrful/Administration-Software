@@ -71,6 +71,7 @@ select{height:16px;border-top:1px solid #707070;border-left:1px solid #707070;bo
 .badge.moderator{background:#c8d0e8;color:#000055;}
 .badge.administrator{background:#e8d0a0;color:#553300;}
 .badge.superadmin{background:#e8c0c0;color:#550000;}
+.badge.senioradmin{background:#e8d4a0;color:#4a2800;}
 .badge.appeal-open{background:#d0e8ff;color:#003366;border-color:#6699cc;}
 .badge.appeal-approved{background:#c8e0c8;color:#003300;border-color:#669966;}
 .badge.appeal-denied{background:#f0c0c0;color:#660000;border-color:#cc6666;}
@@ -303,6 +304,32 @@ select{height:16px;border-top:1px solid #707070;border-left:1px solid #707070;bo
   </div>
 </div>
 
+<!-- FACTORY RESET POPUP -->
+<div class="overlay" id="factoryResetOverlay">
+  <div class="dialog" style="width:380px;">
+    <div class="titlebar" style="background:#880000;">
+      <div class="titlebar-title">🔴 Factory Reset — Final Confirmation</div>
+      <div class="win-btns"><div class="wcb" id="factoryResetClose">&#10005;</div></div>
+    </div>
+    <div style="padding:12px 14px 12px;">
+      <div style="background:#fde8e8;border:1px solid #cc6666;padding:8px;margin-bottom:10px;font-size:11px;color:#880000;font-weight:bold;line-height:1.6;">
+        ⚠ This will permanently delete ALL data including every user, every staff member except rpatoff, all logs, alerts, messages, and requests. This CANNOT be undone.
+      </div>
+      <div style="margin-bottom:5px;"><label style="font-size:11px;color:#000;display:block;margin-bottom:2px;font-weight:bold;">Primary Code:</label>
+        <input type="password" id="fr-code1" style="width:100%;" placeholder="Enter primary code"/></div>
+      <div style="margin-bottom:5px;"><label style="font-size:11px;color:#000;display:block;margin-bottom:2px;font-weight:bold;">Secondary Code:</label>
+        <input type="password" id="fr-code2" style="width:100%;" placeholder="Enter secondary code"/></div>
+      <div style="margin-bottom:8px;"><label style="font-size:11px;color:#000;display:block;margin-bottom:2px;font-weight:bold;">Confirmation Word:</label>
+        <input type="text" id="fr-code3" style="width:100%;" placeholder="Enter confirmation word" autocomplete="off"/></div>
+      <div id="fr-err" style="font-size:11px;color:#880000;margin-bottom:6px;min-height:14px;"></div>
+      <div style="display:flex;gap:5px;justify-content:center;">
+        <button class="btn red" id="fr-confirm" style="font-weight:bold;">Execute Factory Reset</button>
+        <button class="btn" id="fr-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- PROTECTED USER POPUP -->
 <div class="overlay" id="protectedOverlay">
   <div class="dialog" style="width:400px;">
@@ -394,25 +421,26 @@ const auth = getAuth(fbApp);
 const OPERATOR_CODE = '3655125652373';
 
 const DEFAULT_PERMS = {
-  canViewUserAdmin:'INTERN', canModerateUsers:'MODERATOR',
+  canViewUserAdmin:'TRIAL MODERATOR', canModerateUsers:'MODERATOR',
   canViewStaff:'SUPER ADMINISTRATOR', canManageStaff:'SUPER ADMINISTRATOR',
-  canSuspendStaff:'ADMINISTRATOR', canTerminateStaff:'SUPER ADMINISTRATOR',
+  canSuspendStaff:'ADMINISTRATOR', canTerminateStaff:'SENIOR ADMINISTRATOR',
   canViewModLog:'MODERATOR', canViewRevokeLogs:'MODERATOR',
   canViewSuspendLogs:'ADMINISTRATOR', canViewTerminateLogs:'ADMINISTRATOR',
   canViewLoginLog:'ADMINISTRATOR', canViewContentModeration:'MODERATOR',
   canViewStaffActivity:'ADMINISTRATOR',
   canSubmitAppeals:'MODERATOR', canViewAppealLog:'MODERATOR', canReviewAppeals:'ADMINISTRATOR',
-  canViewStaffProfile:'ADMINISTRATOR', canChangeStaffLevel:'SUPER ADMINISTRATOR', canChangeStaffPassword:'SUPER ADMINISTRATOR',
-  canExportLogs:'SUPER ADMINISTRATOR', canViewCustomFields:'INTERN', canManageCustomFields:'SUPER ADMINISTRATOR',
+  canViewStaffProfile:'ADMINISTRATOR', canChangeStaffLevel:'SUPER ADMINISTRATOR', canChangeStaffPassword:'SENIOR ADMINISTRATOR',
+  canExportLogs:'SUPER ADMINISTRATOR', canViewCustomFields:'TRIAL MODERATOR', canManageCustomFields:'SUPER ADMINISTRATOR',
   canBulkAction:'ADMINISTRATOR', canSendStaffMessage:'MODERATOR',
-  canViewUserConfig:'ADMINISTRATOR', canManageUserConfig:'SUPER ADMINISTRATOR',
+  canViewUserConfig:'ADMINISTRATOR', canManageUserConfig:'SENIOR ADMINISTRATOR',
   canViewRequests:'ADMINISTRATOR',
 };
 
 const DEFAULT_REP_POINTS = { 'Remind':1, 'Warn':2, 'Ban 1 Day':3, 'Ban 3 Days':3, 'Ban 7 Days':5, 'Ban 14 Days':5, 'Suspend':4, 'Ban Permanent':10 };
 
 const DEFAULT_APPEAL_PRESETS = ['Hacked Account','False Ban','Misunderstanding','Exploited by Another','No Warning Given','Other'];
-const LEVEL_RANK = {'INTERN':1,'MODERATOR':2,'ADMINISTRATOR':3,'SUPER ADMINISTRATOR':4};
+const LEVEL_RANK = {'TRIAL MODERATOR':1,'MODERATOR':2,'ADMINISTRATOR':3,'SENIOR ADMINISTRATOR':4,'SUPER ADMINISTRATOR':5};
+const LEVEL_LIST = ['TRIAL MODERATOR','MODERATOR','ADMINISTRATOR','SENIOR ADMINISTRATOR','SUPER ADMINISTRATOR'];
 
 let ME='', MY_LEVEL='', currentPassword='';
 let page='home', dlgCallback=null, opCallback=null;
@@ -478,6 +506,25 @@ function nowStr(){ return new Date().toLocaleString(); }
 function rankOf(l){ return LEVEL_RANK[l]||0; }
 function canDo(k){ return rankOf(MY_LEVEL)>=rankOf(PERMS[k]||'SUPER ADMINISTRATOR'); }
 function isSuperAdmin(){ return MY_LEVEL==='SUPER ADMINISTRATOR'; }
+function isSeniorAdmin(){ return rankOf(MY_LEVEL)>=rankOf('SENIOR ADMINISTRATOR'); }
+
+function statusBadge(s){
+  if(s==='active') return '<span class="ok">OK</span>';
+  if(s==='suspended') return '<span class="sus">SUSPENDED</span>';
+  if(s==='banned') return '<span class="ban">BANNED</span>';
+  return s;
+}
+function levelBadge(l){
+  const cls=l==='TRIAL MODERATOR'?'intern':l==='MODERATOR'?'moderator':l==='ADMINISTRATOR'?'administrator':l==='SENIOR ADMINISTRATOR'?'senioradmin':'superadmin';
+  return `<span class="badge ${cls}">${l}</span>`;
+}
+function userBadges(u){
+  const b=[];
+  if(u.protected) b.push('<span title="Protected User" style="font-size:13px;cursor:default;line-height:1;">🛡️</span>');
+  if(u.vip) b.push('<span title="VIP" style="font-size:13px;cursor:default;line-height:1;">⭐</span>');
+  if(u.watched) b.push('<span title="Under Observation" style="font-size:13px;cursor:default;line-height:1;">👁️</span>');
+  return b.length?`<span style="margin-left:3px;">${b.join('')}</span>`:'';
+}
 
 function auditLog(action, detail){
   push(ref(db,'logs/audit'), {action, detail, by:ME, date:nowStr()});
@@ -529,16 +576,6 @@ function loadNotifPrefs(){
   }
 }
 
-function statusBadge(s){
-  if(s==='active') return '<span class="ok">OK</span>';
-  if(s==='suspended') return '<span class="sus">SUSPENDED</span>';
-  if(s==='banned') return '<span class="ban">BANNED</span>';
-  return s;
-}
-function levelBadge(l){
-  const cls=l==='INTERN'?'intern':l==='MODERATOR'?'moderator':l==='ADMINISTRATOR'?'administrator':'superadmin';
-  return `<span class="badge ${cls}">${l}</span>`;
-}
 function avatarHTML(u, size){
   const sz=size||60;
   if(u&&u.avatarUrl) return `<img src="${u.avatarUrl}" width="${sz}" height="${sz}" onerror="this.style.display='none'"/>`;
@@ -924,7 +961,7 @@ function renderUA(c){
         <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:5px;">
           <div class="avatar-box" style="width:60px;height:60px;">${avatarHTML(u)}</div>
           <div style="min-width:0;flex:1;">
-            <div class="row"><label>Username:</label><b>${u.username}</b></div>
+            <div class="row"><label>Username:</label><b>${u.username}</b>${userBadges(u)}</div>
             <div class="row"><label>Roblox Username:</label><span>${u.robloxUsername||'N/A'}</span></div>
             <div class="row"><label>Player ID:</label><span>${u.playerId||'—'}</span></div>
             <div class="row"><label>User ID (Roblox):</label><span>${u.robloxId||'—'}</span></div>
@@ -1265,7 +1302,7 @@ function renderAccounts(c){
       <tr>${canDo('canBulkAction')?'<th><input type="checkbox" id="bulk-check-all" title="Select all"/></th>':''}<th>Player ID</th><th>Username</th><th>Roblox ID</th><th>Status</th><th>Rep</th><th>System Entry</th><th>Action</th></tr>
       ${uArr.map(([uid,u])=>`<tr>
         ${canDo('canBulkAction')?`<td><input type="checkbox" class="bulk-cb" data-uid="${uid}"/></td>`:''}
-        <td>${u.playerId||'—'}</td><td><b>${u.username}</b></td>
+        <td>${u.playerId||'—'}</td><td><b>${u.username}</b>${userBadges(u)}</td>
         <td>${u.robloxId||'—'}</td><td>${statusBadge(u.status)}</td>
         <td>${calcReputation(u)} pts</td><td>${u.created}</td>
         <td style="display:flex;gap:3px;align-items:center;">
@@ -1570,7 +1607,7 @@ function renderStaff(c){
         <div class="row"><label>Password:</label><input type="text" id="nsPass" style="width:115px;"/></div>
         <div class="row"><label>Avatar (Roblox user):</label><input type="text" id="nsAvatar" style="width:115px;" placeholder="Roblox username"/></div>
         <div class="row"><label>Level:</label>
-          <select id="nsLevel" style="width:130px;"><option>INTERN</option><option>MODERATOR</option><option>ADMINISTRATOR</option><option>SUPER ADMINISTRATOR</option></select>
+          <select id="nsLevel" style="width:130px;">${LEVEL_LIST.map(l=>`<option>${l}</option>`).join('')}</select>
         </div>
         <button class="btn" id="btn-addstaff" style="margin-top:4px;">Add Member</button>
         <div id="nsMsg" style="font-size:11px;margin-top:2px;"></div>
@@ -1598,7 +1635,7 @@ function renderStaff(c){
         ${canDo('canChangeStaffLevel')?`
         <div style="font-size:11px;margin:4px 0 2px;color:#000;">Change Level:</div>
         <div style="display:flex;gap:3px;">
-          <select id="slInput" style="width:128px;"><option>INTERN</option><option>MODERATOR</option><option>ADMINISTRATOR</option><option>SUPER ADMINISTRATOR</option></select>
+          <select id="slInput" style="width:128px;">${LEVEL_LIST.map(l=>`<option>${l}</option>`).join('')}</select>
           <button class="btn" id="btn-setlevel">Set</button>
         </div>`:''}
         <div id="spMsg" style="font-size:11px;margin-top:2px;"></div>
@@ -2075,16 +2112,14 @@ function openUserConfigDialog(uid){
         <div style="font-size:10px;color:#808080;margin-bottom:8px;">Protected users require an escalated request before any moderation action can be taken.</div>
         <div style="margin-bottom:5px;display:flex;align-items:center;gap:6px;">
           <input type="checkbox" id="ucfVip" ${u.vip?'checked':''}/>
-          <label for="ucfVip" style="font-size:11px;color:#000;cursor:pointer;">VIP Status</label>
+          <label for="ucfVip" style="font-size:11px;color:#000;cursor:pointer;">⭐ VIP Status</label>
         </div>
-        <div style="margin-bottom:5px;display:flex;align-items:center;gap:6px;">
-          <input type="checkbox" id="ucfMuted" ${u.muted?'checked':''}/>
-          <label for="ucfMuted" style="font-size:11px;color:#000;cursor:pointer;">Muted In-Game</label>
-        </div>
+        <div style="font-size:10px;color:#808080;margin-bottom:6px;">VIP users trigger a confirmation notice before moderation.</div>
         <div style="margin-bottom:5px;display:flex;align-items:center;gap:6px;">
           <input type="checkbox" id="ucfWatched" ${u.watched?'checked':''}/>
-          <label for="ucfWatched" style="font-size:11px;color:#000;cursor:pointer;">Under Observation</label>
+          <label for="ucfWatched" style="font-size:11px;color:#000;cursor:pointer;">👁️ Under Observation</label>
         </div>
+        <div style="font-size:10px;color:#808080;">Watched users get a [WATCHED] tag automatically added to all mod log entries.</div>
       </div>
     </div>`,
     async()=>{
@@ -2093,7 +2128,6 @@ function openUserConfigDialog(uid){
         warningCount:parseInt(document.getElementById('ucfWarnings').value)||0,
         protected:document.getElementById('ucfProtected').checked,
         vip:document.getElementById('ucfVip').checked,
-        muted:document.getElementById('ucfMuted').checked,
         watched:document.getElementById('ucfWatched').checked,
       };
       const repOvr=document.getElementById('ucfRepOverride').value.trim();
@@ -2108,10 +2142,10 @@ function openUserConfigDialog(uid){
 // ── ADMIN LOG ──
 function renderAdminLog(c){
   const sArr=Object.entries(STAFF);
-  const counts={'INTERN':0,'MODERATOR':0,'ADMINISTRATOR':0,'SUPER ADMINISTRATOR':0};
+  const counts={'TRIAL MODERATOR':0,'MODERATOR':0,'ADMINISTRATOR':0,'SENIOR ADMINISTRATOR':0,'SUPER ADMINISTRATOR':0};
   sArr.forEach(([,s])=>{ if(counts[s.level]!==undefined) counts[s.level]++; });
   const permKeys=Object.keys(DEFAULT_PERMS);
-  const levelOptions=['INTERN','MODERATOR','ADMINISTRATOR','SUPER ADMINISTRATOR'];
+  const levelOptions=LEVEL_LIST;
   const repKeys=Object.keys(DEFAULT_REP_POINTS);
   c.innerHTML=`
   <div class="ptitle">Administrator</div>
@@ -2161,10 +2195,7 @@ function renderAdminLog(c){
       <div class="sbox"><div class="stitle">Staff Level Overview</div><div class="sbody">
         <table class="tbl" style="width:100%;">
           <tr><th>Level</th><th>Rank</th><th>Count</th></tr>
-          <tr><td>${levelBadge('INTERN')}</td><td>1</td><td>${counts['INTERN']}</td></tr>
-          <tr><td>${levelBadge('MODERATOR')}</td><td>2</td><td>${counts['MODERATOR']}</td></tr>
-          <tr><td>${levelBadge('ADMINISTRATOR')}</td><td>3</td><td>${counts['ADMINISTRATOR']}</td></tr>
-          <tr><td>${levelBadge('SUPER ADMINISTRATOR')}</td><td>4</td><td>${counts['SUPER ADMINISTRATOR']}</td></tr>
+          ${LEVEL_LIST.map(l=>`<tr><td>${levelBadge(l)}</td><td>${LEVEL_RANK[l]}</td><td>${counts[l]||0}</td></tr>`).join('')}
         </table>
       </div></div>
       <div class="sbox"><div class="stitle">Reputation Point Values</div><div class="sbody">
@@ -2245,12 +2276,38 @@ function renderAdminLog(c){
         ${permKeys.map(key=>`
           <div style="display:flex;align-items:center;margin-bottom:4px;font-size:11px;gap:6px;">
             <label style="width:170px;flex-shrink:0;color:#000;">${formatPermKey(key)}</label>
-            <select id="perm-${key}" style="width:145px;">
+            <select id="perm-${key}" style="width:165px;">
               ${levelOptions.map(l=>`<option value="${l}" ${PERMS[key]===l?'selected':''}>${l}</option>`).join('')}
             </select>
           </div>`).join('')}
         <button class="btn" id="btn-saveperms" style="margin-top:6px;">Save Permissions</button>
         <div id="permMsg" style="font-size:11px;margin-top:3px;color:#006600;"></div>
+      </div></div>
+      <div class="sbox" style="border:2px solid #880000;"><div class="stitle" style="background:#880000;color:#fff;">⚠ Data Management</div><div class="sbody">
+        <div style="font-size:11px;color:#880000;font-weight:bold;margin-bottom:6px;">These actions are irreversible. All deletions are permanently logged.</div>
+        <div style="font-size:11px;font-weight:bold;color:#000;margin-bottom:4px;">Erase Log Category</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;">
+          <button class="btn red small" id="btn-erase-modlog">Erase Mod Log</button>
+          <button class="btn red small" id="btn-erase-revokelog">Erase Revoke Log</button>
+          <button class="btn red small" id="btn-erase-suspendlog">Erase Suspend Log</button>
+          <button class="btn red small" id="btn-erase-terminatelog">Erase Terminate Log</button>
+          <button class="btn red small" id="btn-erase-loginlog">Erase Login Log</button>
+          <button class="btn red small" id="btn-erase-auditlog">Erase Audit Log</button>
+          <button class="btn red small" id="btn-erase-appeals">Erase All Appeals</button>
+          <button class="btn red small" id="btn-erase-alerts">Erase All Alerts</button>
+          <button class="btn red small" id="btn-erase-requests">Erase All Requests</button>
+          <button class="btn red small" id="btn-erase-messages">Erase Staff Messages</button>
+        </div>
+        <div style="border-top:1px solid #880000;padding-top:8px;margin-bottom:4px;">
+          <div style="font-size:11px;font-weight:bold;color:#000;margin-bottom:4px;">Wipe All Users</div>
+          <button class="btn red" id="btn-wipe-all-users" style="width:100%;margin-bottom:8px;">Wipe All Player Data</button>
+        </div>
+        <div style="border-top:1px solid #880000;padding-top:8px;">
+          <div style="font-size:12px;font-weight:bold;color:#880000;margin-bottom:4px;">🔴 Factory Reset</div>
+          <div style="font-size:11px;color:#555;margin-bottom:6px;">Deletes ALL data including users, staff (except rpatoff), all logs, alerts, messages, and requests. Requires three confirmation codes.</div>
+          <button class="btn red" id="btn-factory-reset" style="width:100%;font-weight:bold;">FACTORY RESET</button>
+        </div>
+        <div id="dataManageMsg" style="font-size:11px;margin-top:5px;color:#006600;min-height:14px;"></div>
       </div></div>
     </div>
   </div>`;
@@ -2310,6 +2367,33 @@ function renderAdminLog(c){
       );
     };
   });
+  // Data Management
+  const dmMsg=()=>document.getElementById('dataManageMsg');
+  const eraseLog=(path,label)=>{
+    openOpDialog(`Erase ALL entries from ${label}? This cannot be undone.`, async()=>{
+      await remove(ref(db,path));
+      auditLog('Log Erased',label);
+      const el=dmMsg(); if(el){ el.style.color='#006600'; el.textContent=`${label} erased.`; setTimeout(()=>{ if(el) el.textContent=''; },2500); }
+    });
+  };
+  document.getElementById('btn-erase-modlog').onclick=()=>eraseLog('logs/moderation','Moderation Log');
+  document.getElementById('btn-erase-revokelog').onclick=()=>eraseLog('logs/revoke','Revoke Log');
+  document.getElementById('btn-erase-suspendlog').onclick=()=>eraseLog('logs/suspend','Suspend Log');
+  document.getElementById('btn-erase-terminatelog').onclick=()=>eraseLog('logs/terminate','Terminate Log');
+  document.getElementById('btn-erase-loginlog').onclick=()=>eraseLog('logs/login','Login Log');
+  document.getElementById('btn-erase-auditlog').onclick=()=>eraseLog('logs/audit','Audit Log');
+  document.getElementById('btn-erase-appeals').onclick=()=>eraseLog('logs/appeals','Appeals');
+  document.getElementById('btn-erase-alerts').onclick=()=>eraseLog('siteAlerts','Site Alerts');
+  document.getElementById('btn-erase-requests').onclick=()=>eraseLog('modRequests','Mod Requests');
+  document.getElementById('btn-erase-messages').onclick=()=>eraseLog('staffMessages','Staff Messages');
+  document.getElementById('btn-wipe-all-users').onclick=()=>{
+    openOpDialog('WARNING: Permanently delete ALL player data? This wipes every user record, punishment, and appeal link. Cannot be undone.', async()=>{
+      await remove(ref(db,'users'));
+      auditLog('All Users Wiped',`By ${ME}`);
+      const el=dmMsg(); if(el){ el.style.color='#006600'; el.textContent='All user data wiped.'; setTimeout(()=>{ if(el) el.textContent=''; },2500); }
+    });
+  };
+  document.getElementById('btn-factory-reset').onclick=()=>openFactoryResetDialog();
   document.getElementById('btn-savedlc').onclick=async()=>{
     const cfg={
       modlog:document.getElementById('dlc-modlog').checked,
@@ -2493,10 +2577,57 @@ async function submitMod(){
     openProtectedUserDialog(uid, u, action, reason, note);
     return;
   }
+  // VIP notice
+  if(u.vip){
+    openDialog('⭐ VIP User',`<b>${u.username}</b> is a VIP user. Moderation actions against VIP users are reviewed more closely.<br><br>Are you sure you want to apply <b>${action}</b>?`,'',async()=>{
+      await executeModAction(uid, u, action, reason, note);
+      currentUserId=uid;
+      const el=document.getElementById('mResult');
+      if(el){ el.style.color='#006600'; el.textContent=`"${action}" applied to ${u.username}.`; }
+      setTimeout(()=>nav('useradmin'),1000);
+    });
+    return;
+  }
   await executeModAction(uid, u, action, reason, note);
   currentUserId=uid;
   el.style.color='#006600'; el.textContent=`"${action}" applied to ${u.username}.`;
   setTimeout(()=>nav('useradmin'),1000);
+}
+
+function openFactoryResetDialog(){
+  document.getElementById('fr-code1').value='';
+  document.getElementById('fr-code2').value='';
+  document.getElementById('fr-code3').value='';
+  document.getElementById('fr-err').textContent='';
+  document.getElementById('factoryResetOverlay').classList.add('show');
+  const close=()=>document.getElementById('factoryResetOverlay').classList.remove('show');
+  document.getElementById('factoryResetClose').onclick=close;
+  document.getElementById('fr-cancel').onclick=close;
+  document.getElementById('fr-confirm').onclick=async()=>{
+    const c1=document.getElementById('fr-code1').value.trim();
+    const c2=document.getElementById('fr-code2').value.trim();
+    const c3=document.getElementById('fr-code3').value.trim();
+    const errEl=document.getElementById('fr-err');
+    if(c1!=='5334118'){ errEl.textContent='Primary code incorrect.'; return; }
+    if(c2!=='6445229'){ errEl.textContent='Secondary code incorrect.'; return; }
+    if(c3!=='Eversol'){ errEl.textContent='Confirmation word incorrect.'; return; }
+    close();
+    errEl.textContent='';
+    // Execute factory reset — delete everything except rpatoff staff record
+    const paths=['users','logs/moderation','logs/revoke','logs/suspend','logs/terminate','logs/login','logs/audit','logs/appeals','siteAlerts','modRequests','staffMessages','announcements','meta/banTemplates','meta/customFields','meta/updateLog','meta/permissions','meta/repPoints','meta/appealPresets','meta/dashboardLogConfig','meta/playerCounter'];
+    for(const path of paths) await remove(ref(db,path)).catch(()=>{});
+    // Remove all staff except rpatoff
+    const staffSnap=await get(ref(db,'staff'));
+    if(staffSnap.exists()){
+      for(const key of Object.keys(staffSnap.val())){
+        if(key!=='rpatoff') await remove(ref(db,`staff/${key}`)).catch(()=>{});
+      }
+    }
+    // Re-log audit entry for the reset itself under rpatoff
+    await push(ref(db,'logs/audit'),{action:'Factory Reset Executed',detail:`All data wiped by ${ME}`,by:ME,date:nowStr()});
+    alert('Factory reset complete. The system has been wiped.');
+    doLogout();
+  };
 }
 
 function openProtectedUserDialog(uid, u, action, reason, note){
@@ -2534,11 +2665,12 @@ function openProtectedUserDialog(uid, u, action, reason, note){
 }
 
 async function executeModAction(uid, u, action, reason, note){
+  const watchTag=u.watched?' [WATCHED]':'';
   const newStatus=action==='Suspend'?'suspended':action.startsWith('Ban')?'banned':u.status;
   await update(ref(db,`users/${uid}`),{status:newStatus});
-  await push(ref(db,`users/${uid}/punishments`),{action,mod:ME,created:today(),expiry:action.includes('Day')?'Varies':'Permanent',note:note||reason});
-  await push(ref(db,'logs/moderation'),{user:u.username,action,mod:ME,date:today(),reason:reason||'',note:note||''});
-  auditLog('Player Moderated',`${u.username}: ${action}`);
+  await push(ref(db,`users/${uid}/punishments`),{action,mod:ME,created:today(),expiry:action.includes('Day')?'Varies':'Permanent',note:(note||reason||'')+watchTag});
+  await push(ref(db,'logs/moderation'),{user:u.username,action,mod:ME,date:today(),reason:reason||'',note:(note||'')+watchTag});
+  auditLog('Player Moderated',`${u.username}: ${action}${watchTag}`);
 }
 
 async function saveNote(uid){
