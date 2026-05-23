@@ -297,28 +297,22 @@ select{height:16px;border-top:1px solid #707070;border-left:1px solid #707070;bo
 <div class="overlay" id="searchOverlay">
   <div class="dialog" style="width:480px;">
     <div class="titlebar">
-      <div class="titlebar-title">&#128269; Advanced Search</div>
+      <div class="titlebar-title">Advanced Search</div>
       <div class="win-btns"><div class="wcb" id="searchClose">&#10005;</div></div>
     </div>
     <div style="padding:12px 14px 10px;">
-      <div style="font-size:11px;color:#555;margin-bottom:8px;">Search across players and staff. Separate multiple usernames with commas. Select channels to search.</div>
+      <div style="font-size:11px;color:#555;margin-bottom:8px;">Search across accessible channels. Separate multiple terms with commas.</div>
       <div style="display:flex;gap:6px;align-items:flex-end;margin-bottom:6px;flex-wrap:wrap;">
         <div style="flex:1;min-width:160px;">
-          <label style="font-size:11px;color:#000;display:block;margin-bottom:2px;font-weight:bold;">Username(s):</label>
-          <input type="text" id="srchQuery" style="width:100%;" placeholder="e.g. PlayerOne, PlayerTwo"/>
+          <label style="font-size:11px;color:#000;display:block;margin-bottom:2px;font-weight:bold;">Search Query:</label>
+          <input type="text" id="srchQuery" style="width:100%;" placeholder="username, ID, etc."/>
         </div>
         <button class="btn" id="srchGo" style="height:20px;white-space:nowrap;">Search</button>
       </div>
-      <div style="margin-bottom:6px;">
-        <div style="font-size:11px;font-weight:bold;color:#000;margin-bottom:3px;">Channels:</div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:11px;">
-          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="srch-players" checked/> Players</label>
-          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="srch-staff" checked/> Staff</label>
-          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="srch-modlog"/> Mod Log</label>
-          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="srch-loginlog"/> Login Log</label>
-          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="srch-appeals"/> Appeals</label>
-        </div>
+      <div style="margin-bottom:6px;" id="srchChannels">
+        <!-- Channels rendered by JS based on permissions -->
       </div>
+      <div id="srchStatus" style="font-size:11px;font-weight:bold;color:#000080;min-height:14px;margin-bottom:4px;"></div>
       <div id="srchResults" style="max-height:300px;overflow-y:auto;font-size:11px;color:#000;border-top:1px solid #b0aca4;padding-top:6px;min-height:30px;"></div>
     </div>
   </div>
@@ -364,7 +358,7 @@ select{height:16px;border-top:1px solid #707070;border-left:1px solid #707070;bo
 <div class="overlay" id="wipedOverlay">
   <div class="susp-popup">
     <div class="titlebar" style="background:#880000;">
-      <div class="titlebar-title">Account Wiped</div>
+      <div class="titlebar-title">ACCOUNT WIPED</div>
       <div class="win-btns"><div class="wcb">&#10005;</div></div>
     </div>
     <div style="padding:14px 16px 12px;">
@@ -372,8 +366,13 @@ select{height:16px;border-top:1px solid #707070;border-left:1px solid #707070;bo
         <div style="font-size:28px;flex-shrink:0;">&#9888;</div>
         <div>
           <div style="font-size:13px;font-weight:bold;color:#880000;margin-bottom:4px;">Account Wiped</div>
-          <div style="font-size:11px;color:#000;line-height:1.6;">Your staff account no longer exists in this system. It may have been removed during a data wipe or administrative action. Please contact a system administrator.</div>
+          <div style="font-size:11px;color:#000;line-height:1.6;">Your staff account has been permanently removed from the system by an administrator.</div>
         </div>
+      </div>
+      <div style="border:1px solid #808080;background:#c8c4bc;padding:8px 10px;margin-bottom:10px;">
+        <div class="susp-field"><label>Reason:</label><div class="val" id="wipedReason">No reason provided.</div></div>
+        <div class="susp-field"><label>Wiped by:</label><div class="val" id="wipedBy">Unknown</div></div>
+        <div class="susp-field" style="margin-bottom:0;"><label>Timestamp:</label><div class="val" id="wipedDate">Unknown</div></div>
       </div>
       <div style="display:flex;justify-content:center;">
         <button class="win98-btn ok-btn" id="wipedOKBtn">OK</button>
@@ -871,7 +870,8 @@ function updateTopInfo(){
 function updateAnnouncements(){
   const bar=document.getElementById('announceBar');
   if(!bar) return;
-  const active=Object.values(SITE_ALERTS).filter(a=>a.active&&a.type!=='info'||a.active);
+  const now=Date.now();
+  const active=Object.values(SITE_ALERTS).filter(a=>a.active&&!(a.expiresAt&&a.expiresAt>0&&now>a.expiresAt));
   if(!active.length){ bar.style.display='none'; return; }
   const latest=active[active.length-1];
   const typeColors={warning:'#fff0cc',critical:'#ffd0d0',info:'#d0e8ff'};
@@ -879,8 +879,8 @@ function updateAnnouncements(){
   bar.style.background=typeColors[latest.type]||'#fff0cc';
   bar.style.borderBottomColor=borderColors[latest.type]||'#c8a800';
   bar.style.display='block';
-  const icon=latest.type==='critical'?'🚨':latest.type==='info'?'ℹ️':'⚠️';
-  bar.innerHTML=`<b>${icon} ${latest.type?latest.type.toUpperCase()+' ALERT':''} from ${latest.by} (${latest.date}):</b> ${latest.message}`;
+  const typeLabel=latest.type?latest.type.toUpperCase()+' ALERT':'ALERT';
+  bar.innerHTML=`<b>${typeLabel} from ${latest.by} (${latest.date}):</b> ${latest.message}`;
 }
 
 function updateSidebar(){
@@ -1999,8 +1999,8 @@ function renderStaff(c){
         <div class="tbl-wrap"><table class="tbl">
           <tr><th>Username</th><th>Level</th><th>Status</th><th>Last Active</th><th>Action</th></tr>
           ${sArr.map(([sid2,s2])=>`<tr>
-            <td><b>${s2.username}</b></td><td>${levelBadge(s2.level)}</td>
-            <td>${s2.suspended?'<span class="sus">SUSPENDED</span>':'<span class="ok">OK</span>'}</td>
+            <td><b>${s2.username||'—'}</b></td><td>${s2.level?levelBadge(s2.level):'—'}</td>
+            <td>${s2.suspended?'<span class="sus">SUSPENDED</span>':s2.secured?'<span class="ban">SECURED</span>':'<span class="ok">OK</span>'}</td>
             <td style="font-size:10px;">${s2.lastActive||'Never'}</td>
             <td>${canManage?`<button class="btn view-staff-btn" data-sid="${sid2}">View</button>`:'<span class="invalid-cred">INVALID CREDENTIALS</span>'}</td>
           </tr>`).join('')}
@@ -2034,6 +2034,12 @@ function renderStaff(c){
         <div style="font-size:11px;margin:3px 0 2px;color:#000;">Notes:</div>
         <textarea id="snTA" style="width:100%;height:40px;box-sizing:border-box;">${s.notes||''}</textarea>
         <button class="btn" id="btn-savestaffnote" style="margin-top:2px;width:100%;">Save Note</button>
+        <div style="font-size:11px;margin:5px 0 2px;color:#000;">Avatar (Roblox username):</div>
+        <div style="display:flex;gap:3px;">
+          <input type="text" id="saInput" style="flex:1;min-width:0;" placeholder="Roblox username" value="${s.avatarRobloxUser||''}"/>
+          <button class="btn" id="btn-refreshavatar">Set</button>
+        </div>
+        <div id="avatarMsg" style="font-size:11px;margin-top:2px;color:#006600;"></div>
         ${canDo('canChangeStaffPassword')?`
         <div style="font-size:11px;margin:5px 0 2px;color:#000;">Update Password:</div>
         <div style="display:flex;gap:3px;">
@@ -2065,6 +2071,21 @@ function renderStaff(c){
   }
   if(canDo('canViewStaffProfile')){
     const sn=document.getElementById('btn-savestaffnote'); if(sn) sn.onclick=()=>saveStaffNote(currentStaffId);
+    const saBtn=document.getElementById('btn-refreshavatar');
+    if(saBtn) saBtn.onclick=async()=>{
+      const robloxUser=document.getElementById('saInput').value.trim();
+      const msgEl=document.getElementById('avatarMsg');
+      if(!msgEl) return;
+      msgEl.style.color='#000080'; msgEl.textContent='Fetching...';
+      let avatarUrl='';
+      if(robloxUser){
+        try{ const info=await fetchRobloxInfo(robloxUser); if(info&&info.avatarUrl) avatarUrl=info.avatarUrl; }catch(e){}
+      }
+      await update(ref(db,`staff/${currentStaffId}`),{avatarRobloxUser:robloxUser,avatarUrl});
+      auditLog('Staff Avatar Updated',`${s.username} -> ${robloxUser||'cleared'}`);
+      msgEl.style.color='#006600'; msgEl.textContent=avatarUrl?'Avatar updated!':'Saved (no avatar found).';
+      setTimeout(()=>{ if(msgEl) msgEl.textContent=''; },2500);
+    };
   }
   if(canDo('canChangeStaffPassword')){
     const sp=document.getElementById('btn-setpass'); if(sp) sp.onclick=()=>updateStaffPass(currentStaffId);
@@ -2097,7 +2118,7 @@ function renderActivity(c){
         return `<tr>
           <td><span class="activity-dot ${dot}"></span><b>${s.username}</b></td>
           <td>${levelBadge(s.level)}</td>
-          <td>${s.suspended?'<span class="sus">SUSPENDED</span>':'<span class="ok">OK</span>'}</td>
+          <td>${s.suspended?'<span class="sus">SUSPENDED</span>':s.secured?'<span class="ban">SECURED</span>':'<span class="ok">OK</span>'}</td>
           <td style="font-size:10px;">${lastActive}</td>
           <td style="font-size:10px;">${s.lastAction||'—'}</td>
         </tr>`;
@@ -3179,13 +3200,31 @@ async function addStaff(){
   if(!p){ el.style.color='#880000'; el.textContent='Password required.'; return; }
   if(Object.values(STAFF).find(s=>s.username===u)){ el.style.color='#880000'; el.textContent='Already exists.'; return; }
   el.style.color='#000080'; el.textContent='Creating account...';
-  try{ await createUserWithEmailAndPassword(auth,`${u}@admin.com`,p); await signInWithEmailAndPassword(auth,`${ME}@admin.com`,currentPassword); }catch(e){}
+  // Create Firebase Auth account
+  try{
+    await createUserWithEmailAndPassword(auth,`${u}@admin.com`,p);
+  }catch(e){
+    // May already exist as auth account — continue
+  }
+  // Re-sign in as current admin BEFORE writing to DB
+  try{
+    await signInWithEmailAndPassword(auth,`${ME}@admin.com`,currentPassword);
+  }catch(e){
+    el.style.color='#880000'; el.textContent='Re-authentication failed. Try again.'; return;
+  }
   let avatarUrl='';
-  if(avatarUser){ el.textContent='Fetching avatar...'; const info=await fetchRobloxInfo(avatarUser); if(info) avatarUrl=info.avatarUrl; }
-  await set(ref(db,`staff/${u}`),{username:u,level:l,joined:today(),notes:'',suspended:false,password:p,avatarRobloxUser:avatarUser,avatarUrl,lastActive:'Never',lastAction:'—'});
+  if(avatarUser){
+    el.textContent='Fetching avatar...';
+    try{
+      const info=await fetchRobloxInfo(avatarUser);
+      if(info&&info.avatarUrl) avatarUrl=info.avatarUrl;
+    }catch(e){}
+  }
+  const staffRecord={username:u,level:l,joined:today(),notes:'',suspended:false,secured:false,forceLogout:false,password:p,avatarRobloxUser:avatarUser,avatarUrl,lastActive:'Never',lastAction:'—'};
+  await set(ref(db,`staff/${u}`),staffRecord);
   auditLog('Staff Added',`${u} as ${l}`);
-  el.style.color='#006600'; el.textContent=`${u} added as ${l}.`;
-  setTimeout(()=>{ el.textContent=''; },3000);
+  el.style.color='#006600'; el.textContent=`${u} added as ${l}${avatarUrl?' (avatar loaded)':avatarUser?' (avatar unavailable — use refresh)':''}.`;
+  setTimeout(()=>{ el.textContent=''; },3500);
 }
 
 async function saveStaffNote(sid){
@@ -3250,7 +3289,7 @@ function promptSuspendStaff(sid, isCurrentlySuspended){
       `<div style="font-size:11px;color:#000;margin-bottom:3px;">Reason:</div><textarea id="dlgReason" style="width:100%;height:36px;"></textarea>`,
       async()=>{
         const reason=document.getElementById('dlgReason').value.trim()||'No reason given.';
-        await update(ref(db,`staff/${sid}`),{suspended:false,suspendInfo:null});
+        await update(ref(db,`staff/${sid}`),{suspended:false,suspendInfo:null,forceLogout:false});
         await push(ref(db,'logs/suspend'),{username:s.username,action:'Unsuspend',by:ME,date:today(),reason,modNote:'',offensiveItem:''});
         auditLog('Staff Unsuspended',s.username);
       }
@@ -3303,7 +3342,7 @@ function promptSecureStaff(sid, isCurrentlySecured){
       `<div style="font-size:11px;color:#000;margin-bottom:2px;">Reason:</div><textarea id="dlgReason" style="width:100%;height:36px;"></textarea>`,
       async()=>{
         const reason=document.getElementById('dlgReason').value.trim()||'Cleared by admin.';
-        await update(ref(db,`staff/${sid}`),{secured:false,secureInfo:null});
+        await update(ref(db,`staff/${sid}`),{secured:false,secureInfo:null,forceLogout:false});
         auditLog('Staff Account Unsecured',`${s.username}: ${reason}`); nav('staff');
       });
   } else {
@@ -3385,7 +3424,16 @@ document.getElementById('loginPass').onkeydown=e=>{ if(e.key==='Enter') doLogin(
 document.getElementById('loginUser').onkeydown=e=>{ if(e.key==='Enter') doLogin(); };
 document.getElementById('logoutBtn').onclick=doLogout;
 document.getElementById('suspOKBtn').onclick=()=>document.getElementById('suspOverlay').classList.remove('show');
-document.getElementById('wipedOKBtn').onclick=()=>document.getElementById('wipedOverlay').classList.remove('show');
+document.getElementById('wipedOKBtn').onclick=async()=>{
+  document.getElementById('wipedOverlay').classList.remove('show');
+  // Mark seen so it doesn't reappear
+  const u=document.getElementById('loginUser').value.trim();
+  if(u){
+    try{ localStorage.setItem(`wipedSeen_${u}`,'1'); }catch(e){}
+    // Clear the wipedAccounts record so future logins just show INVALID
+    await remove(ref(db,`wipedAccounts/${u}`)).catch(()=>{});
+  }
+};
 
 async function doLogin(){
   const u=document.getElementById('loginUser').value.trim();
@@ -3396,11 +3444,27 @@ async function doLogin(){
     await signInWithEmailAndPassword(auth,`${u}@admin.com`,p);
     const staffSnap=await get(ref(db,`staff/${u}`));
     if(!staffSnap.exists()){
+      // Check if this was a deliberate wipe (has a wipedAccounts record)
+      const wipeSnap=await get(ref(db,`wipedAccounts/${u}`)).catch(()=>null);
       const termSnap=await get(ref(db,'logs/terminate'));
       let termInfo=null;
       if(termSnap.exists()){ const entries=Object.values(termSnap.val()); termInfo=entries.find(e=>e.username===u&&e.type==='Staff'); }
       await signOut(auth);
-      if(termInfo){
+      if(wipeSnap&&wipeSnap.exists()){
+        const wd=wipeSnap.val();
+        // Check if already seen
+        let seen=false;
+        try{ seen=!!localStorage.getItem(`wipedSeen_${u}`); }catch(e){}
+        if(!seen){
+          document.getElementById('wipedReason').textContent=wd.reason||'No reason provided.';
+          document.getElementById('wipedBy').textContent=wd.by||'Unknown';
+          document.getElementById('wipedDate').textContent=wd.date||'Unknown';
+          document.getElementById('wipedOverlay').classList.add('show');
+          status.textContent='WIPED';
+        } else {
+          status.textContent='INVALID!';
+        }
+      } else if(termInfo){
         document.getElementById('suspReviewed').textContent=termInfo.date||'Unknown';
         document.getElementById('suspReason').textContent=termInfo.reason||'No reason provided.';
         document.getElementById('suspModNote').textContent=termInfo.modNote||'None.';
@@ -3411,11 +3475,10 @@ async function doLogin(){
         status.textContent='TERMINATED';
         document.getElementById('suspOverlay').classList.add('show');
       } else {
-        // Account exists in Firebase Auth but not in staff DB — wiped
-        document.getElementById('wipedOverlay').classList.add('show');
-        status.textContent='WIPED';
+        // Firebase Auth exists but no staff record and no wipe/terminate record — generic invalid
+        status.textContent='INVALID!';
       }
-    await push(ref(db,'logs/login'),{username:u,level:'—',date:nowStr(),result:'invalid',ip:'—'}).catch(()=>{}); 
+      await push(ref(db,'logs/login'),{username:u,level:'—',date:nowStr(),result:'invalid',ip:'—'}).catch(()=>{}); 
       return;
     }
     const staffData=staffSnap.val();
@@ -3565,9 +3628,15 @@ function safeRender(){
 
 function startListeners(){
   let firstMod=true, firstAppeals=true, firstAnnounce=true, firstTerminate=true;
-  onValue(ref(db,'users'),snap=>{ USERS=snap.val()||{}; safeRender(); });
+  onValue(ref(db,'users'),snap=>{
+    const raw=snap.val()||{};
+    // Strip any null/undefined entries that can appear after deletes
+    USERS=Object.fromEntries(Object.entries(raw).filter(([,v])=>v&&v.username));
+    safeRender();
+  });
   onValue(ref(db,'staff'),snap=>{
-    STAFF=snap.val()||{};
+    const raw=snap.val()||{};
+    STAFF=Object.fromEntries(Object.entries(raw).filter(([,v])=>v&&v.username));
     // Only re-render pages that actually show staff data
     const staffPages=['staff','activity','home','adminlog'];
     if(staffPages.includes(page)) safeRender();
@@ -3731,7 +3800,7 @@ function renderSuggestions(c){
 
 // ── STAFF CONFIG ──
 function renderStaffConfig(c){
-  const sArr=Object.entries(STAFF);
+  const sArr=Object.entries(STAFF).filter(([,s])=>s&&s.username);
   const loginAttempts=Object.values(LOGIN_LOG);
   const failedByUser={};
   loginAttempts.forEach(l=>{ if(l.result!=='success'){ failedByUser[l.username]=(failedByUser[l.username]||0)+1; } });
@@ -3854,7 +3923,9 @@ function renderStaffConfig(c){
           const staffEntry=Object.entries(STAFF).find(([,s])=>s.username===username);
           if(!staffEntry){ document.getElementById('wipeStaffMsg').textContent='Not found.'; return; }
           const [sid,sData]=staffEntry;
-          // Force logout first
+          // Write wipe record BEFORE removing so wiped user sees details on next login attempt
+          await set(ref(db,`wipedAccounts/${username}`),{reason:'Account wiped by administrator',by:ME,date:nowStr(),seenByUser:false});
+          // Force logout
           await update(ref(db,`staff/${sid}`),{forceLogout:true}).catch(()=>{});
           await new Promise(r=>setTimeout(r,500));
           await remove(ref(db,`staff/${sid}`));
@@ -4197,54 +4268,99 @@ function renderBadgeMgmt(c){
   });
 }
 
+function buildSearchChannels(){
+  const wrap=document.getElementById('srchChannels');
+  if(!wrap) return;
+  // Build channel list based on permissions
+  const channels=[
+    {id:'srch-players', label:'Players', always:true},
+    {id:'srch-staff', label:'Staff', perm:'canViewStaff'},
+    {id:'srch-modlog', label:'Mod Log', perm:'canViewModLog'},
+    {id:'srch-loginlog', label:'Login Log', perm:'canViewLoginLog'},
+    {id:'srch-appeals', label:'Appeals', perm:'canViewAppealLog'},
+  ];
+  const accessible=channels.filter(ch=>ch.always||canDo(ch.perm));
+  const allOption=isSoftwareManager()?`<label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:bold;color:#000080;"><input type="checkbox" id="srch-all"/> ALL (every channel)</label>`:'';
+  wrap.innerHTML=`<div style="font-size:11px;font-weight:bold;color:#000;margin-bottom:3px;">Channels:</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:11px;">
+      ${accessible.map(ch=>`<label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="${ch.id}" checked/> ${ch.label}</label>`).join('')}
+      ${allOption}
+    </div>`;
+  if(isSoftwareManager()){
+    const allCb=document.getElementById('srch-all');
+    if(allCb) allCb.onchange=()=>{
+      accessible.forEach(ch=>{ const el=document.getElementById(ch.id); if(el) el.checked=allCb.checked; });
+    };
+  }
+}
+
 function runAdvancedSearch(){
   const raw=document.getElementById('srchQuery').value.trim();
-  if(!raw){ document.getElementById('srchResults').innerHTML='<i style="color:#808080;">Enter a username to search.</i>'; return; }
-  const queries=raw.split(',').map(q=>q.trim().toLowerCase()).filter(q=>q);
-  const chPlayers=document.getElementById('srch-players').checked;
-  const chStaff=document.getElementById('srch-staff').checked;
-  const chModlog=document.getElementById('srch-modlog').checked;
-  const chLogin=document.getElementById('srch-loginlog').checked;
-  const chAppeals=document.getElementById('srch-appeals').checked;
-  const results=[];
-
-  if(chPlayers){
-    const matches=Object.entries(USERS).filter(([,u])=>queries.some(q=>u.username.toLowerCase().includes(q)||(u.displayName||'').toLowerCase().includes(q)||String(u.playerId).includes(q)));
-    matches.forEach(([uid,u])=>results.push({type:'Player',label:`<b>${u.username}</b>${u.displayName&&u.displayName!==u.username?` (${u.displayName})`:''}`,sub:`ID: ${u.playerId||'?'} &mdash; ${statusBadge(u.status)}`,action:`<button class="btn small srch-goto" data-type="player" data-uid="${uid}">View</button>`}));
-  }
-  if(chStaff){
-    const matches=Object.entries(STAFF).filter(([,s])=>queries.some(q=>s.username.toLowerCase().includes(q)));
-    matches.forEach(([sid,s])=>results.push({type:'Staff',label:`<b>${s.username}</b>`,sub:levelBadge(s.level)+' &mdash; '+(s.suspended?'<span class="sus">SUSPENDED</span>':'<span class="ok">OK</span>'),action:`<button class="btn small srch-goto" data-type="staff" data-sid="${sid}">View</button>`}));
-  }
-  if(chModlog){
-    const matches=Object.entries(MOD_LOG).filter(([,r])=>queries.some(q=>(r.user||'').toLowerCase().includes(q)||(r.mod||'').toLowerCase().includes(q)));
-    matches.slice(0,20).forEach(([,r])=>results.push({type:'Mod Log',label:`${r.user} &mdash; ${r.action}`,sub:`By ${r.mod} on ${r.date}`,action:''}));
-  }
-  if(chLogin){
-    const matches=Object.entries(LOGIN_LOG).filter(([,r])=>queries.some(q=>(r.username||'').toLowerCase().includes(q)));
-    matches.slice(0,10).forEach(([,r])=>results.push({type:'Login',label:`<b>${r.username}</b>`,sub:`${r.result} &mdash; ${r.date}`,action:''}));
-  }
-  if(chAppeals){
-    const matches=Object.entries(APPEAL_LOG).filter(([,r])=>queries.some(q=>(r.user||'').toLowerCase().includes(q)));
-    matches.slice(0,10).forEach(([,r])=>results.push({type:'Appeal',label:`<b>${r.user}</b>`,sub:`${r.presetReason||'—'} &mdash; ${r.status}`,action:''}));
-  }
-
+  const statusEl=document.getElementById('srchStatus');
   const el=document.getElementById('srchResults');
-  if(!results.length){ el.innerHTML='<i style="color:#808080;">No results found.</i>'; return; }
-  el.innerHTML=`<div style="font-size:11px;color:#808080;margin-bottom:4px;">${results.length} result${results.length!==1?'s':''} found:</div>`+
-    results.map(r=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:3px 0;border-bottom:1px solid #c0bcb4;gap:6px;">
+  if(!raw){
+    statusEl.textContent='INVALID — enter a search query.';
+    statusEl.style.color='#880000';
+    el.innerHTML='';
+    return;
+  }
+  statusEl.textContent='PROCESSING...';
+  statusEl.style.color='#000080';
+  el.innerHTML='';
+
+  // Small timeout so PROCESSING renders before heavy sync search
+  setTimeout(()=>{
+    const queries=raw.split(',').map(q=>q.trim().toLowerCase()).filter(q=>q);
+    const chPlayers=document.getElementById('srch-players')?.checked;
+    const chStaff=document.getElementById('srch-staff')?.checked&&canDo('canViewStaff');
+    const chModlog=document.getElementById('srch-modlog')?.checked&&canDo('canViewModLog');
+    const chLogin=document.getElementById('srch-loginlog')?.checked&&canDo('canViewLoginLog');
+    const chAppeals=document.getElementById('srch-appeals')?.checked&&canDo('canViewAppealLog');
+    const results=[];
+
+    if(chPlayers){
+      const matches=Object.entries(USERS).filter(([,u])=>u&&queries.some(q=>(u.username||'').toLowerCase().includes(q)||(u.displayName||'').toLowerCase().includes(q)||String(u.playerId||'').includes(q)));
+      matches.forEach(([uid,u])=>results.push({type:'Player',label:`<b>${u.username}</b>${u.displayName&&u.displayName!==u.username?` (${u.displayName})`:''}`,sub:`ID: ${u.playerId||'?'} &mdash; ${statusBadge(u.status)}`,action:`<button class="btn small srch-goto" data-type="player" data-uid="${uid}">View</button>`}));
+    }
+    if(chStaff){
+      const matches=Object.entries(STAFF).filter(([,s])=>s&&queries.some(q=>(s.username||'').toLowerCase().includes(q)));
+      matches.forEach(([sid,s])=>results.push({type:'Staff',label:`<b>${s.username}</b>`,sub:`${levelBadge(s.level)} &mdash; ${s.suspended?'<span class="sus">SUSPENDED</span>':s.secured?'<span class="ban">SECURED</span>':'<span class="ok">OK</span>'}`,action:`<button class="btn small srch-goto" data-type="staff" data-sid="${sid}">View</button>`}));
+    }
+    if(chModlog){
+      const matches=Object.entries(MOD_LOG).filter(([,r])=>r&&queries.some(q=>(r.user||'').toLowerCase().includes(q)||(r.mod||'').toLowerCase().includes(q)));
+      matches.slice(0,20).forEach(([,r])=>results.push({type:'Mod Log',label:`${r.user||'—'} &mdash; ${r.action||'—'}`,sub:`By ${r.mod||'—'} on ${r.date||'—'}`,action:''}));
+    }
+    if(chLogin){
+      const matches=Object.entries(LOGIN_LOG).filter(([,r])=>r&&queries.some(q=>(r.username||'').toLowerCase().includes(q)));
+      matches.slice(0,10).forEach(([,r])=>results.push({type:'Login',label:`<b>${r.username||'—'}</b>`,sub:`${r.result||'—'} &mdash; ${r.date||'—'}`,action:''}));
+    }
+    if(chAppeals){
+      const matches=Object.entries(APPEAL_LOG).filter(([,r])=>r&&queries.some(q=>(r.user||'').toLowerCase().includes(q)));
+      matches.slice(0,10).forEach(([,r])=>results.push({type:'Appeal',label:`<b>${r.user||'—'}</b>`,sub:`${r.presetReason||'—'} &mdash; ${r.status||'—'}`,action:''}));
+    }
+
+    if(!results.length){
+      statusEl.textContent='INVALID — no results found.';
+      statusEl.style.color='#880000';
+      el.innerHTML='<i style="color:#808080;">No results found.</i>';
+      return;
+    }
+    statusEl.textContent=`${results.length} result${results.length!==1?'s':''} found.`;
+    statusEl.style.color='#006600';
+    el.innerHTML=results.map(r=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:3px 0;border-bottom:1px solid #c0bcb4;gap:6px;">
       <div style="min-width:0;flex:1;">
         <span style="font-size:10px;color:#fff;background:#000080;padding:1px 4px;border-radius:2px;margin-right:4px;">${r.type}</span>
         ${r.label}<div style="font-size:10px;color:#555;">${r.sub}</div>
       </div>
       <div style="flex-shrink:0;">${r.action}</div>
     </div>`).join('');
-  el.querySelectorAll('.srch-goto').forEach(btn=>{
-    btn.onclick=()=>{
-      if(btn.dataset.type==='player'){ currentUserId=btn.dataset.uid; document.getElementById('searchOverlay').classList.remove('show'); nav('useradmin'); }
-      else if(btn.dataset.type==='staff'){ currentStaffId=btn.dataset.sid; document.getElementById('searchOverlay').classList.remove('show'); nav('staff'); }
-    };
-  });
+    el.querySelectorAll('.srch-goto').forEach(btn=>{
+      btn.onclick=()=>{
+        if(btn.dataset.type==='player'){ currentUserId=btn.dataset.uid; document.getElementById('searchOverlay').classList.remove('show'); nav('useradmin'); }
+        else if(btn.dataset.type==='staff'){ currentStaffId=btn.dataset.sid; document.getElementById('searchOverlay').classList.remove('show'); nav('staff'); }
+      };
+    });
+  },10);
 }
 
 function setupMenus(){
@@ -4334,7 +4450,9 @@ function setupMenus(){
   const searchBtn=document.getElementById('searchBtn');
   if(searchBtn) searchBtn.onclick=()=>{
     document.getElementById('srchResults').innerHTML='';
+    document.getElementById('srchStatus').textContent='';
     document.getElementById('srchQuery').value='';
+    buildSearchChannels();
     document.getElementById('searchOverlay').classList.add('show');
     setTimeout(()=>document.getElementById('srchQuery').focus(),100);
   };
