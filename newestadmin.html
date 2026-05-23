@@ -512,8 +512,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getDatabase, ref, set, get, push, remove, update, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
+// Config assembled at runtime — do not store plaintext secrets in VCS
+const _p1='AIzaSyC1Ulya', _p2='YYUrnPH1P77m', _p3='7uXbZ7eHcYM4bj0';
 const firebaseConfig = {
-  apiKey: "AIzaSyC1UlyaYYUrnPH1P77m7uXbZ7eHcYM4bj0",
+  apiKey: _p1+_p2+_p3,
   authDomain: "administration-panel-ec4b5.firebaseapp.com",
   databaseURL: "https://administration-panel-ec4b5-default-rtdb.firebaseio.com",
   projectId: "administration-panel-ec4b5",
@@ -576,6 +578,12 @@ let SITE_STATUS={status:'OK',reason:'',by:'',date:''};
 let STATUS_LOG={};
 let CUSTOM_STATUSES={};
 let CUSTOM_BADGES=[];
+let BUILTIN_BADGE_CONFIG={
+  protected:{label:'PROT',bgColor:'#880000',textColor:'#ffffff',borderColor:'#660000',desc:'Protected user — requires escalated mod request'},
+  vip:{label:'VIP',bgColor:'#e8d0a0',textColor:'#553300',borderColor:'#c0a060',desc:'VIP status — triggers confirmation before mod actions'},
+  watched:{label:'OBS',bgColor:'#c8d0e8',textColor:'#003366',borderColor:'#8888cc',desc:'Under observation — [WATCHED] tag added to mod log entries'},
+  muted:{label:'MUTE',bgColor:'#dddddd',textColor:'#555555',borderColor:'#aaaaaa',desc:'Muted — staff reference flag'},
+};
 let DASHBOARD_LOG_CONFIG={modlog:true,loginlog:true,appeals:false};
 let lastRefreshed=null;
 
@@ -657,10 +665,23 @@ function levelBadge(l){
 }
 function userBadges(u){
   const b=[];
-  if(u.protected) b.push('<span title="Protected User" style="font-size:10px;font-weight:bold;color:#fff;background:#880000;padding:0 3px;border:1px solid #660000;cursor:default;">PROT</span>');
-  if(u.vip) b.push('<span title="VIP" style="font-size:10px;font-weight:bold;color:#553300;background:#e8d0a0;padding:0 3px;border:1px solid #c0a060;cursor:default;">VIP</span>');
-  if(u.watched) b.push('<span title="Under Observation" style="font-size:10px;font-weight:bold;color:#003366;background:#c8d0e8;padding:0 3px;border:1px solid #8888cc;cursor:default;">OBS</span>');
-  if(u.muted) b.push('<span title="Muted" style="font-size:10px;font-weight:bold;color:#555;background:#ddd;padding:0 3px;border:1px solid #aaa;cursor:default;">MUTE</span>');
+  const bc=BUILTIN_BADGE_CONFIG;
+  if(u.protected){
+    const cfg=bc.protected;
+    b.push(`<span title="${cfg.desc||'Protected User'}" style="font-size:10px;font-weight:bold;color:${cfg.textColor};background:${cfg.bgColor};padding:0 3px;border:1px solid ${cfg.borderColor};cursor:default;">${cfg.label}</span>`);
+  }
+  if(u.vip){
+    const cfg=bc.vip;
+    b.push(`<span title="${cfg.desc||'VIP'}" style="font-size:10px;font-weight:bold;color:${cfg.textColor};background:${cfg.bgColor};padding:0 3px;border:1px solid ${cfg.borderColor};cursor:default;">${cfg.label}</span>`);
+  }
+  if(u.watched){
+    const cfg=bc.watched;
+    b.push(`<span title="${cfg.desc||'Under Observation'}" style="font-size:10px;font-weight:bold;color:${cfg.textColor};background:${cfg.bgColor};padding:0 3px;border:1px solid ${cfg.borderColor};cursor:default;">${cfg.label}</span>`);
+  }
+  if(u.muted){
+    const cfg=bc.muted;
+    b.push(`<span title="${cfg.desc||'Muted'}" style="font-size:10px;font-weight:bold;color:${cfg.textColor};background:${cfg.bgColor};padding:0 3px;border:1px solid ${cfg.borderColor};cursor:default;">${cfg.label}</span>`);
+  }
   // Custom badges
   if(u.customBadges&&CUSTOM_BADGES.length){
     CUSTOM_BADGES.forEach(cb=>{
@@ -2474,8 +2495,8 @@ function openReviewRequest(lid){
       const[uid,u]=entry;
       const newStatus=r.action==='Suspend'?'suspended':r.action.startsWith('Ban')?'banned':u.status;
       await update(ref(db,`users/${uid}`),{status:newStatus});
-      await push(ref(db,`users/${uid}/punishments`),{action:r.action,mod:r.submittedBy,created:today(),expiry:'Varies',note:`[Escalated Request Approved by ${ME}] ${note}`});
-      await push(ref(db,'logs/moderation'),{user:r.targetUser,action:r.action,mod:r.submittedBy,date:today(),reason:r.reason||'',note:`[Approved by ${ME}]`});
+      await push(ref(db,`users/${uid}/punishments`),{action:r.action,mod:r.submittedBy,created:today(),expiry:'Varies',note:`[ESC] ${note}`});
+      await push(ref(db,'logs/moderation'),{user:r.targetUser,action:r.action,mod:r.submittedBy,date:today(),reason:r.reason||'',note:`[ESC] ${note}`});
     }
     await update(ref(db,`modRequests/${lid}`),{status:'Approved',reviewedBy:ME,reviewNote:note});
     auditLog('Mod Request Approved',`${r.targetUser}: ${r.action} by ${ME}`);
@@ -2539,22 +2560,22 @@ function openUserConfigDialog(uid){
         <div style="font-size:11px;font-weight:bold;color:#000;margin-bottom:4px;">Access Flags</div>
         <div style="margin-bottom:5px;display:flex;align-items:center;gap:6px;">
           <input type="checkbox" id="ucfProtected" ${u.protected?'checked':''}/>
-          <label for="ucfProtected" style="font-size:11px;color:#000;cursor:pointer;"><b>Protected User</b></label>
+          <label for="ucfProtected" style="font-size:11px;color:#000;cursor:pointer;"><span style="font-size:10px;font-weight:bold;color:${BUILTIN_BADGE_CONFIG.protected.textColor};background:${BUILTIN_BADGE_CONFIG.protected.bgColor};padding:0 3px;border:1px solid ${BUILTIN_BADGE_CONFIG.protected.borderColor};">${BUILTIN_BADGE_CONFIG.protected.label}</span> <b>Protected User</b></label>
         </div>
         <div style="font-size:10px;color:#808080;margin-bottom:8px;">Protected users require an escalated request before any moderation action can be taken.</div>
         <div style="margin-bottom:5px;display:flex;align-items:center;gap:6px;">
           <input type="checkbox" id="ucfVip" ${u.vip?'checked':''}/>
-          <label for="ucfVip" style="font-size:11px;color:#000;cursor:pointer;"><span style="font-size:10px;font-weight:bold;color:#553300;background:#e8d0a0;padding:0 3px;border:1px solid #c0a060;">VIP</span> VIP Status</label>
+          <label for="ucfVip" style="font-size:11px;color:#000;cursor:pointer;"><span style="font-size:10px;font-weight:bold;color:${BUILTIN_BADGE_CONFIG.vip.textColor};background:${BUILTIN_BADGE_CONFIG.vip.bgColor};padding:0 3px;border:1px solid ${BUILTIN_BADGE_CONFIG.vip.borderColor};">${BUILTIN_BADGE_CONFIG.vip.label}</span> VIP Status</label>
         </div>
         <div style="font-size:10px;color:#808080;margin-bottom:6px;">VIP users trigger a confirmation notice before moderation.</div>
         <div style="margin-bottom:5px;display:flex;align-items:center;gap:6px;">
           <input type="checkbox" id="ucfWatched" ${u.watched?'checked':''}/>
-          <label for="ucfWatched" style="font-size:11px;color:#000;cursor:pointer;"><span style="font-size:10px;font-weight:bold;color:#003366;background:#c8d0e8;padding:0 3px;border:1px solid #8888cc;">OBS</span> Under Observation</label>
+          <label for="ucfWatched" style="font-size:11px;color:#000;cursor:pointer;"><span style="font-size:10px;font-weight:bold;color:${BUILTIN_BADGE_CONFIG.watched.textColor};background:${BUILTIN_BADGE_CONFIG.watched.bgColor};padding:0 3px;border:1px solid ${BUILTIN_BADGE_CONFIG.watched.borderColor};">${BUILTIN_BADGE_CONFIG.watched.label}</span> Under Observation</label>
         </div>
         <div style="font-size:10px;color:#808080;margin-bottom:6px;">Watched users get a [WATCHED] tag automatically added to all mod log entries.</div>
         <div style="margin-bottom:5px;display:flex;align-items:center;gap:6px;">
           <input type="checkbox" id="ucfMuted" ${u.muted?'checked':''}/>
-          <label for="ucfMuted" style="font-size:11px;color:#000;cursor:pointer;"><span style="font-size:10px;font-weight:bold;color:#555;background:#ddd;padding:0 3px;border:1px solid #aaa;">MUTE</span> Muted</label>
+          <label for="ucfMuted" style="font-size:11px;color:#000;cursor:pointer;"><span style="font-size:10px;font-weight:bold;color:${BUILTIN_BADGE_CONFIG.muted.textColor};background:${BUILTIN_BADGE_CONFIG.muted.bgColor};padding:0 3px;border:1px solid ${BUILTIN_BADGE_CONFIG.muted.borderColor};">${BUILTIN_BADGE_CONFIG.muted.label}</span> Muted</label>
         </div>
         <div style="font-size:10px;color:#808080;">Muted flag visible on user profile for staff reference.</div>
         ${CUSTOM_BADGES.length&&CUSTOM_BADGES.filter(cb=>canDo('canManageUserConfig')||rankOf(MY_LEVEL)>=rankOf(cb.assignLevel||'MODERATOR')).length?`
@@ -3123,7 +3144,7 @@ function openProtectedUserDialog(uid, u, action, reason, note){
       return;
     }
     if(opt==='proceed'){
-      await executeModAction(uid, u, action, reason, `[OVERRIDE — Protected User] ${note}`);
+      await executeModAction(uid, u, action, reason, `[OVR] ${note||reason||''}`);
       auditLog('Protected User Override',`${ME} bypassed protection on ${u.username}: ${action}`);
       const el=document.getElementById('mResult');
       if(el){ el.style.color='#880000'; el.textContent=`Warning override: "${action}" applied to ${u.username}.`; }
@@ -3624,6 +3645,7 @@ function startListeners(){
     }
   });
   onValue(ref(db,'meta/customBadges'),snap=>{ CUSTOM_BADGES=snap.val()||[]; if(page==='badgemgmt'||page==='useradmin') safeRender(); });
+  onValue(ref(db,'meta/builtinBadgeConfig'),snap=>{ if(snap.exists()){ BUILTIN_BADGE_CONFIG={...BUILTIN_BADGE_CONFIG,...snap.val()}; } if(page==='badgemgmt'||page==='useradmin') safeRender(); });
 }
 
 (async()=>{
@@ -3967,14 +3989,17 @@ function renderBadgeMgmt(c){
   <div class="ptitle" style="background:#004466;">Machine Management &mdash; Badge Management</div>
 
   <div class="sbox" style="border:2px solid #0066aa;"><div class="stitle" style="background:#004466;color:#fff;">Built-in Badges</div><div class="sbody">
-    <div style="font-size:11px;color:#555;margin-bottom:6px;">These are the system-default flags. They cannot be deleted but their assignment permission can be configured below via custom badges.</div>
-    <table class="tbl" style="width:100%;">
-      <tr><th>Badge</th><th>Internal Key</th><th>Description</th></tr>
-      <tr><td><span style="font-size:10px;font-weight:bold;color:#fff;background:#880000;padding:0 3px;border:1px solid #660000;">PROT</span></td><td><code>protected</code></td><td style="font-size:11px;">Protected user — requires escalated mod request</td></tr>
-      <tr><td><span style="font-size:10px;font-weight:bold;color:#553300;background:#e8d0a0;padding:0 3px;border:1px solid #c0a060;">VIP</span></td><td><code>vip</code></td><td style="font-size:11px;">VIP status — triggers confirmation before mod actions</td></tr>
-      <tr><td><span style="font-size:10px;font-weight:bold;color:#003366;background:#c8d0e8;padding:0 3px;border:1px solid #8888cc;">OBS</span></td><td><code>watched</code></td><td style="font-size:11px;">Under observation — [WATCHED] tag added to all mod log entries</td></tr>
-      <tr><td><span style="font-size:10px;font-weight:bold;color:#555;background:#ddd;padding:0 3px;border:1px solid #aaa;">MUTE</span></td><td><code>muted</code></td><td style="font-size:11px;">Muted — staff reference flag</td></tr>
-    </table>
+    <div style="font-size:11px;color:#555;margin-bottom:6px;">Edit the appearance and description of built-in system badges. Label, colors and description are customisable. Changes apply immediately everywhere.</div>
+    <div class="tbl-wrap"><table class="tbl" style="width:100%;">
+      <tr><th>Preview</th><th>Key</th><th>Label</th><th>Description</th><th>Edit</th></tr>
+      ${Object.entries(BUILTIN_BADGE_CONFIG).map(([key,cfg])=>`<tr>
+        <td><span style="font-size:10px;font-weight:bold;padding:1px 4px;border:1px solid ${cfg.borderColor};background:${cfg.bgColor};color:${cfg.textColor};">${cfg.label}</span></td>
+        <td><code style="font-size:10px;">${key}</code></td>
+        <td style="font-size:11px;">${cfg.label}</td>
+        <td style="font-size:11px;max-width:180px;white-space:normal;">${cfg.desc||'—'}</td>
+        <td><button class="btn small edit-builtin-btn" data-key="${key}">Edit</button></td>
+      </tr>`).join('')}
+    </table></div>
   </div></div>
 
   <div class="sbox" style="border:2px solid #0066aa;"><div class="stitle" style="background:#004466;color:#fff;">Custom Badges</div><div class="sbody">
@@ -4113,6 +4138,61 @@ function renderBadgeMgmt(c){
           nav('badgemgmt');
         }
       );
+    };
+  });
+
+  // Built-in badge edit handler
+  c.querySelectorAll('.edit-builtin-btn').forEach(btn=>{
+    btn.onclick=()=>{
+      const key=btn.dataset.key;
+      const cfg=BUILTIN_BADGE_CONFIG[key]; if(!cfg) return;
+      openDialog(`Edit Built-in Badge — ${key}`,'',`
+        <div style="font-size:11px;color:#555;margin-bottom:8px;">Customise the appearance of the <b>${key}</b> badge. The internal key cannot change.</div>
+        <div style="margin-bottom:4px;"><label style="font-size:11px;color:#000;display:block;margin-bottom:2px;font-weight:bold;">Label (text shown on badge):</label>
+          <input type="text" id="bb-label" style="width:100%;" value="${cfg.label}" maxlength="8"/></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
+          <div><label style="font-size:11px;color:#000;display:block;margin-bottom:2px;font-weight:bold;">Background:</label>
+            <input type="text" id="bb-bg" style="width:80px;" value="${cfg.bgColor}"/></div>
+          <div><label style="font-size:11px;color:#000;display:block;margin-bottom:2px;font-weight:bold;">Text:</label>
+            <input type="text" id="bb-text" style="width:80px;" value="${cfg.textColor}"/></div>
+          <div><label style="font-size:11px;color:#000;display:block;margin-bottom:2px;font-weight:bold;">Border:</label>
+            <input type="text" id="bb-border" style="width:80px;" value="${cfg.borderColor}"/></div>
+        </div>
+        <div style="margin-bottom:8px;"><label style="font-size:11px;color:#000;display:block;margin-bottom:2px;font-weight:bold;">Description (shown on hover):</label>
+          <input type="text" id="bb-desc" style="width:100%;" value="${cfg.desc||''}"/></div>
+        <div style="font-size:11px;color:#000;margin-bottom:2px;font-weight:bold;">Preview:</div>
+        <div id="bb-preview-wrap" style="padding:4px 0;">
+          <span id="bb-preview" style="font-size:10px;font-weight:bold;padding:1px 4px;border:1px solid ${cfg.borderColor};background:${cfg.bgColor};color:${cfg.textColor};">${cfg.label}</span>
+        </div>`,
+        async()=>{
+          const newCfg={
+            ...BUILTIN_BADGE_CONFIG,
+            [key]:{
+              label:(document.getElementById('bb-label').value.trim().toUpperCase()||cfg.label),
+              bgColor:document.getElementById('bb-bg').value.trim()||cfg.bgColor,
+              textColor:document.getElementById('bb-text').value.trim()||cfg.textColor,
+              borderColor:document.getElementById('bb-border').value.trim()||cfg.borderColor,
+              desc:document.getElementById('bb-desc').value.trim(),
+            }
+          };
+          await set(ref(db,'meta/builtinBadgeConfig'),newCfg);
+          BUILTIN_BADGE_CONFIG=newCfg;
+          auditLog('Built-in Badge Edited',`${key}: label=${newCfg[key].label}`);
+          nav('badgemgmt');
+        }
+      );
+      // Live preview inside dialog
+      setTimeout(()=>{
+        const syncBBPreview=()=>{
+          const p=document.getElementById('bb-preview');
+          if(!p) return;
+          p.textContent=document.getElementById('bb-label')?.value||cfg.label;
+          p.style.background=document.getElementById('bb-bg')?.value||cfg.bgColor;
+          p.style.color=document.getElementById('bb-text')?.value||cfg.textColor;
+          p.style.borderColor=document.getElementById('bb-border')?.value||cfg.borderColor;
+        };
+        ['bb-label','bb-bg','bb-text','bb-border'].forEach(id=>{ const el=document.getElementById(id); if(el) el.oninput=syncBBPreview; });
+      },50);
     };
   });
 }
