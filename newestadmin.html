@@ -353,8 +353,10 @@ function closeOpDialog(){document.getElementById('opOverlay').classList.remove('
 function submitOpCode(){
   const val=document.getElementById('opCodeInput').value.trim();
   if(val!==OPERATOR_CODE){document.getElementById('opErr').textContent='Incorrect operator code.';return;}
-  closeOpDialog();
-  if(opCallback) opCallback();
+  const cb=opCallback;
+  opCallback=null;
+  document.getElementById('opOverlay').classList.remove('show');
+  if(cb) cb();
 }
 document.getElementById('opClose').onclick=closeOpDialog;
 document.getElementById('opCancel').onclick=closeOpDialog;
@@ -680,7 +682,7 @@ function renderStaff(c){
       <div class="sbox"><div class="stitle">Staff Profile &mdash; ${s.username}</div><div class="sbody">
         ${s.avatarUrl?`<div style="display:flex;justify-content:center;margin-bottom:6px;"><div class="avatar-box" style="width:60px;height:60px;">${avatarHTML(s)}</div></div>`:''}
         <div class="row"><label>Username:</label><b>${s.username}</b></div>
-        <div class="row"><label>Level:</label><div style="overflow:hidden;max-width:110px;">${levelBadge(s.level)}</div></div>
+        <div class="row"><label>Level:</label><span>Rank ${LEVEL_RANK[s.level]||'?'} &mdash; ${s.level}</span></div>
         <div class="row"><label>Joined:</label><span>${s.joined}</span></div>
         <div class="row"><label>Status:</label>${s.suspended?'<span class="sus">SUSPENDED</span>':'<span class="ok">OK</span>'}</div>
         ${s.avatarRobloxUser?`<div class="row"><label>Avatar Source:</label><span>${s.avatarRobloxUser}</span></div>`:''}
