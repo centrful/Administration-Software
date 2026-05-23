@@ -2239,46 +2239,67 @@ function startHeartbeat(){
 
 function updateActivity(){
   if(!ME) return;
-  update(ref(db,`staff/${ME}`),{lastActive:nowStr()}).catch(()=>{});
+  if(updateActivity._t) clearTimeout(updateActivity._t);
+  updateActivity._t = setTimeout(()=>{
+    update(ref(db,`staff/${ME}`),{lastActive:nowStr()}).catch(()=>{});
+  }, 10000); // batch writes — only actually write after 10s of inactivity in handler
 }
 
 // Update activity on any click or keypress
 document.addEventListener('click', ()=>updateActivity(), true);
 document.addEventListener('keydown', ()=>updateActivity(), true);
 
+function isUserTyping(){
+  const el = document.activeElement;
+  if(!el) return false;
+  if(el.tagName==='INPUT' || el.tagName==='TEXTAREA' || el.tagName==='SELECT') return true;
+  // Also protect if any input/textarea currently has content being edited
+  const anyFocused = document.querySelector('input:focus, textarea:focus, select:focus');
+  return !!anyFocused;
+}
+
+function safeRender(){
+  if(!isUserTyping()) render();
+}
+
 function startListeners(){
-  let firstUsers=true, firstStaff=true, firstMod=true, firstAppeals=true, firstAnnounce=true, firstSuspend=true, firstTerminate=true;
-  onValue(ref(db,'users'),snap=>{ USERS=snap.val()||{}; if(page) render(); firstUsers=false; });
-  onValue(ref(db,'staff'),snap=>{ STAFF=snap.val()||{}; if(page) render(); firstStaff=false; });
+  let firstMod=true, firstAppeals=true, firstAnnounce=true, firstTerminate=true;
+  onValue(ref(db,'users'),snap=>{ USERS=snap.val()||{}; safeRender(); });
+  onValue(ref(db,'staff'),snap=>{
+    STAFF=snap.val()||{};
+    // Only re-render pages that actually show staff data
+    const staffPages=['staff','activity','home','adminlog'];
+    if(staffPages.includes(page)) safeRender();
+  });
   onValue(ref(db,'logs/moderation'),snap=>{
     const prev=Object.keys(MOD_LOG||{}).length;
     MOD_LOG=snap.val()||{};
     if(!firstMod && Object.keys(MOD_LOG).length>prev){ const e=Object.values(MOD_LOG).at(-1); pushNotif('newMod',`New mod action: ${e.action} on ${e.user} by ${e.mod}`); }
     firstMod=false;
-    if(page==='modlog') render();
+    if(page==='modlog') safeRender();
   });
-  onValue(ref(db,'logs/revoke'),snap=>{ REVOKE_LOG=snap.val()||{}; if(page==='revokelog') render(); });
+  onValue(ref(db,'logs/revoke'),snap=>{ REVOKE_LOG=snap.val()||{}; if(page==='revokelog') safeRender(); });
   onValue(ref(db,'logs/suspend'),snap=>{
     const prev=Object.keys(SUSPEND_LOG||{}).length;
     SUSPEND_LOG=snap.val()||{};
-    if(!firstMod && Object.keys(SUSPEND_LOG).length>prev){ const e=Object.values(SUSPEND_LOG).at(-1); if(e.action==='Suspend') pushNotif('staffSuspended',`Staff suspended: ${e.username} by ${e.by}`); }
-    if(page==='suspendlog') render();
+    if(Object.keys(SUSPEND_LOG).length>prev){ const e=Object.values(SUSPEND_LOG).at(-1); if(e&&e.action==='Suspend') pushNotif('staffSuspended',`Staff suspended: ${e.username} by ${e.by}`); }
+    if(page==='suspendlog') safeRender();
   });
   onValue(ref(db,'logs/terminate'),snap=>{
     const prev=Object.keys(TERMINATE_LOG||{}).length;
     TERMINATE_LOG=snap.val()||{};
     if(!firstTerminate && Object.keys(TERMINATE_LOG).length>prev){ const e=Object.values(TERMINATE_LOG).at(-1); pushNotif('staffTerminated',`Staff terminated: ${e.username} by ${e.by}`); }
     firstTerminate=false;
-    if(page==='terminatelog') render();
+    if(page==='terminatelog') safeRender();
   });
-  onValue(ref(db,'logs/login'),snap=>{ LOGIN_LOG=snap.val()||{}; if(page==='loginlog') render(); });
-  onValue(ref(db,'logs/audit'),snap=>{ AUDIT_LOG=snap.val()||{}; if(page==='auditlog') render(); });
+  onValue(ref(db,'logs/login'),snap=>{ LOGIN_LOG=snap.val()||{}; if(page==='loginlog') safeRender(); });
+  onValue(ref(db,'logs/audit'),snap=>{ AUDIT_LOG=snap.val()||{}; if(page==='auditlog') safeRender(); });
   onValue(ref(db,'logs/appeals'),snap=>{
     const prev=Object.keys(APPEAL_LOG||{}).length;
     APPEAL_LOG=snap.val()||{};
     if(!firstAppeals && Object.keys(APPEAL_LOG).length>prev){ const e=Object.values(APPEAL_LOG).at(-1); pushNotif('newAppeal',`New appeal from ${e.user}: ${e.presetReason}`); }
     firstAppeals=false;
-    if(page==='appeals') render();
+    if(page==='appeals') safeRender();
   });
   onValue(ref(db,'announcements'),snap=>{
     const prev=Object.values(ANNOUNCEMENTS||{}).filter(a=>a.active).length;
@@ -2287,7 +2308,7 @@ function startListeners(){
     if(!firstAnnounce && now>prev){ const e=Object.values(ANNOUNCEMENTS).filter(a=>a.active).at(-1); pushNotif('newAnnouncement',`Announcement from ${e.by}: ${e.message.substring(0,60)}`); }
     firstAnnounce=false;
     updateAnnouncements();
-    if(page==='announcements') render();
+    if(page==='announcements') safeRender();
   });
   get(ref(db,'meta/appealPresets')).then(snap=>{ if(snap.exists()) APPEAL_PRESETS=snap.val(); });
   onValue(ref(db,'meta/customFields'),snap=>{ CUSTOM_FIELDS=snap.val()||[]; });
