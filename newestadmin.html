@@ -540,10 +540,13 @@ function renderUA(c){
         <div id="fuResult" style="margin-top:4px;"></div>
       </div></div>
       <div class="sbox"><div class="stitle">Appeal Status</div><div class="sbody">
-        <div class="row"><label>Status:</label><span>${u.appealStatus?`<span class="badge appeal-${(u.appealStatus||'').toLowerCase().replace(' ','-')}">${u.appealStatus}</span>`:'None'}</span></div>
-        ${canDo('canSubmitAppeals')&&u.punishments&&Object.keys(u.punishments).length>0?`
-        <div style="margin-top:4px;">
-          <button class="btn small" id="btn-open-appeal-panel">Open Appeal Panel</button>
+        <div class="row"><label>Last Appeal:</label><span>${u.appealStatus?`<span class="badge appeal-${(u.appealStatus||'').toLowerCase().replace(' ','-')}">${u.appealStatus}</span>`:'<span style="color:#808080;">None</span>'}</span></div>
+        ${canDo('canSubmitAppeals')?`
+        <div style="margin-top:5px;">
+          ${u.punishments&&Object.keys(u.punishments).length>0
+            ?`<button class="btn small" id="btn-open-appeal-panel">Open Appeal Panel</button>`
+            :`<button class="btn small" disabled style="color:#808080;cursor:default;">Open Appeal Panel</button>
+             <div style="font-size:10px;color:#808080;margin-top:2px;">No active punishments.</div>`}
         </div>`:''}
       </div></div>
     </div>
