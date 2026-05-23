@@ -93,6 +93,7 @@ select{height:16px;border-top:1px solid #707070;border-left:1px solid #707070;bo
 .activity-dot.active{background:#006600;}
 .activity-dot.idle{background:#cc8800;}
 .activity-dot.offline{background:#808080;}
+.activity-dot.suspended{background:#cc8800;}
 .menu-item{cursor:default;padding:1px 6px;color:#000;user-select:none;}
 .menu-item:hover,.menu-item.open{background:#00007e;color:#fff;}
 .dropdown{display:none;position:absolute;top:100%;left:0;background:#d4d0c8;border-top:1px solid #fff;border-left:1px solid #fff;border-right:1px solid #404040;border-bottom:1px solid #404040;z-index:500;min-width:160px;box-shadow:2px 2px 4px rgba(0,0,0,0.4);}
@@ -1141,7 +1142,8 @@ function renderActivity(c){
       ${sArr.map(([,s])=>{
         const lastActive=s.lastActive||'Never';
         const isRecent=s.lastActive&&(new Date()-new Date(s.lastActive))<3600000;
-        const dot=s.suspended?'offline':isRecent?'active':'idle';
+        const isLoggedOut=!s.lastActive||s.lastAction==='Logged out'||s.lastActive==='Never';
+        const dot=s.suspended?'suspended':isLoggedOut?'offline':isRecent?'active':'idle';
         return `<tr>
           <td><span class="activity-dot ${dot}"></span><b>${s.username}</b></td>
           <td>${levelBadge(s.level)}</td>
