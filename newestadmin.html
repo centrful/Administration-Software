@@ -72,7 +72,16 @@ select{height:16px;border-top:1px solid #707070;border-left:1px solid #707070;bo
 .badge.administrator{background:#e8d0a0;color:#553300;}
 .badge.superadmin{background:#e8c0c0;color:#550000;}
 .badge.senioradmin{background:#e8d4a0;color:#4a2800;}
-.badge.softwaremanager{background:#1a1a2e;color:#00d4ff;border-color:#00d4ff;}
+.badge.softwaremanager{background:#111;color:#e0e0e0;border-color:#555;}
+.badge.secured{background:#1a1a2e;color:#00d4ff;border-color:#00d4ff;}
+.badge.status-ok{background:#c8e0c8;color:#003300;border-color:#669966;}
+.badge.status-updating{background:#fff0cc;color:#664400;border-color:#cc8800;}
+.badge.status-paused{background:#f0c0c0;color:#660000;border-color:#cc6666;}
+.site-status-indicator{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:bold;padding:1px 7px;border:1px solid #808080;background:#e0dcd4;}
+.site-status-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.site-status-dot.ok{background:#006600;}
+.site-status-dot.updating{background:#cc8800;}
+.site-status-dot.paused{background:#cc0000;}
 .badge.appeal-open{background:#d0e8ff;color:#003366;border-color:#6699cc;}
 .badge.appeal-approved{background:#c8e0c8;color:#003300;border-color:#669966;}
 .badge.appeal-denied{background:#f0c0c0;color:#660000;border-color:#cc6666;}
@@ -161,10 +170,16 @@ select{height:16px;border-top:1px solid #707070;border-left:1px solid #707070;bo
   <div class="shell">
     <div class="topbar">
       <span id="topbarTitle">Administration Panel</span>
+      <div id="siteStatusBar" style="display:none;align-items:center;gap:5px;font-size:11px;color:#fff;margin-left:10px;">
+        <span id="siteStatusIndicator"></span>
+      </div>
       <div class="topbar-right">
         <div style="position:relative;display:inline-block;">
           <button class="logout-btn" id="refreshBtn" style="width:22px;padding:0;font-size:12px;" title="Refresh data">&#8635;</button>
           <div id="refreshTooltip" style="display:none;position:absolute;top:100%;right:0;background:#222;color:#fff;font-size:10px;white-space:nowrap;padding:3px 6px;border-radius:2px;z-index:999;margin-top:2px;pointer-events:none;"></div>
+        </div>
+        <div style="position:relative;display:inline-block;">
+          <button class="logout-btn" id="searchBtn" style="width:22px;padding:0;font-size:12px;" title="Advanced Search">&#128269;</button>
         </div>
         <div style="position:relative;display:inline-block;">
           <button class="logout-btn" id="notifBtn" style="width:22px;padding:0;font-size:12px;" title="Notifications">&#128276;</button>
@@ -241,12 +256,15 @@ select{height:16px;border-top:1px solid #707070;border-left:1px solid #707070;bo
           <span class="sb-link" id="nav-reputation">&#9658; Reputation System</span>
           <span class="sb-link" id="nav-appeals">&#9658; Appeal Log</span>
           <span class="sb-link" id="nav-altdetect">&#9658; Alt Detection</span>
+          <span class="sb-link" id="nav-msganalyze">&#9658; Message Analyze</span>
         </div>
         <div class="sb-section" id="sb-staff-section">
           <div class="sb-title">Staff</div>
           <span class="sb-link" id="nav-staff">&#9658; Staff Registry</span>
           <span class="sb-link" id="nav-activity">&#9658; Staff Activity</span>
           <span class="sb-link" id="nav-messaging">&#9658; Staff Messaging</span>
+          <span class="sb-link" id="nav-suggestions">&#9658; Suggestions</span>
+          <span class="sb-link" id="nav-staffconfig">&#9658; Staff Config</span>
         </div>
         <div class="sb-section">
           <div class="sb-title">Logs</div>
@@ -264,11 +282,43 @@ select{height:16px;border-top:1px solid #707070;border-left:1px solid #707070;bo
           <span class="sb-link" id="nav-adminlog">&#9658; Administrator</span>
         </div>
         <div class="sb-section" id="sb-machine-section">
-          <div class="sb-title" style="color:#00aacc;">Machine Management</div>
+          <div class="sb-title" style="color:#000;">Machine Management</div>
           <span class="sb-link" id="nav-siteconfig">&#9658; Configuration</span>
+          <span class="sb-link" id="nav-statuslog">&#9658; Status Log</span>
         </div>
       </div>
       <div class="content" id="content"><div style="padding:10px;color:#444;font-style:italic;">Loading data...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ADVANCED SEARCH OVERLAY -->
+<div class="overlay" id="searchOverlay">
+  <div class="dialog" style="width:480px;">
+    <div class="titlebar">
+      <div class="titlebar-title">&#128269; Advanced Search</div>
+      <div class="win-btns"><div class="wcb" id="searchClose">&#10005;</div></div>
+    </div>
+    <div style="padding:12px 14px 10px;">
+      <div style="font-size:11px;color:#555;margin-bottom:8px;">Search across players and staff. Separate multiple usernames with commas. Select channels to search.</div>
+      <div style="display:flex;gap:6px;align-items:flex-end;margin-bottom:6px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:160px;">
+          <label style="font-size:11px;color:#000;display:block;margin-bottom:2px;font-weight:bold;">Username(s):</label>
+          <input type="text" id="srchQuery" style="width:100%;" placeholder="e.g. PlayerOne, PlayerTwo"/>
+        </div>
+        <button class="btn" id="srchGo" style="height:20px;white-space:nowrap;">Search</button>
+      </div>
+      <div style="margin-bottom:6px;">
+        <div style="font-size:11px;font-weight:bold;color:#000;margin-bottom:3px;">Channels:</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:11px;">
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="srch-players" checked/> Players</label>
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="srch-staff" checked/> Staff</label>
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="srch-modlog"/> Mod Log</label>
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="srch-loginlog"/> Login Log</label>
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="srch-appeals"/> Appeals</label>
+        </div>
+      </div>
+      <div id="srchResults" style="max-height:300px;overflow-y:auto;font-size:11px;color:#000;border-top:1px solid #b0aca4;padding-top:6px;min-height:30px;"></div>
     </div>
   </div>
 </div>
@@ -491,6 +541,10 @@ const DEFAULT_PERMS = {
   canBulkAction:'ADMINISTRATOR', canSendStaffMessage:'MODERATOR',
   canViewUserConfig:'ADMINISTRATOR', canManageUserConfig:'SUPER ADMINISTRATOR',
   canViewRequests:'ADMINISTRATOR',
+  canManageSuggestions:'MODERATOR',
+  canViewSuggestions:'MODERATOR',
+  canViewMessageAnalyze:'MODERATOR',
+  canViewStaffConfig:'SUPER ADMINISTRATOR',
 };
 
 const DEFAULT_REP_POINTS = { 'Remind':1, 'Warn':2, 'Ban 1 Day':3, 'Ban 3 Days':3, 'Ban 7 Days':5, 'Ban 14 Days':5, 'Suspend':4, 'Ban Permanent':10 };
@@ -516,11 +570,32 @@ let STAFF_MESSAGES={};
 let MOD_REQUESTS={};
 let SITE_ALERTS={};
 let SITE_CONFIG={};
+let SUGGESTIONS={};
+let SITE_STATUS={status:'OK',reason:'',by:'',date:''};
+let STATUS_LOG={};
+let CUSTOM_STATUSES={};
 let DASHBOARD_LOG_CONFIG={modlog:true,loginlog:true,appeals:false};
 let lastRefreshed=null;
 
 let UPDATE_LOG=[
-  {version:'2.3', date:'Current', entries:[
+  {version:'2.4', date:'Current', entries:[
+    'Changed Machine Management title to black; Software Manager badge updated to dark grey/white',
+    'Added Site Status system (OK/UPDATING/PAUSED) with topbar indicator and status log',
+    'Added Advanced Search button — search players/staff/logs across multiple channels',
+    'Added Suggestions channel for staff to submit ideas; Software Manager reviews',
+    'Added Staff Config page with analytics and per-user permission overrides',
+    'Added Message Analyze page — AI-powered player message moderation assistant',
+    'Added Secure Account action in Staff Registry for compromised accounts',
+    'Added Force Log Out button per-staff and "Force Log Out All Staff" mass action',
+    'Fixed Watched/VIP/Protected badges to use readable text labels instead of emoji',
+    'Added Muted flag to User Config and player badges',
+    'Added Roblox Display Name to User Admin account summary',
+    'Login log now shows 200 entries; IP column reserved for future server integration',
+    'Added "- NONE -" permission level so only Software Managers can access certain things',
+    'About dialog version now matches latest Update Log version automatically',
+    'Session invalidation: suspending/securing staff forces logout on next heartbeat',
+  ]},
+  {version:'2.3', date:'Previous', entries:[
     'Added Site-Wide Alerts (Warning / Critical / Info types) replacing Announcements',
     'Added Staff Messaging — direct messages and all-staff broadcasts',
     'Added User Config — Protected flag, VIP, Muted, Under Observation, Points, Rep Override',
@@ -557,16 +632,16 @@ const ALL_NOTIF_EVENTS=[
   {key:'altLinked',label:'Alt Account Linked',perm:'canViewContentModeration'},
   {key:'appealReviewed',label:'Appeal Reviewed',perm:'canViewAppealLog'},
   {key:'newRequest',label:'New Moderation Request',perm:'canViewRequests'},
-  {key:'newStaffMessage',label:'New Staff Message',perm:'canSendStaffMessage'},
+  {key:'newStaffMessage',label:'New Staff Message / Suggestion Review',perm:'canSendStaffMessage'},
 ];
 
 function today(){ return new Date().toLocaleDateString(); }
 function nowStr(){ return new Date().toLocaleString(); }
-function rankOf(l){ return LEVEL_RANK[l]||0; }
+function rankOf(l){ if(l==='- NONE -') return 999; return LEVEL_RANK[l]||0; }
 function isSoftwareManager(){ return MY_LEVEL==='SOFTWARE MANAGER'; }
 function isSuperAdmin(){ return MY_LEVEL==='SUPER ADMINISTRATOR'||isSoftwareManager(); }
-// SOFTWARE MANAGER bypasses all permission checks
-function canDo(k){ return isSoftwareManager()||rankOf(MY_LEVEL)>=rankOf(PERMS[k]||'SUPER ADMINISTRATOR'); }
+// SOFTWARE MANAGER bypasses all permission checks; '- NONE -' means no one can access
+function canDo(k){ if(isSoftwareManager()) return true; const req=PERMS[k]||'SUPER ADMINISTRATOR'; if(req==='- NONE -') return false; return rankOf(MY_LEVEL)>=rankOf(req); }
 
 function statusBadge(s){
   if(s==='active') return '<span class="ok">OK</span>';
@@ -580,10 +655,11 @@ function levelBadge(l){
 }
 function userBadges(u){
   const b=[];
-  if(u.protected) b.push('<span title="Protected User" style="font-size:13px;cursor:default;line-height:1;">🛡️</span>');
-  if(u.vip) b.push('<span title="VIP" style="font-size:13px;cursor:default;line-height:1;">⭐</span>');
-  if(u.watched) b.push('<span title="Under Observation" style="font-size:13px;cursor:default;line-height:1;">👁️</span>');
-  return b.length?`<span style="margin-left:3px;">${b.join('')}</span>`:'';
+  if(u.protected) b.push('<span title="Protected User" style="font-size:10px;font-weight:bold;color:#fff;background:#880000;padding:0 3px;border:1px solid #660000;cursor:default;">PROT</span>');
+  if(u.vip) b.push('<span title="VIP" style="font-size:10px;font-weight:bold;color:#553300;background:#e8d0a0;padding:0 3px;border:1px solid #c0a060;cursor:default;">VIP</span>');
+  if(u.watched) b.push('<span title="Under Observation" style="font-size:10px;font-weight:bold;color:#003366;background:#c8d0e8;padding:0 3px;border:1px solid #8888cc;cursor:default;">OBS</span>');
+  if(u.muted) b.push('<span title="Muted" style="font-size:10px;font-weight:bold;color:#555;background:#ddd;padding:0 3px;border:1px solid #aaa;cursor:default;">MUTE</span>');
+  return b.length?`<span style="margin-left:3px;display:inline-flex;gap:2px;vertical-align:middle;">${b.join('')}</span>`:'';
 }
 
 function auditLog(action, detail){
@@ -718,9 +794,10 @@ async function fetchRobloxInfo(username){
       proxyFetch(`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${robloxId}&size=150x150&format=Png&isCircular=false`),
       proxyFetch(`https://users.roblox.com/v1/users/${robloxId}`)
     ]);
-    let accountCreated='';
+    let accountCreated='', displayName='';
     if(d3&&d3.created){ accountCreated=new Date(d3.created).toLocaleDateString(); }
-    return {robloxId:String(robloxId), avatarUrl:d2&&d2.data&&d2.data[0]?d2.data[0].imageUrl:'', accountCreated};
+    if(d3&&d3.displayName) displayName=d3.displayName;
+    return {robloxId:String(robloxId), avatarUrl:d2&&d2.data&&d2.data[0]?d2.data[0].imageUrl:'', accountCreated, displayName};
   }catch(e){ return null; }
 }
 
@@ -789,6 +866,11 @@ function updateSidebar(){
   show('nav-requests', canDo('canViewRequests'));
   show('nav-userconfig', canDo('canViewUserConfig'));
   show('nav-alerts', canDo('canManageStaff')||isSuperAdmin());
+  show('nav-suggestions', canDo('canViewSuggestions'));
+  show('nav-staffconfig', canDo('canViewStaffConfig'));
+  show('nav-msganalyze', canDo('canViewMessageAnalyze'));
+  show('nav-statuslog', isSoftwareManager());
+  show('nav-altdetect', canDo('canViewContentModeration'));
 }
 
 function nav(p){
@@ -826,6 +908,10 @@ function render(){
   else if(page==='announcements') renderAlerts(c);
   else if(page==='adminlog'){ isSuperAdmin()?renderAdminLog(c):c.innerHTML=denied; }
   else if(page==='siteconfig'){ isSoftwareManager()?renderSiteConfig(c):c.innerHTML=denied; }
+  else if(page==='statuslog'){ isSoftwareManager()?renderStatusLog(c):c.innerHTML=denied; }
+  else if(page==='suggestions'){ canDo('canViewSuggestions')?renderSuggestions(c):c.innerHTML=denied; }
+  else if(page==='staffconfig'){ canDo('canViewStaffConfig')?renderStaffConfig(c):c.innerHTML=denied; }
+  else if(page==='msganalyze'){ canDo('canViewMessageAnalyze')?renderMsgAnalyze(c):c.innerHTML=denied; }
 }
 
 // ── OPERATOR CODE ──
@@ -914,6 +1000,33 @@ function renderSiteConfig(c){
   <div class="ptitle" style="background:#004466;">Machine Management &mdash; Configuration</div>
   <div style="display:flex;gap:6px;flex-wrap:wrap;">
     <div style="flex:1;min-width:280px;">
+      <div class="sbox" style="border:2px solid #880000;"><div class="stitle" style="background:#880000;color:#fff;">&#9654; Site Status</div><div class="sbody">
+        <div style="font-size:11px;color:#555;margin-bottom:6px;">Set the current operational status of the site. This shows at the top of all staff screens and can trigger automatic alerts.</div>
+        <div style="margin-bottom:5px;display:flex;align-items:center;gap:8px;">
+          <label style="font-size:11px;color:#000;font-weight:bold;">Current Status:</label>
+          <span id="currentStatusDisplay" style="font-size:12px;font-weight:bold;color:#000;">${(SITE_STATUS&&SITE_STATUS.status)||'OK'}</span>
+        </div>
+        <div style="margin-bottom:5px;"><label style="font-size:11px;color:#000;display:block;margin-bottom:2px;font-weight:bold;">New Status:</label>
+          <select id="siteStatusSel" style="width:100%;font-family:inherit;font-size:11px;height:16px;">
+            <option value="OK">OK (green)</option>
+            <option value="UPDATING">UPDATING (yellow)</option>
+            <option value="PAUSED">PAUSED (red)</option>
+          </select></div>
+        <div style="margin-bottom:5px;"><label style="font-size:11px;color:#000;display:block;margin-bottom:2px;font-weight:bold;">Reason (required):</label>
+          <textarea id="siteStatusReason" style="width:100%;height:45px;" placeholder="Why is the status changing?"></textarea></div>
+        <div style="margin-bottom:8px;"><label style="font-size:11px;color:#000;display:block;margin-bottom:2px;font-weight:bold;">Alert Duration:</label>
+          <select id="siteStatusDuration" style="width:100%;font-family:inherit;font-size:11px;height:16px;">
+            <option value="0">Never (manual clear)</option>
+            <option value="15">15 minutes</option>
+            <option value="30">30 minutes</option>
+            <option value="60">1 hour</option>
+            <option value="120">2 hours</option>
+            <option value="240">4 hours</option>
+            <option value="480">8 hours</option>
+          </select></div>
+        <button class="btn" id="btn-setsitestatus">Apply Status Change</button>
+        <div id="statusMsg" style="font-size:11px;margin-top:4px;color:#006600;"></div>
+      </div></div>
       <div class="sbox" style="border:2px solid #0066aa;"><div class="stitle" style="background:#004466;color:#fff;">Site Text Configuration</div><div class="sbody">
         <div style="font-size:11px;color:#555;margin-bottom:8px;">Edit the visible text of any part of the panel. Changes save to Firebase and apply immediately for all users.</div>
         ${fields.map(f=>`
@@ -947,8 +1060,31 @@ function renderSiteConfig(c){
     </div>
   </div>`;
 
-  document.getElementById('btn-savesc').onclick=async()=>{
-    const newCfg={};
+  document.getElementById('btn-setsitestatus').onclick=async()=>{
+    const newStatus=document.getElementById('siteStatusSel').value;
+    const reason=document.getElementById('siteStatusReason').value.trim();
+    const durationMins=parseInt(document.getElementById('siteStatusDuration').value)||0;
+    const statusMsgEl=document.getElementById('statusMsg');
+    if(!reason){ statusMsgEl.style.color='#880000'; statusMsgEl.textContent='Reason is required.'; return; }
+    const prevStatus=(SITE_STATUS&&SITE_STATUS.status)||'OK';
+    const newStatusObj={status:newStatus,reason,by:ME,date:nowStr(),expiresAt:durationMins>0?Date.now()+durationMins*60000:0};
+    await set(ref(db,'meta/siteStatus'),newStatusObj);
+    SITE_STATUS=newStatusObj;
+    await push(ref(db,'statusLog'),{prevStatus,newStatus,reason,by:ME,date:nowStr(),timestamp:Date.now()});
+    const alertType=newStatus==='OK'?'info':newStatus==='UPDATING'?'warning':'critical';
+    for(const[lid] of Object.entries(SITE_ALERTS)) await update(ref(db,`siteAlerts/${lid}`),{active:false});
+    await push(ref(db,'siteAlerts'),{message:`Site status changed to ${newStatus}: ${reason}`,type:alertType,by:ME,date:today(),active:true});
+    updateSiteStatusBar(); updateAnnouncements();
+    auditLog('Site Status Changed',`${prevStatus} -> ${newStatus}: ${reason}`);
+    statusMsgEl.style.color='#006600'; statusMsgEl.textContent='Status updated!';
+    document.getElementById('currentStatusDisplay').textContent=newStatus;
+    document.getElementById('siteStatusReason').value='';
+    setTimeout(()=>{ if(statusMsgEl) statusMsgEl.textContent=''; },2000);
+  };
+  const ssSel=document.getElementById('siteStatusSel');
+  if(ssSel&&SITE_STATUS&&SITE_STATUS.status) ssSel.value=SITE_STATUS.status;
+
+  document.getElementById('btn-savesc').onclick=async()=>{    const newCfg={};
     fields.forEach(f=>{
       const el=document.getElementById('sc-'+f.key);
       if(el) newCfg[f.key]=el.value.trim()||f.placeholder;
@@ -1011,6 +1147,11 @@ function renderHome(c){
 
   c.innerHTML=`
   <div class="ptitle">Dashboard &mdash; Welcome, ${ME}</div>
+  ${SITE_STATUS&&SITE_STATUS.status&&SITE_STATUS.status!=='OK'?`
+  <div style="background:${SITE_STATUS.status==='PAUSED'?'#fde8e8':'#fff8d0'};border:1px solid ${SITE_STATUS.status==='PAUSED'?'#cc6666':'#c8a800'};padding:5px 8px;margin-bottom:6px;font-size:11px;display:flex;align-items:center;gap:8px;">
+    <span class="site-status-dot ${SITE_STATUS.status==='PAUSED'?'paused':'updating'}" style="flex-shrink:0;"></span>
+    <b>Site Status: ${SITE_STATUS.status}</b> &mdash; ${SITE_STATUS.reason||'No reason given.'} <span style="color:#808080;margin-left:4px;">(set by ${SITE_STATUS.by||'?'})</span>
+  </div>`:''}
   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
     <div class="sbox" style="flex:1;min-width:130px;"><div class="stitle">Players</div><div class="sbody">
       <div style="font-size:18px;font-weight:bold;color:#000080;">${totalPlayers}</div>
@@ -1135,6 +1276,7 @@ function renderUA(c){
           <div class="avatar-box" style="width:60px;height:60px;">${avatarHTML(u)}</div>
           <div style="min-width:0;flex:1;">
             <div class="row"><label>Username:</label><b>${u.username}</b>${userBadges(u)}</div>
+            ${u.displayName&&u.displayName!==u.username?`<div class="row"><label>Display Name:</label><span style="color:#444;">${u.displayName}</span></div>`:''}
             <div class="row"><label>Roblox Username:</label><span>${u.robloxUsername||'N/A'}</span></div>
             <div class="row"><label>Player ID:</label><span>${u.playerId||'—'}</span></div>
             <div class="row"><label>User ID (Roblox):</label><span>${u.robloxId||'—'}</span></div>
@@ -1336,6 +1478,7 @@ async function refreshRoblox(uid){
   if(!info){ if(el) el.textContent='Not found on Roblox.'; return; }
   const updates={robloxId:info.robloxId,avatarUrl:info.avatarUrl};
   if(info.accountCreated) updates.robloxAccountCreated=info.accountCreated;
+  if(info.displayName) updates.displayName=info.displayName;
   await update(ref(db,`users/${uid}`),updates);
   auditLog('Roblox Data Refreshed',`${u.username}`);
   if(el){ el.textContent='Updated!'; setTimeout(()=>{ if(el) el.textContent=''; },2000); }
@@ -1370,7 +1513,7 @@ async function lookupAndAdd(username){
   preview.style.display='flex';
   avatarBox.innerHTML='<span style="font-size:8px;">...</span>';
   const[info,playerId]=await Promise.all([fetchRobloxInfo(username),getNextPlayerId()]);
-  const newUser={username,robloxUsername:username,robloxId:info?info.robloxId:'',avatarUrl:info?info.avatarUrl:'',robloxAccountCreated:info&&info.accountCreated?info.accountCreated:'',playerId,status:'active',created:today(),notes:'',punishments:{}};
+  const newUser={username,robloxUsername:username,robloxId:info?info.robloxId:'',avatarUrl:info?info.avatarUrl:'',displayName:info&&info.displayName?info.displayName:'',robloxAccountCreated:info&&info.accountCreated?info.accountCreated:'',playerId,status:'active',created:today(),notes:'',punishments:{}};
   if(info){ avatarBox.innerHTML=`<img src="${info.avatarUrl}" width="36" height="36"/>`; infoEl.innerHTML=`<b>${username}</b><br>Roblox ID: ${info.robloxId}`; msgEl.style.color='#006600'; msgEl.textContent='Found! Adding...'; }
   else { preview.style.display='none'; msgEl.style.color='#995500'; msgEl.textContent=`Not on Roblox — adding as Player #${playerId}.`; }
   const newRef=push(ref(db,'users'));
@@ -1447,6 +1590,14 @@ function renderAccounts(c){
   const uArr=Object.entries(USERS).sort((a,b)=>(a[1].playerId||0)-(b[1].playerId||0));
   c.innerHTML=`
   <div class="ptitle">All Accounts</div>
+  ${isSuperAdmin()?`
+  <div class="sbox"><div class="stitle">Staff Mass Actions</div><div class="sbody">
+    <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
+      <button class="btn red small" id="btn-logout-allstaff">&#9210; Force Log Out All Staff</button>
+      <span style="font-size:11px;color:#808080;">Forces every active staff member (except yourself) to be logged out on their next heartbeat.</span>
+    </div>
+    <div id="massStaffMsg" style="font-size:11px;margin-top:3px;color:#006600;"></div>
+  </div></div>`:''}
   ${canDo('canBulkAction')&&uArr.length>0?`
   <div class="sbox"><div class="stitle">Bulk Actions</div><div class="sbody">
     <div style="display:flex;align-items:flex-start;gap:6px;flex-wrap:wrap;">
@@ -1503,6 +1654,22 @@ function renderAccounts(c){
   });
   document.getElementById('btn-adduser').onclick=addUser;
   document.getElementById('nuUser').onkeydown=e=>{ if(e.key==='Enter') addUser(); };
+  if(isSuperAdmin()){
+    const logoutAllBtn=document.getElementById('btn-logout-allstaff');
+    if(logoutAllBtn) logoutAllBtn.onclick=()=>{
+      openDialog('Force Log Out All Staff','Force log out ALL staff members except yourself? They will be kicked on their next activity check.',`
+        <div style="font-size:11px;color:#880000;background:#fde8e8;border:1px solid #cc6666;padding:6px;margin-bottom:4px;">This affects every active staff session. Use only in emergencies.</div>`,
+        async()=>{
+          for(const[sid,s] of Object.entries(STAFF)){
+            if(s.username!==ME) await update(ref(db,`staff/${sid}`),{forceLogout:true}).catch(()=>{});
+          }
+          auditLog('All Staff Force Logged Out',`By ${ME}`);
+          const msgEl=document.getElementById('massStaffMsg');
+          if(msgEl){ msgEl.textContent='All staff flagged for logout.'; setTimeout(()=>{ if(msgEl) msgEl.textContent=''; },3000); }
+        }
+      );
+    };
+  }
 
   if(canDo('canBulkAction')&&uArr.length>0){
     const checkAll=document.getElementById('bulk-check-all');
@@ -1816,6 +1983,8 @@ function renderStaff(c){
         <hr style="border:none;border-top:1px solid #909090;margin:6px 0;">
         <div style="font-size:11px;font-weight:bold;color:#000;margin-bottom:3px;">Admin Actions</div>
         ${canSuspend?`<button class="btn" id="btn-togglesusp" style="margin-bottom:3px;width:100%;">${s.suspended?'Unsuspend Staff':'Suspend Staff'}</button>`:''}
+        ${canSuspend?`<button class="btn" id="btn-secureaccount" style="margin-bottom:3px;width:100%;color:${s.secured?'#006600':'#000086'};">${s.secured?'&#128275; Unsecure Account':'&#128274; Secure Account'}</button>`:''}
+        ${isSuperAdmin()?`<button class="btn" id="btn-forcelogout" style="margin-bottom:3px;width:100%;">&#9210; Force Log Out</button>`:''}
         ${canTerminate?`<button class="btn red" id="btn-terminate" style="width:100%;">Terminate Account</button>`:''}
         `:''}
       </div></div>
@@ -1837,8 +2006,11 @@ function renderStaff(c){
   }
   if(canSuspend&&document.getElementById('btn-togglesusp'))
     document.getElementById('btn-togglesusp').onclick=()=>promptSuspendStaff(currentStaffId,s.suspended);
-  if(canTerminate&&document.getElementById('btn-terminate'))
-    document.getElementById('btn-terminate').onclick=()=>promptTerminateStaff(currentStaffId);
+  if(canSuspend&&document.getElementById('btn-secureaccount'))
+    document.getElementById('btn-secureaccount').onclick=()=>promptSecureStaff(currentStaffId,s.secured);
+  if(isSuperAdmin()&&document.getElementById('btn-forcelogout'))
+    document.getElementById('btn-forcelogout').onclick=()=>promptForceLogout(currentStaffId);
+  if(canTerminate&&document.getElementById('btn-terminate'))    document.getElementById('btn-terminate').onclick=()=>promptTerminateStaff(currentStaffId);
 }
 
 // ── STAFF ACTIVITY ──
@@ -1984,17 +2156,21 @@ function renderTerminateLog(c){
 }
 
 function renderLoginLog(c){
-  const entries=Object.entries(LOGIN_LOG).sort((a,b)=>a[1].date>b[1].date?-1:1).slice(0,100);
+  const entries=Object.entries(LOGIN_LOG).sort((a,b)=>a[1].date>b[1].date?-1:1).slice(0,200);
+  const isSM=isSoftwareManager();
   const tbl=entries.length===0?'<i style="color:#444;">No logins recorded yet.</i>':`
   <div class="tbl-wrap"><table class="tbl">
-    <tr><th>Username</th><th>Level</th><th>Date/Time</th><th>Result</th>${isSuperAdmin()?'<th>Admin</th>':''}</tr>
+    <tr><th>Username</th><th>Level</th><th>Date/Time</th><th>Result</th>${isSM?'<th>IP</th>':''}${isSuperAdmin()?'<th>Admin</th>':''}</tr>
     ${entries.map(([lid,r])=>`<tr>
       <td><b>${r.username}</b></td><td>${r.level||'—'}</td><td>${r.date}</td>
       <td>${r.result==='success'?'<span class="ok">Success</span>':'<span class="ban">'+r.result+'</span>'}</td>
+      ${isSM?`<td style="font-size:10px;color:#808080;">${r.ip||'—'}</td>`:''}
       ${isSuperAdmin()?`<td>${deleteLogBtn('logs/login',lid)}</td>`:''}
     </tr>`).join('')}
   </table></div>`;
-  c.innerHTML=`<div class="ptitle">Login Log</div><div class="sbox"><div class="stitle">Staff Login History (last 100)</div><div class="sbody">${tbl}</div></div>`;
+  c.innerHTML=`<div class="ptitle">Login Log</div>
+  ${isSM?`<div class="sbox" style="border-color:#0066aa;"><div class="stitle" style="background:#004466;color:#fff;">&#9888; Software Manager View</div><div class="sbody"><div style="font-size:11px;color:#000;">IP addresses shown below are placeholders (browser-based panel cannot access real IPs without a server component). <b>This column is reserved for future server integration.</b></div></div></div>`:''}
+  <div class="sbox"><div class="stitle">Staff Login History (last 200)</div><div class="sbody">${tbl}</div></div>`;
   bindDeleteLogBtns(c);
 }
 
@@ -2285,14 +2461,19 @@ function openUserConfigDialog(uid){
         <div style="font-size:10px;color:#808080;margin-bottom:8px;">Protected users require an escalated request before any moderation action can be taken.</div>
         <div style="margin-bottom:5px;display:flex;align-items:center;gap:6px;">
           <input type="checkbox" id="ucfVip" ${u.vip?'checked':''}/>
-          <label for="ucfVip" style="font-size:11px;color:#000;cursor:pointer;">⭐ VIP Status</label>
+          <label for="ucfVip" style="font-size:11px;color:#000;cursor:pointer;"><span style="font-size:10px;font-weight:bold;color:#553300;background:#e8d0a0;padding:0 3px;border:1px solid #c0a060;">VIP</span> VIP Status</label>
         </div>
         <div style="font-size:10px;color:#808080;margin-bottom:6px;">VIP users trigger a confirmation notice before moderation.</div>
         <div style="margin-bottom:5px;display:flex;align-items:center;gap:6px;">
           <input type="checkbox" id="ucfWatched" ${u.watched?'checked':''}/>
-          <label for="ucfWatched" style="font-size:11px;color:#000;cursor:pointer;">👁️ Under Observation</label>
+          <label for="ucfWatched" style="font-size:11px;color:#000;cursor:pointer;"><span style="font-size:10px;font-weight:bold;color:#003366;background:#c8d0e8;padding:0 3px;border:1px solid #8888cc;">OBS</span> Under Observation</label>
         </div>
-        <div style="font-size:10px;color:#808080;">Watched users get a [WATCHED] tag automatically added to all mod log entries.</div>
+        <div style="font-size:10px;color:#808080;margin-bottom:6px;">Watched users get a [WATCHED] tag automatically added to all mod log entries.</div>
+        <div style="margin-bottom:5px;display:flex;align-items:center;gap:6px;">
+          <input type="checkbox" id="ucfMuted" ${u.muted?'checked':''}/>
+          <label for="ucfMuted" style="font-size:11px;color:#000;cursor:pointer;"><span style="font-size:10px;font-weight:bold;color:#555;background:#ddd;padding:0 3px;border:1px solid #aaa;">MUTE</span> Muted</label>
+        </div>
+        <div style="font-size:10px;color:#808080;">Muted flag visible on user profile for staff reference.</div>
       </div>
     </div>`,
     async()=>{
@@ -2302,6 +2483,7 @@ function openUserConfigDialog(uid){
         protected:document.getElementById('ucfProtected').checked,
         vip:document.getElementById('ucfVip').checked,
         watched:document.getElementById('ucfWatched').checked,
+        muted:document.getElementById('ucfMuted').checked,
       };
       const repOvr=document.getElementById('ucfRepOverride').value.trim();
       if(repOvr!=='') updates.repOverride=parseInt(repOvr)||0;
@@ -2450,6 +2632,7 @@ function renderAdminLog(c){
           <div style="display:flex;align-items:center;margin-bottom:4px;font-size:11px;gap:6px;">
             <label style="width:170px;flex-shrink:0;color:#000;">${formatPermKey(key)}</label>
             <select id="perm-${key}" style="width:165px;">
+              <option value="- NONE -" ${PERMS[key]==='- NONE -'?'selected':''}>- NONE - (Software Manager only)</option>
               ${levelOptions.map(l=>`<option value="${l}" ${PERMS[key]===l?'selected':''}>${l}</option>`).join('')}
             </select>
           </div>`).join('')}
@@ -2963,7 +3146,7 @@ function promptSuspendStaff(sid, isCurrentlySuspended){
         const modNote=document.getElementById('suspModNoteIn').value.trim();
         const offensiveItem=document.getElementById('suspOffItemIn').value.trim();
         const suspInfo={date:today(),reason,modNote,offensiveItem,by:ME};
-        await update(ref(db,`staff/${sid}`),{suspended:true,suspendInfo:suspInfo});
+        await update(ref(db,`staff/${sid}`),{suspended:true,suspendInfo:suspInfo,forceLogout:true});
         await push(ref(db,'logs/suspend'),{username:s.username,action:'Suspend',by:ME,date:today(),reason,modNote,offensiveItem});
         auditLog('Staff Suspended',`${s.username}: ${reason}`);
       }
@@ -2971,8 +3154,53 @@ function promptSuspendStaff(sid, isCurrentlySuspended){
   }
 }
 
-function promptTerminateStaff(sid){
+function promptForceLogout(sid){
   const s=STAFF[sid]; if(!s) return;
+  if(s.username===ME){ openDialog('Error','You cannot force-log out yourself.','',null); document.getElementById('dlgOK').style.display='none'; document.getElementById('dlgCancel').textContent='Close'; return; }
+  openDialog('Force Log Out',`Force log out <b>${s.username}</b>? This will set their session as expired. They will be auto-logged out on their next heartbeat check.`,
+    `<div style="font-size:11px;color:#000;margin-bottom:2px;">Reason:</div><textarea id="dlgReason" style="width:100%;height:36px;" placeholder="Reason for forced logout..."></textarea>`,
+    async()=>{
+      const reason=document.getElementById('dlgReason').value.trim()||'Forced logout by administrator.';
+      await update(ref(db,`staff/${sid}`),{forceLogout:true,lastAction:'Force logged out by '+ME});
+      await push(ref(db,'logs/login'),{username:s.username,level:s.level||'—',date:nowStr(),result:'force-logout',ip:'—'});
+      auditLog('Staff Force Logged Out',`${s.username} by ${ME}: ${reason}`);
+    }
+  );
+}
+
+function promptSecureStaff(sid, isCurrentlySecured){
+  const s=STAFF[sid]; if(!s) return;
+  if(s.level==='SOFTWARE MANAGER'){
+    openDialog('Action Blocked','<span style="color:#880000;font-weight:bold;">SOFTWARE MANAGER accounts cannot be secured via the panel.</span>','',null);
+    document.getElementById('dlgOK').style.display='none'; document.getElementById('dlgCancel').textContent='Close'; return;
+  }
+  if(isCurrentlySecured){
+    openDialog('Unsecure Account',`Remove security lock from <b>${s.username}</b>?`,
+      `<div style="font-size:11px;color:#000;margin-bottom:2px;">Reason:</div><textarea id="dlgReason" style="width:100%;height:36px;"></textarea>`,
+      async()=>{
+        const reason=document.getElementById('dlgReason').value.trim()||'Cleared by admin.';
+        await update(ref(db,`staff/${sid}`),{secured:false,secureInfo:null});
+        auditLog('Staff Account Unsecured',`${s.username}: ${reason}`); nav('staff');
+      });
+  } else {
+    openDialog('Secure Account',`Lock account <b>${s.username}</b> due to suspected compromise?`,`
+      <div style="background:#fde8e8;border:1px solid #cc6666;padding:6px;margin-bottom:8px;font-size:11px;color:#880000;">Securing an account prevents login until unsecured by an administrator. This action is permanently logged.</div>
+      <div style="margin-bottom:4px;"><label style="font-size:11px;color:#000;display:block;margin-bottom:2px;">Reason:</label>
+        <select id="secureReason" style="width:100%;font-family:inherit;font-size:11px;height:16px;">
+          <option>Suspected Compromise</option><option>Unauthorized Access</option><option>Password Sharing</option><option>Other</option>
+        </select></div>
+      <div><label style="font-size:11px;color:#000;display:block;margin-bottom:2px;">Notes:</label>
+        <textarea id="secureNote" style="width:100%;height:36px;"></textarea></div>`,
+      async()=>{
+        const reason=document.getElementById('secureReason').value;
+        const note=document.getElementById('secureNote').value.trim();
+        await update(ref(db,`staff/${sid}`),{secured:true,secureInfo:{reason,note,by:ME,date:nowStr()}});
+        auditLog('Staff Account Secured',`${s.username}: ${reason}`); nav('staff');
+      });
+  }
+}
+
+function promptTerminateStaff(sid){  const s=STAFF[sid]; if(!s) return;
   if(s.level==='SOFTWARE MANAGER'){
     openDialog('Action Blocked','<span style="color:#880000;font-weight:bold;">SOFTWARE MANAGER accounts cannot be terminated.</span><br><br>This account has system-level access and is protected from all administrative actions via the panel.','',null);
     document.getElementById('dlgOK').style.display='none';
@@ -3060,7 +3288,7 @@ async function doLogin(){
         document.getElementById('wipedOverlay').classList.add('show');
         status.textContent='WIPED';
       }
-      await push(ref(db,'logs/login'),{username:u,level:'—',date:nowStr(),result:'invalid'}).catch(()=>{});
+    await push(ref(db,'logs/login'),{username:u,level:'—',date:nowStr(),result:'invalid',ip:'—'}).catch(()=>{}); 
       return;
     }
     const staffData=staffSnap.val();
@@ -3076,7 +3304,22 @@ async function doLogin(){
       document.getElementById('suspPopupMsg').textContent='Our content administration has determined your behavior has been in violation of our Terms of Use.';
       status.textContent='SUSPENDED';
       document.getElementById('suspOverlay').classList.add('show');
-      await push(ref(db,'logs/login'),{username:u,level:staffData.level||'—',date:nowStr(),result:'suspended'});
+      await push(ref(db,'logs/login'),{username:u,level:staffData.level||'—',date:nowStr(),result:'suspended',ip:'—'});
+      return;
+    }
+    if(staffData.secured){
+      await signOut(auth);
+      const si=staffData.secureInfo||{};
+      document.getElementById('suspReviewed').textContent=si.date||'Unknown';
+      document.getElementById('suspReason').textContent=si.reason||'Account secured by administrator.';
+      document.getElementById('suspModNote').textContent=si.note||'Contact an administrator.';
+      document.getElementById('suspOffItem').textContent='N/A';
+      document.getElementById('suspPopupTitle').textContent='Account Secured';
+      document.getElementById('suspPopupHeading').textContent='Account Secured — Access Locked';
+      document.getElementById('suspPopupMsg').textContent='Your account has been locked by an administrator due to suspected unauthorized access or compromise. Please contact a senior administrator.';
+      status.textContent='LOCKED';
+      document.getElementById('suspOverlay').classList.add('show');
+      await push(ref(db,'logs/login'),{username:u,level:staffData.level||'—',date:nowStr(),result:'secured-locked',ip:'—'});
       return;
     }
     ME=u; MY_LEVEL=staffData.level; currentPassword=p;
@@ -3087,7 +3330,7 @@ async function doLogin(){
     APPEAL_PRESETS=presetsSnap.exists()?presetsSnap.val():[...DEFAULT_APPEAL_PRESETS];
     const cfSnap=await get(ref(db,'meta/customFields'));
     CUSTOM_FIELDS=cfSnap.exists()?cfSnap.val():[];
-    await push(ref(db,'logs/login'),{username:u,level:MY_LEVEL,date:nowStr(),result:'success'});
+    await push(ref(db,'logs/login'),{username:u,level:MY_LEVEL,date:nowStr(),result:'success',ip:'—'});
     await update(ref(db,`staff/${u}`),{lastActive:nowStr(),lastAction:'Logged in'});
     status.textContent='';
     document.getElementById('loginScreen').style.display='none';
@@ -3120,7 +3363,7 @@ async function doLogin(){
       }
     }
     nav('home');
-  }catch(e){ status.textContent='INVALID!'; await push(ref(db,'logs/login'),{username:u,level:'—',date:nowStr(),result:'failed'}).catch(()=>{}); }
+  }catch(e){ status.textContent='INVALID!'; await push(ref(db,'logs/login'),{username:u,level:'—',date:nowStr(),result:'failed',ip:'—'}).catch(()=>{}); }
 }
 
 async function doLogout(){
@@ -3143,6 +3386,19 @@ function startHeartbeat(){
     const snap=await get(ref(db,`staff/${ME}`));
     if(!snap.exists()) return;
     const s=snap.val();
+    // Force logout check
+    if(s.forceLogout){
+      await update(ref(db,`staff/${ME}`),{forceLogout:false});
+      clearInterval(heartbeatInterval);
+      alert('You have been logged out by an administrator.');
+      doLogout(); return;
+    }
+    // Suspension/security check
+    if(s.suspended||s.secured){
+      clearInterval(heartbeatInterval);
+      alert(s.secured?'Your account has been secured. You will be logged out.':'Your account has been suspended. You will be logged out.');
+      doLogout(); return;
+    }
     const lastActive=s.lastActive&&s.lastActive!=='Never'?new Date(s.lastActive):null;
     if(lastActive&&(new Date()-lastActive)>=1200000){
       // 20 minutes inactive — auto logout
@@ -3250,6 +3506,9 @@ function startListeners(){
     updateAnnouncements();
     if(page==='alerts') safeRender();
   });
+  onValue(ref(db,'suggestions'),snap=>{ SUGGESTIONS=snap.val()||{}; if(page==='suggestions') safeRender(); });
+  onValue(ref(db,'statusLog'),snap=>{ STATUS_LOG=snap.val()||{}; if(page==='statuslog') safeRender(); });
+  onValue(ref(db,'meta/siteStatus'),snap=>{ if(snap.exists()){ SITE_STATUS=snap.val(); updateSiteStatusBar(); } });
 }
 
 (async()=>{
@@ -3260,6 +3519,302 @@ function startListeners(){
 })();
 
 // ── MENUBAR ──
+// ── SUGGESTIONS ──
+function renderSuggestions(c){
+  const canManage=canDo('canManageSuggestions');
+  const entries=Object.entries(SUGGESTIONS).sort((a,b)=>a[1].date>b[1].date?-1:1);
+  c.innerHTML=`
+  <div class="ptitle">Staff Suggestions</div>
+  ${canManage?`
+  <div class="sbox"><div class="stitle">Submit a Suggestion</div><div class="sbody">
+    <div style="font-size:11px;color:#555;margin-bottom:6px;">Submit a suggestion for Software Manager review. You'll be notified when it's reviewed.</div>
+    <div style="margin-bottom:4px;"><label style="font-size:11px;color:#000;display:block;margin-bottom:2px;font-weight:bold;">Subject:</label>
+      <input type="text" id="suggSubject" style="width:100%;" placeholder="Brief title for your suggestion"/></div>
+    <div style="margin-bottom:4px;"><label style="font-size:11px;color:#000;display:block;margin-bottom:2px;font-weight:bold;">Description:</label>
+      <textarea id="suggBody" style="width:100%;height:55px;" placeholder="Describe your suggestion in detail..."></textarea></div>
+    <div style="margin-bottom:4px;"><label style="font-size:11px;color:#000;display:block;margin-bottom:2px;font-weight:bold;">Category:</label>
+      <select id="suggCategory" style="width:150px;">
+        <option>Feature Request</option><option>Bug Report</option><option>Process Improvement</option><option>Staff Tools</option><option>Other</option>
+      </select></div>
+    <button class="btn" id="btn-submitsugg">Submit Suggestion</button>
+    <div id="suggMsg" style="font-size:11px;margin-top:3px;color:#006600;"></div>
+  </div></div>`:''}
+  <div class="sbox"><div class="stitle">All Suggestions</div><div class="sbody">
+    ${entries.length===0?'<i style="color:#444;">No suggestions submitted yet.</i>':`
+    <div class="tbl-wrap"><table class="tbl">
+      <tr><th>Subject</th><th>Category</th><th>From</th><th>Date</th><th>Status</th>${isSoftwareManager()?'<th>Review</th>':''}${isSuperAdmin()?'<th>Admin</th>':''}</tr>
+      ${entries.map(([lid,s])=>`<tr>
+        <td style="max-width:160px;white-space:normal;"><b>${s.subject||'—'}</b><div style="font-size:10px;color:#555;margin-top:1px;">${(s.body||'').substring(0,60)}${(s.body||'').length>60?'...':''}</div></td>
+        <td>${s.category||'—'}</td>
+        <td>${s.from}</td><td style="font-size:10px;">${s.date}</td>
+        <td><span class="badge ${s.status==='Approved'?'appeal-approved':s.status==='Denied'?'appeal-denied':'appeal-open'}">${s.status||'Pending'}</span></td>
+        ${isSoftwareManager()?`<td><button class="btn small review-sugg-btn" data-lid="${lid}">Review</button></td>`:''}
+        ${isSuperAdmin()?`<td>${deleteLogBtn('suggestions',lid)}</td>`:''}
+      </tr>`).join('')}
+    </table></div>`}
+  </div></div>`;
+  if(canManage){
+    document.getElementById('btn-submitsugg').onclick=async()=>{
+      const subject=document.getElementById('suggSubject').value.trim();
+      const body=document.getElementById('suggBody').value.trim();
+      const category=document.getElementById('suggCategory').value;
+      const msgEl=document.getElementById('suggMsg');
+      if(!subject){ msgEl.style.color='#880000'; msgEl.textContent='Subject required.'; return; }
+      if(!body){ msgEl.style.color='#880000'; msgEl.textContent='Description required.'; return; }
+      await push(ref(db,'suggestions'),{subject,body,category,from:ME,date:nowStr(),status:'Pending',reviewNote:'',reviewedBy:''});
+      auditLog('Suggestion Submitted',`${ME}: ${subject}`);
+      document.getElementById('suggSubject').value='';
+      document.getElementById('suggBody').value='';
+      msgEl.style.color='#006600'; msgEl.textContent='Suggestion submitted!';
+      setTimeout(()=>{ if(msgEl) msgEl.textContent=''; },2000);
+    };
+  }
+  if(isSoftwareManager()){
+    c.querySelectorAll('.review-sugg-btn').forEach(btn=>{
+      btn.onclick=()=>{
+        const s=SUGGESTIONS[btn.dataset.lid]; if(!s) return;
+        openDialog('Review Suggestion',`From <b>${s.from}</b>: <b>${s.subject}</b><br><div style="font-size:10px;margin-top:3px;background:#e8e4dc;padding:5px;border:1px solid #b0aca4;white-space:pre-wrap;">${s.body}</div>`,`
+          <div style="margin-bottom:4px;"><label style="font-size:11px;color:#000;display:block;margin-bottom:2px;font-weight:bold;">Decision:</label>
+            <select id="suggDecision" style="width:100%;font-family:inherit;font-size:11px;height:16px;"><option>Approved</option><option>Denied</option><option>Under Review</option></select></div>
+          <div><label style="font-size:11px;color:#000;display:block;margin-bottom:2px;font-weight:bold;">Review Note:</label>
+            <textarea id="suggNote" style="width:100%;height:40px;"></textarea></div>`,
+          async()=>{
+            const decision=document.getElementById('suggDecision').value;
+            const note=document.getElementById('suggNote').value.trim();
+            await update(ref(db,`suggestions/${btn.dataset.lid}`),{status:decision,reviewNote:note,reviewedBy:ME});
+            auditLog('Suggestion Reviewed',`${s.from}: ${s.subject} -> ${decision}`);
+            pushNotif('newStaffMessage',`Your suggestion "${s.subject}" was ${decision} by ${ME}`);
+          }
+        );
+      };
+    });
+  }
+  bindDeleteLogBtns(c);
+}
+
+// ── STAFF CONFIG ──
+function renderStaffConfig(c){
+  const sArr=Object.entries(STAFF);
+  const canViewLogs=isSoftwareManager();
+  const loginAttempts=Object.values(LOGIN_LOG);
+  const failedByUser={};
+  loginAttempts.forEach(l=>{ if(l.result!=='success'){ failedByUser[l.username]=(failedByUser[l.username]||0)+1; } });
+  c.innerHTML=`
+  <div class="ptitle">Staff Configuration &amp; Analytics</div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;">
+    <div style="flex:2;min-width:260px;">
+      <div class="sbox"><div class="stitle">Staff Analytics</div><div class="sbody">
+        <div class="tbl-wrap"><table class="tbl">
+          <tr><th>Username</th><th>Level</th><th>Status</th><th>Joined</th><th>Last Active</th><th>Actions Taken</th><th>Failed Logins</th></tr>
+          ${sArr.map(([sid,s])=>{
+            const actionsTaken=Object.values(MOD_LOG).filter(m=>m.mod===s.username).length;
+            const failed=failedByUser[s.username]||0;
+            return `<tr>
+              <td><b>${s.username}</b>${s.secured?` <span style="font-size:10px;color:#880000;font-weight:bold;">[SECURED]</span>`:''}</td>
+              <td>${levelBadge(s.level)}</td>
+              <td>${s.suspended?'<span class="sus">SUSPENDED</span>':s.secured?'<span class="ban">SECURED</span>':'<span class="ok">OK</span>'}</td>
+              <td style="font-size:10px;">${s.joined||'—'}</td>
+              <td style="font-size:10px;">${s.lastActive||'Never'}</td>
+              <td><b>${actionsTaken}</b></td>
+              <td>${failed>3?`<span class="ban">${failed}</span>`:`${failed}`}</td>
+            </tr>`;
+          }).join('')}
+        </table></div>
+      </div></div>
+    </div>
+    <div style="flex:1;min-width:200px;">
+      <div class="sbox"><div class="stitle">Override Permissions</div><div class="sbody">
+        <div style="font-size:11px;color:#555;margin-bottom:5px;">Override permissions for individual staff on a temporary basis. Changes are logged to audit.</div>
+        <div style="margin-bottom:4px;"><label style="font-size:11px;color:#000;display:block;margin-bottom:2px;">Staff Member:</label>
+          <select id="scfgStaff" style="width:100%;">
+            ${sArr.filter(([,s])=>s.level!=='SOFTWARE MANAGER').map(([,s])=>`<option value="${s.username}">${s.username} [${s.level.split(' ')[0]}]</option>`).join('')}
+          </select></div>
+        <div style="margin-bottom:4px;"><label style="font-size:11px;color:#000;display:block;margin-bottom:2px;">Permission to Override:</label>
+          <select id="scfgPerm" style="width:100%;">
+            ${Object.keys(DEFAULT_PERMS).map(k=>`<option value="${k}">${formatPermKey(k)}</option>`).join('')}
+          </select></div>
+        <div style="margin-bottom:4px;"><label style="font-size:11px;color:#000;display:block;margin-bottom:2px;">Grant / Revoke:</label>
+          <select id="scfgAction" style="width:100%;font-family:inherit;font-size:11px;height:16px;"><option value="grant">Grant (allow this permission)</option><option value="revoke">Revoke (block this permission)</option></select></div>
+        <button class="btn" id="btn-applyoverride">Apply Override</button>
+        <div id="scfgMsg" style="font-size:11px;margin-top:3px;"></div>
+        <hr style="border:none;border-top:1px solid #c0bcb4;margin:8px 0;">
+        <div style="font-size:11px;font-weight:bold;color:#000;margin-bottom:4px;">Active Overrides</div>
+        <div id="scfgOverrideList" style="font-size:11px;color:#555;"></div>
+      </div></div>
+    </div>
+  </div>`;
+  const renderOverrideList=()=>{
+    const list=document.getElementById('scfgOverrideList');
+    if(!list) return;
+    const overrides=Object.entries(STAFF).flatMap(([,s])=>s.permOverrides?Object.entries(s.permOverrides).map(([k,v])=>({username:s.username,perm:k,grant:v})):[]);
+    list.innerHTML=overrides.length===0?'<i style="color:#808080;">No active overrides.</i>':overrides.map(o=>`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;"><span>${o.username}: ${formatPermKey(o.perm)} <span style="${o.grant?'color:#006600':'color:#880000'};">(${o.grant?'granted':'revoked'})</span></span></div>`).join('');
+  };
+  renderOverrideList();
+  document.getElementById('btn-applyoverride').onclick=async()=>{
+    const username=document.getElementById('scfgStaff').value;
+    const perm=document.getElementById('scfgPerm').value;
+    const action=document.getElementById('scfgAction').value;
+    const msgEl=document.getElementById('scfgMsg');
+    const staffEntry=Object.entries(STAFF).find(([,s])=>s.username===username);
+    if(!staffEntry){ msgEl.style.color='#880000'; msgEl.textContent='Staff member not found.'; return; }
+    const [sid,sData]=staffEntry;
+    const overrides=sData.permOverrides||{};
+    if(action==='revoke') overrides[perm]=false;
+    else { delete overrides[perm]; }
+    await update(ref(db,`staff/${sid}`),{permOverrides:overrides});
+    auditLog('Permission Override Applied',`${username}: ${perm} ${action}ed by ${ME}`);
+    msgEl.style.color='#006600'; msgEl.textContent='Override applied!';
+    setTimeout(()=>{ if(msgEl) msgEl.textContent=''; renderOverrideList(); },1500);
+  };
+}
+
+// ── MESSAGE ANALYZE ──
+function renderMsgAnalyze(c){
+  c.innerHTML=`
+  <div class="ptitle">Message Analyze</div>
+  <div class="sbox"><div class="stitle">AI-Assisted Message Analysis</div><div class="sbody">
+    <div style="font-size:11px;color:#555;margin-bottom:6px;">Paste a player's message below. The system will suggest whether it warrants a warning, moderation action, or no action, with reasoning.</div>
+    <div style="margin-bottom:5px;"><label style="font-size:11px;color:#000;display:block;margin-bottom:2px;font-weight:bold;">Player Username (optional):</label>
+      <input type="text" id="maUser" style="width:200px;" placeholder="For context only"/></div>
+    <div style="margin-bottom:5px;"><label style="font-size:11px;color:#000;display:block;margin-bottom:2px;font-weight:bold;">Message to Analyze:</label>
+      <textarea id="maMsg" style="width:100%;height:80px;" placeholder="Paste the player's message here..."></textarea></div>
+    <button class="btn" id="btn-maanalyze">Analyze Message</button>
+    <div id="maLoading" style="display:none;font-size:11px;color:#000080;margin-top:5px;">Analyzing...</div>
+    <div id="maResult" style="margin-top:8px;"></div>
+  </div></div>
+  <div class="sbox"><div class="stitle">Analysis History</div><div class="sbody">
+    <div id="maHistory" style="font-size:11px;color:#555;"><i>No analyses run this session.</i></div>
+  </div></div>`;
+  const history=[];
+  document.getElementById('btn-maanalyze').onclick=async()=>{
+    const msg=document.getElementById('maMsg').value.trim();
+    const user=document.getElementById('maUser').value.trim();
+    if(!msg){ document.getElementById('maResult').innerHTML='<span style="color:#880000;font-size:11px;">Please enter a message to analyze.</span>'; return; }
+    document.getElementById('maLoading').style.display='block';
+    document.getElementById('maResult').innerHTML='';
+    try{
+      const response=await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-sonnet-4-20250514',
+          max_tokens:1000,
+          system:`You are a moderation assistant for a Roblox game administration panel. Analyze player messages and determine the appropriate moderation action. Be concise. Output ONLY a JSON object with these fields: {"verdict":"Warning"|"Moderation Action"|"No Action","severity":"Low"|"Medium"|"High"|"None","reason":"brief explanation","suggested_action":"specific action if any","flags":["list","of","concerns"]}`,
+          messages:[{role:'user',content:`Player${user?' ('+user+')':''}: "${msg}"`}]
+        })
+      });
+      const data=await response.json();
+      document.getElementById('maLoading').style.display='none';
+      const text=data.content?.map(i=>i.text||'').join('').replace(/```json|```/g,'').trim();
+      let parsed;
+      try{ parsed=JSON.parse(text); }catch(e){ parsed=null; }
+      const verdictColor=parsed?.verdict==='No Action'?'#006600':parsed?.verdict==='Warning'?'#cc8800':'#cc0000';
+      const resultHtml=parsed?`
+        <div style="border:1px solid #b0aca4;background:#e8e4dc;padding:8px 10px;">
+          <div style="font-size:13px;font-weight:bold;color:${verdictColor};margin-bottom:4px;">${parsed.verdict||'Unknown'} &mdash; ${parsed.severity||'?'} Severity</div>
+          <div style="font-size:11px;color:#000;margin-bottom:4px;"><b>Reason:</b> ${parsed.reason||'—'}</div>
+          ${parsed.suggested_action?`<div style="font-size:11px;color:#000;margin-bottom:4px;"><b>Suggested Action:</b> ${parsed.suggested_action}</div>`:''}
+          ${parsed.flags&&parsed.flags.length?`<div style="font-size:11px;color:#000;"><b>Flags:</b> ${parsed.flags.join(', ')}</div>`:''}
+        </div>
+        ${canDo('canModerateUsers')&&parsed.verdict!=='No Action'?`<button class="btn small" style="margin-top:4px;" onclick="nav('moderate')">Go to Moderate User</button>`:''}`:
+        `<div style="font-size:11px;color:#880000;">Failed to parse analysis. Raw: ${text?.substring(0,200)||'No response'}</div>`;
+      document.getElementById('maResult').innerHTML=resultHtml;
+      history.unshift({user:user||'Unknown',msg:msg.substring(0,50)+'...',verdict:parsed?.verdict||'Error',date:nowStr()});
+      document.getElementById('maHistory').innerHTML=history.map(h=>`
+        <div style="border-bottom:1px solid #c0bcb4;padding:3px 0;font-size:11px;">
+          <b>${h.user}</b>: "${h.msg}" &mdash; <span style="color:${h.verdict==='No Action'?'#006600':h.verdict==='Warning'?'#cc8800':'#cc0000'};">${h.verdict}</span>
+          <span style="color:#808080;font-size:10px;margin-left:4px;">${h.date}</span>
+        </div>`).join('');
+    }catch(err){
+      document.getElementById('maLoading').style.display='none';
+      document.getElementById('maResult').innerHTML=`<div style="font-size:11px;color:#880000;">Analysis failed: ${err.message}</div>`;
+    }
+  };
+}
+
+// ── STATUS LOG ──
+function renderStatusLog(c){
+  const entries=Object.entries(STATUS_LOG).sort((a,b)=>a[1].timestamp>b[1].timestamp?-1:1);
+  c.innerHTML=`
+  <div class="ptitle" style="background:#004466;">Machine Management &mdash; Status Log</div>
+  <div class="sbox" style="border:2px solid #0066aa;"><div class="stitle" style="background:#004466;color:#fff;">Site Status Change History</div><div class="sbody">
+    <div style="font-size:11px;color:#555;margin-bottom:6px;">Every site status change is automatically logged here.</div>
+    ${entries.length===0?'<i style="color:#444;">No status changes recorded.</i>':`
+    <div class="tbl-wrap"><table class="tbl">
+      <tr><th>Changed By</th><th>Previous</th><th>New Status</th><th>Reason</th><th>Timestamp</th></tr>
+      ${entries.map(([,e])=>`<tr>
+        <td><b>${e.by}</b></td>
+        <td><span class="badge status-${(e.prevStatus||'ok').toLowerCase()}">${e.prevStatus||'OK'}</span></td>
+        <td><span class="badge status-${(e.newStatus||'ok').toLowerCase()}">${e.newStatus}</span></td>
+        <td style="max-width:180px;white-space:normal;">${e.reason||'—'}</td>
+        <td style="font-size:10px;">${e.date}</td>
+      </tr>`).join('')}
+    </table></div>`}
+  </div></div>`;
+}
+
+function updateSiteStatusBar(){
+  const bar=document.getElementById('siteStatusBar');
+  const ind=document.getElementById('siteStatusIndicator');
+  if(!bar||!ind) return;
+  if(!SITE_STATUS||!SITE_STATUS.status){ bar.style.display='none'; return; }
+  const s=SITE_STATUS.status||'OK';
+  const dotClass=s==='OK'?'ok':s==='UPDATING'?'updating':'paused';
+  const color=s==='OK'?'#c8e0c8':s==='UPDATING'?'#fff0cc':'#f0c0c0';
+  bar.style.display='flex';
+  ind.innerHTML=`<span class="site-status-indicator" style="background:${color};"><span class="site-status-dot ${dotClass}"></span>${s}</span>`;
+}
+
+function runAdvancedSearch(){
+  const raw=document.getElementById('srchQuery').value.trim();
+  if(!raw){ document.getElementById('srchResults').innerHTML='<i style="color:#808080;">Enter a username to search.</i>'; return; }
+  const queries=raw.split(',').map(q=>q.trim().toLowerCase()).filter(q=>q);
+  const chPlayers=document.getElementById('srch-players').checked;
+  const chStaff=document.getElementById('srch-staff').checked;
+  const chModlog=document.getElementById('srch-modlog').checked;
+  const chLogin=document.getElementById('srch-loginlog').checked;
+  const chAppeals=document.getElementById('srch-appeals').checked;
+  const results=[];
+
+  if(chPlayers){
+    const matches=Object.entries(USERS).filter(([,u])=>queries.some(q=>u.username.toLowerCase().includes(q)||(u.displayName||'').toLowerCase().includes(q)||String(u.playerId).includes(q)));
+    matches.forEach(([uid,u])=>results.push({type:'Player',label:`<b>${u.username}</b>${u.displayName&&u.displayName!==u.username?` (${u.displayName})`:''}`,sub:`ID: ${u.playerId||'?'} &mdash; ${statusBadge(u.status)}`,action:`<button class="btn small srch-goto" data-type="player" data-uid="${uid}">View</button>`}));
+  }
+  if(chStaff){
+    const matches=Object.entries(STAFF).filter(([,s])=>queries.some(q=>s.username.toLowerCase().includes(q)));
+    matches.forEach(([sid,s])=>results.push({type:'Staff',label:`<b>${s.username}</b>`,sub:levelBadge(s.level)+' &mdash; '+(s.suspended?'<span class="sus">SUSPENDED</span>':'<span class="ok">OK</span>'),action:`<button class="btn small srch-goto" data-type="staff" data-sid="${sid}">View</button>`}));
+  }
+  if(chModlog){
+    const matches=Object.entries(MOD_LOG).filter(([,r])=>queries.some(q=>(r.user||'').toLowerCase().includes(q)||(r.mod||'').toLowerCase().includes(q)));
+    matches.slice(0,20).forEach(([,r])=>results.push({type:'Mod Log',label:`${r.user} &mdash; ${r.action}`,sub:`By ${r.mod} on ${r.date}`,action:''}));
+  }
+  if(chLogin){
+    const matches=Object.entries(LOGIN_LOG).filter(([,r])=>queries.some(q=>(r.username||'').toLowerCase().includes(q)));
+    matches.slice(0,10).forEach(([,r])=>results.push({type:'Login',label:`<b>${r.username}</b>`,sub:`${r.result} &mdash; ${r.date}`,action:''}));
+  }
+  if(chAppeals){
+    const matches=Object.entries(APPEAL_LOG).filter(([,r])=>queries.some(q=>(r.user||'').toLowerCase().includes(q)));
+    matches.slice(0,10).forEach(([,r])=>results.push({type:'Appeal',label:`<b>${r.user}</b>`,sub:`${r.presetReason||'—'} &mdash; ${r.status}`,action:''}));
+  }
+
+  const el=document.getElementById('srchResults');
+  if(!results.length){ el.innerHTML='<i style="color:#808080;">No results found.</i>'; return; }
+  el.innerHTML=`<div style="font-size:11px;color:#808080;margin-bottom:4px;">${results.length} result${results.length!==1?'s':''} found:</div>`+
+    results.map(r=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:3px 0;border-bottom:1px solid #c0bcb4;gap:6px;">
+      <div style="min-width:0;flex:1;">
+        <span style="font-size:10px;color:#fff;background:#000080;padding:1px 4px;border-radius:2px;margin-right:4px;">${r.type}</span>
+        ${r.label}<div style="font-size:10px;color:#555;">${r.sub}</div>
+      </div>
+      <div style="flex-shrink:0;">${r.action}</div>
+    </div>`).join('');
+  el.querySelectorAll('.srch-goto').forEach(btn=>{
+    btn.onclick=()=>{
+      if(btn.dataset.type==='player'){ currentUserId=btn.dataset.uid; document.getElementById('searchOverlay').classList.remove('show'); nav('useradmin'); }
+      else if(btn.dataset.type==='staff'){ currentStaffId=btn.dataset.sid; document.getElementById('searchOverlay').classList.remove('show'); nav('staff'); }
+    };
+  });
+}
+
 function setupMenus(){
   const menus=[['file','drop-file'],['view','drop-view'],['tools','drop-tools'],['help','drop-help']];
   menus.forEach(([name,dropId])=>{
@@ -3301,7 +3856,7 @@ function setupMenus(){
   });
   // Help menu
   const mabout=document.getElementById('menu-about');
-  if(mabout) mabout.onclick=()=>openDialog('About','Administration Panel<br><br>Version: 2.0<br>Built for your Roblox game.<br>Logged in as: <b>'+ME+'</b> ['+MY_LEVEL+']','',null);
+  if(mabout) mabout.onclick=()=>openDialog('About',`Administration Panel<br><br>Version: <b>${UPDATE_LOG&&UPDATE_LOG.length?UPDATE_LOG[0].version:'2.3'}</b><br>Built for your Roblox game.<br>Logged in as: <b>${ME}</b> [${MY_LEVEL}]`,'',null);
   const mshort=document.getElementById('menu-shortcuts');
   if(mshort) mshort.onclick=()=>openDialog('Keyboard Shortcuts',
     '<b>Enter</b> &mdash; Submit / Confirm<br><b>Escape</b> &mdash; Close dialog<br><br>Navigation shortcuts:<br><b>Alt+U</b> &mdash; User Admin<br><b>Alt+A</b> &mdash; All Accounts<br><b>Alt+S</b> &mdash; Staff Registry<br><b>Alt+M</b> &mdash; Moderation Log','',null);
@@ -3342,6 +3897,18 @@ function setupMenus(){
   document.getElementById('notifSettingsClose').onclick=()=>document.getElementById('notifSettingsOverlay').classList.remove('show');
   document.getElementById('notifSettingsCancel').onclick=()=>document.getElementById('notifSettingsOverlay').classList.remove('show');
   document.getElementById('notifSettingsSave').onclick=()=>{ saveNotifPrefs(); document.getElementById('notifSettingsOverlay').classList.remove('show'); };
+
+  // Advanced Search
+  const searchBtn=document.getElementById('searchBtn');
+  if(searchBtn) searchBtn.onclick=()=>{
+    document.getElementById('srchResults').innerHTML='';
+    document.getElementById('srchQuery').value='';
+    document.getElementById('searchOverlay').classList.add('show');
+    setTimeout(()=>document.getElementById('srchQuery').focus(),100);
+  };
+  document.getElementById('searchClose').onclick=()=>document.getElementById('searchOverlay').classList.remove('show');
+  document.getElementById('srchGo').onclick=runAdvancedSearch;
+  document.getElementById('srchQuery').onkeydown=e=>{ if(e.key==='Enter') runAdvancedSearch(); if(e.key==='Escape') document.getElementById('searchOverlay').classList.remove('show'); };
 
   // Refresh button
   const refreshBtn=document.getElementById('refreshBtn');
@@ -3397,7 +3964,7 @@ function openNotifSettings(){
   document.getElementById('notifSettingsOverlay').classList.add('show');
 }
 
-['useradmin','moderate','accounts','reputation','appeals','altdetect','staff','activity','modlog','revokelog','suspendlog','terminatelog','loginlog','auditlog','alerts','adminlog','home','messaging','requests','userconfig','siteconfig'].forEach(p=>{
+['useradmin','moderate','accounts','reputation','appeals','altdetect','staff','activity','modlog','revokelog','suspendlog','terminatelog','loginlog','auditlog','alerts','adminlog','home','messaging','requests','userconfig','siteconfig','suggestions','staffconfig','msganalyze','statuslog'].forEach(p=>{
   const el=document.getElementById('nav-'+p);
   if(el) el.onclick=()=>nav(p);
 });
