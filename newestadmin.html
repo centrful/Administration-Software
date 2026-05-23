@@ -35,10 +35,45 @@ body{font-family:Verdana,Arial,sans-serif;font-size:11px;background:#b0b8c8;min-
 .shell{font-family:Verdana,Arial,sans-serif;font-size:11px;background:#c8cfd8;min-height:100vh;display:flex;flex-direction:column;}
 
 /* ── TOPBAR (Roblox-style grey with logo area) ── */
-.topbar{background:#d4d0c8;color:#000;padding:4px 8px;font-size:11px;font-weight:bold;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #808080;}
+.topbar{background:linear-gradient(to bottom,#1a4a8a,#0a2a6a);color:#fff;padding:4px 8px;font-size:11px;font-weight:bold;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #0a1a4a;}
 .topbar-right{display:flex;align-items:center;gap:6px;}
 .logout-btn{background:#d4d0c8;border-top:2px solid #fff;border-left:2px solid #fff;border-right:2px solid #404040;border-bottom:2px solid #404040;font-size:10px;font-family:inherit;color:#000;cursor:pointer;padding:0 6px;height:20px;border-radius:0;}
 .logout-btn:active{border-top:2px solid #404040;border-left:2px solid #404040;border-right:2px solid #fff;border-bottom:2px solid #fff;}
+/* ── NIGHT MODE ── */
+body.night{background:#1a1a2a;}
+body.night .shell{background:#1e1e2e;}
+body.night .topbar{background:linear-gradient(to bottom,#0a0a1a,#050510);}
+body.night .menubar{background:#1a1a2e;border-bottom-color:#333;}
+body.night .menu-item{color:#ccc;}
+body.night .menu-item:hover{background:#2a2a5a;color:#fff;}
+body.night .topinfo{background:#1a1a2e;color:#aaa;border-bottom-color:#333;}
+body.night .sidebar{background:#13131f;border-right-color:#333;}
+body.night .sb-root{background:#0d0d1a;color:#aaa;border-bottom-color:#333;}
+body.night .sb-group{border-bottom-color:#2a2a3a;}
+body.night .sb-group-hdr{background:#13131f;}
+body.night .sb-group-hdr:hover{background:#1e1e35;}
+body.night .sb-plusminus{background:#1e1e35;border-color:#444;color:#aaa;}
+body.night .sb-group-label{color:#7799dd;}
+body.night .sb-group-body{background:#13131f;}
+body.night .sb-link{color:#7799dd;}
+body.night .sb-link:hover{color:#ff6666;}
+body.night .sb-link.active{color:#fff;font-weight:bold;}
+body.night .content{background:#1e1e2e;}
+body.night .sbox{background:#252535;border-color:#333;}
+body.night .stitle{background:#0a1a4a;color:#aad4ff;border-bottom-color:#0a0a2a;}
+body.night .sbody{background:#252535;color:#ccc;}
+body.night .ptitle{background:#0a0a2a;color:#aad4ff;}
+body.night .tbl th{background:#0a1a4a;}
+body.night .tbl td{border-bottom-color:#333;color:#ccc;}
+body.night .tbl tr:nth-child(odd) td{background:#1e2035;}
+body.night .tbl tr:nth-child(even) td{background:#252535;}
+body.night .tbl tr:hover td{background:#2a2a5a;}
+body.night input[type=text],body.night input[type=password],body.night input[type=number],body.night textarea,body.night select{background:#1a1a2e;color:#ddd;border-color:#444;}
+body.night .btn,.btn{transition:none;}
+body.night .row label{color:#aaa;}
+body.night .dropdown,.night .dialog,.night .susp-popup{background:#252535;}
+body.night .drop-item{color:#ccc;}
+body.night .drop-item:hover{background:#2a2a5a;}
 
 /* ── MENUBAR (matches Roblox internal — grey bar with underlined items) ── */
 .menubar{background:#d4d0c8;border-bottom:1px solid #808080;padding:2px 6px;display:flex;gap:0;}
@@ -60,18 +95,25 @@ body{font-family:Verdana,Arial,sans-serif;font-size:11px;background:#b0b8c8;min-
 /* ── MAIN LAYOUT ── */
 .main{display:flex;flex:1;}
 
-/* ── SIDEBAR (Roblox internal left nav — white bg, blue link text, tree style) ── */
-.sidebar{width:180px;flex-shrink:0;background:#fff;border-right:1px solid #808080;overflow-y:auto;}
-.tree-group{border-bottom:1px solid #c0c0c0;}
-.tree-header{display:flex;align-items:center;gap:0;background:#dce3ec;color:#000;padding:3px 6px;cursor:pointer;user-select:none;font-size:11px;font-weight:bold;border-bottom:1px solid #b0b8c8;}
-.tree-header:hover{background:#c8d4e4;}
-.tree-toggle{font-size:10px;margin-right:4px;flex-shrink:0;color:#333;}
-.tree-body{display:block;background:#fff;}
-.tree-body.collapsed{display:none;}
-/* Links look like hyperlinks — Roblox internal style */
-.sb-link{padding:2px 4px 2px 14px;cursor:pointer;color:#003399;text-decoration:underline;display:block;font-size:11px;white-space:nowrap;border-bottom:1px solid #eef0f4;}
-.sb-link:hover{background:#dce8f8;color:#0000cc;}
-.sb-link.active{font-weight:bold;color:#000;text-decoration:none;background:#c8d8f0;border-left:3px solid #0a246a;}
+/* ── SIDEBAR (exact Roblox internal admin recreation) ── */
+.sidebar{width:170px;flex-shrink:0;background:#fff;border-right:1px solid #9090a0;overflow-y:auto;font-size:11px;}
+/* "Admin Dashboard" root label */
+.sb-root{padding:4px 6px;font-weight:bold;font-size:11px;color:#000;background:#d4d0c8;border-bottom:1px solid #a0a0a0;cursor:default;user-select:none;}
+/* Group container */
+.sb-group{border-bottom:1px solid #c8c8d0;}
+/* Group header row — bullet + label, no background colour (just white) */
+.sb-group-hdr{display:flex;align-items:center;gap:3px;padding:2px 4px;cursor:pointer;user-select:none;background:#fff;}
+.sb-group-hdr:hover{background:#e8eef8;}
+/* The [−]/[+] box — matches the Roblox internal boxed minus/plus exactly */
+.sb-plusminus{display:inline-block;width:11px;height:11px;border:1px solid #808080;background:#fff;text-align:center;line-height:10px;font-size:10px;font-weight:bold;flex-shrink:0;color:#000;font-style:normal;}
+.sb-group-label{font-size:11px;color:#003399;text-decoration:underline;font-weight:bold;}
+/* Group body */
+.sb-group-body{background:#fff;}
+.sb-group-body.collapsed{display:none;}
+/* Individual links — indented bullet style */
+.sb-link{padding:1px 4px 1px 22px;cursor:pointer;color:#003399;text-decoration:underline;display:block;font-size:11px;white-space:nowrap;}
+.sb-link:hover{color:#cc0000;}
+.sb-link.active{color:#000;text-decoration:none;font-weight:bold;}
 
 /* ── CONTENT AREA ── */
 .content{flex:1;padding:8px;min-width:0;overflow-y:auto;background:#fff;}
@@ -216,9 +258,9 @@ select{height:20px;border:2px inset #808080;background:#fff;font-size:11px;font-
 
 <div id="adminScreen">
   <div class="shell">
-    <div class="topbar">
+    <div class="topbar" id="mainTopbar">
       <span id="topbarTitle">Administration Panel</span>
-      <div id="siteStatusBar" style="display:none;align-items:center;gap:5px;font-size:11px;color:#000;margin-left:10px;">
+      <div id="siteStatusBar" style="display:none;align-items:center;gap:5px;font-size:11px;color:#fff;margin-left:10px;">
         <span id="siteStatusIndicator"></span>
       </div>
       <div class="topbar-right">
@@ -226,6 +268,7 @@ select{height:20px;border:2px inset #808080;background:#fff;font-size:11px;font-
           <button class="logout-btn" id="refreshBtn" style="width:22px;padding:0;font-size:12px;" title="Refresh data">&#8635;</button>
           <div id="refreshTooltip" style="display:none;position:absolute;top:100%;right:0;background:#222;color:#fff;font-size:10px;white-space:nowrap;padding:3px 6px;border-radius:2px;z-index:999;margin-top:2px;pointer-events:none;"></div>
         </div>
+        <button class="logout-btn" id="nightModeBtn" style="width:22px;padding:0;font-size:12px;" title="Toggle Night Mode">&#9790;</button>
         <div style="position:relative;display:inline-block;">
           <button class="logout-btn" id="searchBtn" style="width:22px;padding:0;font-size:12px;" title="Advanced Search">&#128269;</button>
         </div>
@@ -244,7 +287,6 @@ select{height:20px;border:2px inset #808080;background:#fff;font-size:11px;font-
           </div>
         </div>
         <button class="logout-btn" id="logoutBtn">Log Out</button>
-        <div style="display:flex;gap:2px;"><div class="wcb">_</div><div class="wcb">&#9633;</div><div class="wcb">&#10005;</div></div>
       </div>
     </div>
     <div class="menubar" id="menubar">
@@ -285,94 +327,96 @@ select{height:20px;border:2px inset #808080;background:#fff;font-size:11px;font-
       </div>
     </div>
     <div class="announce-bar" id="announceBar" style="background:#fff0cc;border-bottom:2px solid #c8a800;"></div>
-    <div class="topinfo" id="topinfo" style="background:#d4d0c8;color:#000;border-bottom:1px solid #808080;font-weight:normal;">Loading...</div>
+    <div class="topinfo" id="topinfo">Loading...</div>
     <div class="main">
-      <div class="sidebar">
+      <div class="sidebar" id="mainSidebar">
 
-        <div class="tree-group">
-          <div class="tree-header" style="cursor:default;background:#dce3ec;">
-            <span style="font-size:11px;">&#127968;</span>&nbsp;Home
+        <!-- Root label exactly like Roblox internal -->
+        <div class="sb-root">&#x229F; Admin Dashboard</div>
+
+        <!-- each group: minus box to collapse, exactly like image 1 -->
+        <div class="sb-group" id="sbg-users">
+          <div class="sb-group-hdr" onclick="toggleSbGroup('sbg-users')">
+            <span class="sb-plusminus" id="pm-sbg-users">&#x229F;</span>
+            <span class="sb-group-label">People</span>
           </div>
-          <div class="tree-body">
-            <span class="sb-link" id="nav-home">Dashboard</span>
+          <div class="sb-group-body" id="body-sbg-users">
+            <span class="sb-link" id="nav-useradmin">&#x2022; User Admin</span>
+            <span class="sb-link" id="nav-moderate">&#x2022; Moderate User</span>
+            <span class="sb-link" id="nav-accounts">&#x2022; All Accounts</span>
+            <span class="sb-link" id="nav-requests">&#x2022; Requests</span>
+            <span class="sb-link" id="nav-home">&#x2022; Dashboard</span>
           </div>
         </div>
 
-        <div class="tree-group">
-          <div class="tree-header" onclick="toggleTree('tree-users')">
-            <span class="tree-toggle" id="tog-tree-users">&#9660;</span>Users
+        <div class="sb-group" id="sbg-content" style="display:none;">
+          <div class="sb-group-hdr" onclick="toggleSbGroup('sbg-content')">
+            <span class="sb-plusminus" id="pm-sbg-content">&#x229F;</span>
+            <span class="sb-group-label">Content Moderation</span>
           </div>
-          <div class="tree-body" id="tree-users">
-            <span class="sb-link" id="nav-useradmin">User Admin</span>
-            <span class="sb-link" id="nav-moderate">Moderate User</span>
-            <span class="sb-link" id="nav-accounts">All Accounts</span>
-            <span class="sb-link" id="nav-requests">Requests</span>
-          </div>
-        </div>
-
-        <div class="tree-group" id="sb-content-section">
-          <div class="tree-header" onclick="toggleTree('tree-content')">
-            <span class="tree-toggle" id="tog-tree-content">&#9660;</span>Moderation
-          </div>
-          <div class="tree-body" id="tree-content">
-            <span class="sb-link" id="nav-reputation">Reputation</span>
-            <span class="sb-link" id="nav-appeals">Appeals</span>
-            <span class="sb-link" id="nav-altdetect">Alt Detection</span>
-            <span class="sb-link" id="nav-msganalyze">Msg Analyze</span>
+          <div class="sb-group-body" id="body-sbg-content">
+            <span class="sb-link" id="nav-reputation">&#x2022; Reputation</span>
+            <span class="sb-link" id="nav-appeals">&#x2022; Appeals</span>
+            <span class="sb-link" id="nav-altdetect">&#x2022; Alt Detection</span>
+            <span class="sb-link" id="nav-msganalyze">&#x2022; Msg Analyze</span>
           </div>
         </div>
 
-        <div class="tree-group" id="sb-staff-section">
-          <div class="tree-header" onclick="toggleTree('tree-staff')">
-            <span class="tree-toggle" id="tog-tree-staff">&#9660;</span>Staff
+        <div class="sb-group" id="sbg-staff" style="display:none;">
+          <div class="sb-group-hdr" onclick="toggleSbGroup('sbg-staff')">
+            <span class="sb-plusminus" id="pm-sbg-staff">&#x229F;</span>
+            <span class="sb-group-label">Staff</span>
           </div>
-          <div class="tree-body" id="tree-staff">
-            <span class="sb-link" id="nav-staff">Staff Registry</span>
-            <span class="sb-link" id="nav-activity">Staff Activity</span>
-            <span class="sb-link" id="nav-messaging">Messaging</span>
-            <span class="sb-link" id="nav-suggestions">Suggestions</span>
-            <span class="sb-link" id="nav-staffconfig">Staff Config</span>
-          </div>
-        </div>
-
-        <div class="tree-group">
-          <div class="tree-header" onclick="toggleTree('tree-logs')">
-            <span class="tree-toggle" id="tog-tree-logs">&#9660;</span>Logs
-          </div>
-          <div class="tree-body" id="tree-logs">
-            <span class="sb-link" id="nav-modlog">Moderation</span>
-            <span class="sb-link" id="nav-revokelog">Revoke</span>
-            <span class="sb-link" id="nav-suspendlog">Suspension</span>
-            <span class="sb-link" id="nav-terminatelog">Termination</span>
-            <span class="sb-link" id="nav-loginlog">Login</span>
+          <div class="sb-group-body" id="body-sbg-staff">
+            <span class="sb-link" id="nav-staff">&#x2022; Staff Registry</span>
+            <span class="sb-link" id="nav-activity">&#x2022; Staff Activity</span>
+            <span class="sb-link" id="nav-messaging">&#x2022; Messaging</span>
+            <span class="sb-link" id="nav-suggestions">&#x2022; Suggestions</span>
+            <span class="sb-link" id="nav-staffconfig">&#x2022; Staff Config</span>
           </div>
         </div>
 
-        <div class="tree-group" id="sb-config-section">
-          <div class="tree-header" onclick="toggleTree('tree-config')">
-            <span class="tree-toggle" id="tog-tree-config">&#9660;</span>Configuration
+        <div class="sb-group" id="sbg-logs">
+          <div class="sb-group-hdr" onclick="toggleSbGroup('sbg-logs')">
+            <span class="sb-plusminus" id="pm-sbg-logs">&#x229F;</span>
+            <span class="sb-group-label">Logs</span>
           </div>
-          <div class="tree-body" id="tree-config">
-            <span class="sb-link" id="nav-userconfig">User Config</span>
-            <span class="sb-link" id="nav-auditlog">Audit Log</span>
-            <span class="sb-link" id="nav-alerts">Site Alerts</span>
-            <span class="sb-link" id="nav-adminlog">Administrator</span>
-          </div>
-        </div>
-
-        <div class="tree-group" id="sb-machine-section">
-          <div class="tree-header" onclick="toggleTree('tree-machine')" style="background:#222;color:#ccc;">
-            <span class="tree-toggle" id="tog-tree-machine">&#9660;</span>Machine Mgmt
-          </div>
-          <div class="tree-body" id="tree-machine">
-            <span class="sb-link" id="nav-siteconfig">Configuration</span>
-            <span class="sb-link" id="nav-statuslog">Status Log</span>
-            <span class="sb-link" id="nav-wipelog">Wipe Log</span>
-            <span class="sb-link" id="nav-badgemgmt">Badge Mgmt</span>
+          <div class="sb-group-body" id="body-sbg-logs">
+            <span class="sb-link" id="nav-modlog">&#x2022; Moderation</span>
+            <span class="sb-link" id="nav-revokelog">&#x2022; Revoke</span>
+            <span class="sb-link" id="nav-suspendlog">&#x2022; Suspension</span>
+            <span class="sb-link" id="nav-terminatelog">&#x2022; Termination</span>
+            <span class="sb-link" id="nav-loginlog">&#x2022; Login</span>
           </div>
         </div>
 
-      </div>
+        <div class="sb-group" id="sbg-config" style="display:none;">
+          <div class="sb-group-hdr" onclick="toggleSbGroup('sbg-config')">
+            <span class="sb-plusminus" id="pm-sbg-config">&#x229F;</span>
+            <span class="sb-group-label">Configuration</span>
+          </div>
+          <div class="sb-group-body" id="body-sbg-config">
+            <span class="sb-link" id="nav-userconfig">&#x2022; User Config</span>
+            <span class="sb-link" id="nav-auditlog">&#x2022; Audit Log</span>
+            <span class="sb-link" id="nav-alerts">&#x2022; Site Alerts</span>
+            <span class="sb-link" id="nav-adminlog">&#x2022; Administrator</span>
+          </div>
+        </div>
+
+        <div class="sb-group" id="sbg-machine" style="display:none;">
+          <div class="sb-group-hdr" onclick="toggleSbGroup('sbg-machine')">
+            <span class="sb-plusminus" id="pm-sbg-machine">&#x229F;</span>
+            <span class="sb-group-label">Machine Mgmt</span>
+          </div>
+          <div class="sb-group-body" id="body-sbg-machine">
+            <span class="sb-link" id="nav-siteconfig">&#x2022; Configuration</span>
+            <span class="sb-link" id="nav-statuslog">&#x2022; Status Log</span>
+            <span class="sb-link" id="nav-wipelog">&#x2022; Wipe Log</span>
+            <span class="sb-link" id="nav-badgemgmt">&#x2022; Badge Mgmt</span>
+          </div>
+        </div>
+
+      </div>      </div>
       <div class="content" id="content"><div style="padding:10px;color:#444;font-style:italic;">Loading data...</div></div>
     </div>
   </div>
@@ -980,12 +1024,8 @@ function updateAnnouncements(){
 function updateSidebar(){
   const show=(id,cond)=>{ const el=document.getElementById(id); if(el) el.style.display=cond?'':'none'; };
   const showGroup=(id,cond)=>{ const el=document.getElementById(id); if(el) el.style.display=cond?'':'none'; };
+  // Individual links
   show('nav-home', true);
-  showGroup('sb-staff-section', canDo('canViewStaff'));
-  showGroup('sb-content-section', canDo('canViewContentModeration'));
-  const canSeeConfig=canDo('canViewUserConfig')||isSuperAdmin()||canDo('canManageStaff');
-  showGroup('sb-config-section', canSeeConfig);
-  showGroup('sb-machine-section', isSoftwareManager());
   show('nav-moderate', canDo('canModerateUsers'));
   show('nav-modlog', canDo('canViewModLog'));
   show('nav-revokelog', canDo('canViewRevokeLogs'));
@@ -1007,6 +1047,12 @@ function updateSidebar(){
   show('nav-wipelog', isSoftwareManager());
   show('nav-badgemgmt', isSoftwareManager());
   show('nav-altdetect', canDo('canViewContentModeration'));
+  // Groups — show/hide entire group based on permissions
+  showGroup('sbg-content', canDo('canViewContentModeration'));
+  showGroup('sbg-staff', canDo('canViewStaff'));
+  const canSeeConfig=canDo('canViewUserConfig')||isSuperAdmin()||canDo('canManageStaff');
+  showGroup('sbg-config', canSeeConfig);
+  showGroup('sbg-machine', isSoftwareManager());
 }
 
 function nav(p){
@@ -4853,6 +4899,10 @@ function setupMenus(){
   document.getElementById('srchGo').onclick=runAdvancedSearch;
   document.getElementById('srchQuery').onkeydown=e=>{ if(e.key==='Enter') runAdvancedSearch(); if(e.key==='Escape') document.getElementById('searchOverlay').classList.remove('show'); };
 
+  // Night mode button
+  const nightBtn=document.getElementById('nightModeBtn');
+  if(nightBtn) nightBtn.onclick=()=>{ nightMode=!nightMode; applyNightMode(); };
+
   // Refresh button
   const refreshBtn=document.getElementById('refreshBtn');
   const refreshTooltip=document.getElementById('refreshTooltip');
@@ -4892,14 +4942,26 @@ function setupMenus(){
     document.getElementById('updateLogOverlay').classList.add('show');
   };
 }
-// ── COLLAPSIBLE TREE ──
-window.toggleTree = function(id){
-  const body = document.getElementById(id);
-  const tog = document.getElementById('tog-' + id);
+// ── COLLAPSIBLE SIDEBAR TREE ──
+window.toggleSbGroup = function(groupId){
+  const body = document.getElementById('body-' + groupId);
+  const pm = document.getElementById('pm-' + groupId);
   if(!body) return;
   const collapsed = body.classList.toggle('collapsed');
-  if(tog) tog.innerHTML = collapsed ? '&#9658;' : '&#9660;';
+  if(pm) pm.innerHTML = collapsed ? '&#x229E;' : '&#x229F;'; // [+] / [-]
 };
+
+// ── NIGHT MODE ──
+let nightMode = false;
+try { nightMode = localStorage.getItem('nightMode') === '1'; } catch(e){}
+function applyNightMode(){
+  document.body.classList.toggle('night', nightMode);
+  const btn = document.getElementById('nightModeBtn');
+  if(btn) btn.title = nightMode ? 'Switch to Light Mode' : 'Toggle Night Mode';
+  if(btn) btn.textContent = nightMode ? '\u2600' : '\u263D';
+  try { localStorage.setItem('nightMode', nightMode ? '1' : '0'); } catch(e){}
+}
+applyNightMode();
 
 setupMenus();
 
