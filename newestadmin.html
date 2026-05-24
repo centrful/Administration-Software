@@ -196,6 +196,30 @@ select{height:28px;border:1px solid var(--c-border-input);background:var(--bg-in
 .page-search .search-wrap svg{position:absolute;left:7px;top:50%;transform:translateY(-50%);color:var(--c-text2);pointer-events:none;}
 .page-search .search-count{font-size:11px;color:var(--c-text2);white-space:nowrap;}
 
+/* ── TOAST NOTIFICATIONS ── */
+#toast-container{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+.toast{background:var(--bg-dialog);border:1px solid var(--c-border);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--c-text);box-shadow:0 8px 24px rgba(1,4,9,0.25);min-width:220px;max-width:320px;display:flex;align-items:center;gap:8px;pointer-events:all;animation:toastIn 0.25s ease;border-left:3px solid var(--c-link);}
+.toast.success{border-left-color:var(--c-ok);}
+.toast.error{border-left-color:var(--c-ban);}
+.toast.warning{border-left-color:var(--c-sus);}
+.toast.info{border-left-color:var(--c-link);}
+.toast .toast-icon{font-size:14px;flex-shrink:0;}
+.toast .toast-body{flex:1;line-height:1.4;}
+.toast .toast-close{background:none;border:none;color:var(--c-text2);cursor:pointer;font-size:14px;padding:0;line-height:1;flex-shrink:0;}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+@keyframes toastOut{from{opacity:1;transform:translateX(0);}to{opacity:0;transform:translateX(20px);}}
+
+/* ── STAT CARDS ── */
+.stat-card{background:var(--bg-sbox);border:1px solid var(--c-border);border-radius:8px;padding:12px 14px;min-width:100px;flex:1;position:relative;overflow:hidden;transition:border-color 0.2s;}
+.stat-card:hover{border-color:var(--c-link);}
+.stat-card .sc-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--c-text2);margin-bottom:4px;}
+.stat-card .sc-val{font-size:22px;font-weight:800;color:var(--c-text);line-height:1;}
+.stat-card .sc-sub{font-size:10px;color:var(--c-text2);margin-top:3px;}
+.stat-card .sc-bar{position:absolute;bottom:0;left:0;height:3px;border-radius:0 0 8px 8px;transition:width 0.8s ease;}
+
+/* ── KEYBOARD SHORTCUT HINT ── */
+.kbd{display:inline-flex;align-items:center;justify-content:center;background:var(--bg-tbl-odd);border:1px solid var(--c-border);border-bottom:2px solid var(--c-border);border-radius:4px;padding:1px 5px;font-size:10px;font-family:monospace;color:var(--c-text2);white-space:nowrap;}
+
 /* ── MISC ── */
 .nonexistent{color:var(--c-ban);font-weight:600;}
 .invalid-cred{color:var(--c-ban);font-size:10px;font-style:italic;}
@@ -278,6 +302,7 @@ select{height:28px;border:1px solid var(--c-border-input);background:var(--bg-in
 </div>
 
 <div id="adminScreen" style="position:relative;">
+<div id="toast-container"></div>
   <canvas id="shellBg" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0;transition:opacity 0.5s;"></canvas>
   <div class="shell" style="position:relative;z-index:1;">
     <div class="topbar" id="mainTopbar">
@@ -838,6 +863,27 @@ function isSuperAdmin(){ return MY_LEVEL==='SUPER ADMINISTRATOR'||isSoftwareMana
 // SOFTWARE MANAGER bypasses all permission checks; '- NONE -' means no one can access
 function canDo(k){ if(isSoftwareManager()) return true; const req=PERMS[k]||'SUPER ADMINISTRATOR'; if(req==='- NONE -') return false; return rankOf(MY_LEVEL)>=rankOf(req); }
 
+// ── TOAST NOTIFICATIONS ──
+function showToast(message, type='info', duration=3000){
+  const container=document.getElementById('toast-container');
+  if(!container) return;
+  const icons={success:'✓',error:'✕',warning:'⚠',info:'ℹ'};
+  const t=document.createElement('div');
+  t.className=`toast ${type}`;
+  t.innerHTML=`<span class="toast-icon">${icons[type]||'ℹ'}</span><span class="toast-body">${message}</span><button class="toast-close" onclick="this.parentElement.remove()">×</button>`;
+  container.appendChild(t);
+  setTimeout(()=>{
+    t.style.animation='toastOut 0.25s ease forwards';
+    setTimeout(()=>t.remove(), 250);
+  }, duration);
+}
+window.showToast=showToast;
+
+// ── BAN TEMPLATE VARIABLE SUBSTITUTION ──
+function applyTemplateVars(text, username, reason){
+  return text.replace(/\{username\}/gi, username||'').replace(/\{reason\}/gi, reason||'');
+}
+
 function statusBadge(s){
   if(s==='active') return '<span class="ok">OK</span>';
   if(s==='suspended') return '<span class="sus">SUSPENDED</span>';
@@ -1073,37 +1119,32 @@ function updateTopInfo(){
   const dateStr=now.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
   const el=document.getElementById('topinfo');
   if(!el) return;
-  const dot='<span style="color:var(--c-border);margin:0 3px;user-select:none;">·</span>';
-  const pipe='<span style="color:var(--c-border);margin:0 8px;user-select:none;opacity:0.4;">|</span>';
-  const lbl=(t)=>`<span style="color:var(--c-text2);font-size:11px;">${t}</span>`;
-  const val=(v,c)=>`<span style="font-weight:600;font-size:12px;color:${c||'var(--c-text)'};">${v}</span>`;
-  const alertSvg='<svg width="11" height="11" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;vertical-align:middle;"><circle cx="8" cy="8" r="7" stroke="var(--c-sus)" stroke-width="1.5" fill="rgba(227,179,65,0.15)"/><line x1="8" y1="4.5" x2="8" y2="8.5" stroke="var(--c-sus)" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="11" r="0.9" fill="var(--c-sus)"/></svg>';
-  const alertChip=activeAlerts>0?pipe+alertSvg+' '+val(activeAlerts+' alert'+(activeAlerts>1?'s':''),'var(--c-sus)'):'';
-  el.innerHTML=
-    '<span style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px;">'+
-    '<span style="display:flex;align-items:center;flex-wrap:wrap;row-gap:3px;">'+
-      lbl('Players: ')+val(active,'var(--c-ok)')+
-      '<span style="color:var(--c-text2);font-size:11px;margin-left:3px;">active</span>'+
-      dot+val(susp,'var(--c-sus)')+
-      '<span style="color:var(--c-sus);font-size:11px;margin-left:3px;">suspended</span>'+
-      dot+val(banned,'var(--c-ban)')+
-      '<span style="color:var(--c-ban);font-size:11px;margin-left:3px;">banned</span>'+
-      pipe+
-      lbl('Staff: ')+val(staffCount,'var(--c-text)')+
-      dot+val(onlineStaff,'var(--c-ok)')+
-      '<span style="color:var(--c-ok);font-size:11px;margin-left:3px;">online</span>'+
-      (suspStaff>0?dot+val(suspStaff,'var(--c-sus)')+'<span style="color:var(--c-sus);font-size:11px;margin-left:3px;">suspended</span>':'')+
-      pipe+
-      lbl('Appeals: ')+val(openAppeals,openAppeals>0?'var(--c-ban)':'var(--c-ok)')+
-      pipe+
-      lbl('High Risk: ')+val(highRisk,highRisk>0?'var(--c-sus)':'var(--c-text2)')+
-      pipe+
-      lbl('Mod Log: ')+val(modCount,'var(--c-text)')+
-      '<span style="color:var(--c-text2);font-size:11px;margin-left:3px;">entries</span>'+
-      alertChip+
-    '</span>'+
-    '<span style="color:var(--c-text2);font-size:11px;white-space:nowrap;flex-shrink:0;">'+dateStr+' &nbsp; '+timeStr+'</span>'+
-    '</span>';
+  // Build clean chips — each is a self-contained non-breaking unit
+  const chip=(label,value,color)=>`<span style="display:inline-flex;align-items:center;gap:3px;white-space:nowrap;"><span style="font-size:10px;color:var(--c-text2);">${label}</span><span style="font-weight:700;font-size:12px;color:${color};">${value}</span></span>`;
+  const sep=`<span style="color:var(--c-border);margin:0 6px;opacity:0.5;user-select:none;">|</span>`;
+  const alertSvg='<svg width="10" height="10" viewBox="0 0 16 16" fill="none" style="vertical-align:middle;margin-right:2px;"><circle cx="8" cy="8" r="7" stroke="var(--c-sus)" stroke-width="1.5" fill="rgba(227,179,65,0.15)"/><line x1="8" y1="4.5" x2="8" y2="8.5" stroke="var(--c-sus)" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="11" r="0.9" fill="var(--c-sus)"/></svg>';
+
+  const parts=[
+    chip('Players',active,'var(--c-ok)'),
+    susp>0?chip('Suspended',susp,'var(--c-sus)'):'',
+    banned>0?chip('Banned',banned,'var(--c-ban)'):'',
+    sep,
+    chip('Staff',staffCount,'var(--c-text)'),
+    chip('Online',onlineStaff,'var(--c-ok)'),
+    suspStaff>0?chip('Susp.',suspStaff,'var(--c-sus)'):'',
+    sep,
+    chip('Appeals',openAppeals,openAppeals>0?'var(--c-ban)':'var(--c-text2)'),
+    sep,
+    chip('High Risk',highRisk,highRisk>0?'var(--c-sus)':'var(--c-text2)'),
+    sep,
+    chip('Mod Log',modCount,'var(--c-text)'),
+    activeAlerts>0?(sep+alertSvg+`<span style="font-size:11px;font-weight:600;color:var(--c-sus);">${activeAlerts} alert${activeAlerts>1?'s':''}</span>`):'',
+  ].filter(Boolean);
+
+  el.innerHTML=`<span style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:4px;overflow:hidden;">
+    <span style="display:flex;align-items:center;gap:0;flex-wrap:nowrap;overflow:hidden;min-width:0;">${parts.join('')}</span>
+    <span style="color:var(--c-text2);font-size:11px;white-space:nowrap;flex-shrink:0;padding-left:8px;">${dateStr} &nbsp; ${timeStr}</span>
+  </span>`;
   // Keep time ticking
   if(!updateTopInfo._timer) updateTopInfo._timer=setInterval(()=>{ if(document.getElementById('topinfo')) updateTopInfo(); },30000);
 }
@@ -1147,7 +1188,20 @@ function updateAnnouncements(){
   bar.style.padding='6px 16px';
   bar.style.display='flex';
   bar.style.alignItems='center';
-  bar.innerHTML=`${cfg.icon}<span style="font-weight:700;color:${cfg.textColor};font-size:12px;">${cfg.label}</span><span style="color:${cfg.textColor};opacity:0.75;font-size:11px;margin-left:4px;"> from ${latest.by} (${latest.date}):</span><span style="color:${cfg.textColor};font-weight:500;font-size:12px;margin-left:5px;">${latest.message}</span>`;
+  bar.innerHTML=`${cfg.icon}<span style="font-weight:700;color:${cfg.textColor};font-size:12px;">${cfg.label}</span><span style="color:${cfg.textColor};opacity:0.75;font-size:11px;margin-left:4px;"> from ${latest.by} (${latest.date}):</span><span style="color:${cfg.textColor};font-weight:500;font-size:12px;margin-left:5px;">${latest.message}</span>${latest.expiresAt&&latest.expiresAt>0?`<span id="announce-cd" style="font-size:10px;font-weight:600;margin-left:8px;opacity:0.8;color:${cfg.textColor};"></span>`:''}`;
+  // Start/restart countdown in announce bar
+  if(window._announceCdTimer) clearInterval(window._announceCdTimer);
+  if(latest.expiresAt&&latest.expiresAt>0){
+    const updateCd=()=>{
+      const el=document.getElementById('announce-cd'); if(!el) return clearInterval(window._announceCdTimer);
+      const rem=latest.expiresAt-Date.now();
+      if(rem<=0){ el.textContent='(Expired)'; clearInterval(window._announceCdTimer); return; }
+      const s=Math.floor(rem/1000),m=Math.floor(s/60),h=Math.floor(m/60);
+      el.textContent=h>0?`(${h}h ${m%60}m left)`:m>0?`(${m}m ${s%60}s left)`:`(${s}s left)`;
+    };
+    updateCd();
+    window._announceCdTimer=setInterval(updateCd,1000);
+  }
 }
 
 function updateSidebar(){
@@ -1192,6 +1246,34 @@ function nav(p){
   render();
 }
 window.nav=nav;
+
+// ── KEYBOARD SHORTCUTS ──
+document.addEventListener('keydown',e=>{
+  // Only active when logged in
+  if(!ME) return;
+  // Ctrl+K or / — focus global search
+  if((e.ctrlKey&&e.key==='k')||(e.key==='/'&&document.activeElement.tagName!=='INPUT'&&document.activeElement.tagName!=='TEXTAREA')){
+    e.preventDefault();
+    const sb=document.getElementById('searchBtn'); if(sb) sb.click();
+    return;
+  }
+  // Escape — close any open overlay
+  if(e.key==='Escape'){
+    const overlays=['overlay','notifDropdown','drop-file','drop-view','drop-tools','drop-help'];
+    overlays.forEach(id=>{ const el=document.getElementById(id); if(el&&(el.classList.contains('show')||el.classList.contains('open'))) { el.classList.remove('show','open'); } });
+    return;
+  }
+  // G+H — go home, G+U — user admin, G+S — staff, G+M — mod log (vim-style nav)
+  if(e.key==='g'&&!e.ctrlKey&&document.activeElement.tagName!=='INPUT'&&document.activeElement.tagName!=='TEXTAREA'){
+    window._gPressed=true;
+    setTimeout(()=>{ window._gPressed=false; },800);
+    return;
+  }
+  if(window._gPressed&&!e.ctrlKey&&document.activeElement.tagName!=='INPUT'&&document.activeElement.tagName!=='TEXTAREA'){
+    const map={h:'home',u:'useradmin',s:'staff',m:'modlog',a:'appeals',l:'loginlog',r:'reputation'};
+    if(map[e.key]){ e.preventDefault(); nav(map[e.key]); window._gPressed=false; }
+  }
+});
 
 function render(){
   updateTopInfo(); updateSidebar(); updateAnnouncements();
@@ -1663,40 +1745,43 @@ function renderHome(c){
     <span class="site-status-dot ${SITE_STATUS.status==='PAUSED'?'paused':'updating'}" style="flex-shrink:0;width:10px;height:10px;"></span>
     <span style="color:var(--c-text);"><b style="color:${SITE_STATUS.status==='PAUSED'?'var(--c-ban)':'var(--c-sus)'};">Site ${SITE_STATUS.status}</b> &mdash; ${SITE_STATUS.reason||'No reason given.'} <span style="color:var(--c-text2);">(by ${SITE_STATUS.by||'?'})</span></span>
   </div>`:''}
-  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
-    <div class="sbox" style="flex:1;min-width:130px;"><div class="stitle">Players</div><div class="sbody">
-      <div style="font-size:18px;font-weight:bold;color:var(--c-link);">${totalPlayers}</div>
-      <div style="font-size:11px;margin-top:3px;line-height:1.8;">
-        <span class="ok">&#9679; Active: <b>${activePlayers}</b></span><br>
-        <span class="sus">&#9679; Suspended: <b>${suspended}</b></span><br>
-        <span class="ban">&#9679; Banned: <b>${banned}</b></span>
-      </div>
-      <div style="margin-top:4px;"><button class="btn small" onclick="nav('accounts')">View All</button></div>
-    </div></div>
-    <div class="sbox" style="flex:1;min-width:130px;"><div class="stitle">Staff</div><div class="sbody">
-      <div style="font-size:18px;font-weight:bold;color:var(--c-link);">${totalStaff}</div>
-      <div style="font-size:11px;margin-top:3px;line-height:1.8;">
-        <span class="ok"><span class="activity-dot active" style="width:7px;height:7px;display:inline-block;"></span> Online: <b>${onlineStaff}</b></span><br>
-        <span class="sus">&#9679; Suspended: <b>${suspendedStaff}</b></span>
-      </div>
-      ${canDo('canViewStaff')?`<div style="margin-top:4px;"><button class="btn small" onclick="nav('activity')">Activity</button></div>`:''}
-    </div></div>
-    <div class="sbox" style="flex:1;min-width:130px;"><div class="stitle">Appeals</div><div class="sbody">
-      <div style="font-size:18px;font-weight:bold;color:${openAppeals>0?'var(--c-ban)':'var(--c-ok)'};">${openAppeals}</div>
-      <div style="font-size:11px;margin-top:3px;color:var(--c-text);">Open / Pending</div>
-      ${canDo('canViewAppealLog')?`<div style="margin-top:4px;"><button class="btn small" onclick="nav('appeals')">View Appeals</button></div>`:''}
-    </div></div>
-    <div class="sbox" style="flex:1;min-width:130px;"><div class="stitle">Risk Players</div><div class="sbody">
-      <div style="font-size:18px;font-weight:bold;color:${highRisk>0?'var(--c-sus)':'var(--c-ok)'};">${highRisk}</div>
-      <div style="font-size:11px;margin-top:3px;color:var(--c-text);">High Risk (rep &gt;15)</div>
-      ${canDo('canViewContentModeration')?`<div style="margin-top:4px;"><button class="btn small" onclick="nav('reputation')">Reputation</button></div>`:''}
-    </div></div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+    <div class="stat-card" style="border-top:3px solid var(--c-link);">
+      <div class="sc-label">Total Players</div>
+      <div class="sc-val" id="sc-total" data-target="${totalPlayers}">0</div>
+      <div class="sc-sub"><span style="color:var(--c-ok);">&#9679; ${activePlayers} active</span> &nbsp; <span style="color:var(--c-sus);">&#9679; ${suspended} susp</span> &nbsp; <span style="color:var(--c-ban);">&#9679; ${banned} ban</span></div>
+      <div style="margin-top:8px;"><button class="btn small" onclick="nav('accounts')">View All →</button></div>
+    </div>
+    <div class="stat-card" style="border-top:3px solid var(--c-ok);">
+      <div class="sc-label">Staff Online</div>
+      <div class="sc-val" id="sc-online" data-target="${onlineStaff}" style="color:var(--c-ok);">0</div>
+      <div class="sc-sub">${totalStaff} total${suspendedStaff>0?` &nbsp; <span style="color:var(--c-sus);">&#9679; ${suspendedStaff} susp</span>`:''}</div>
+      ${canDo('canViewStaff')?`<div style="margin-top:8px;"><button class="btn small" onclick="nav('activity')">Activity →</button></div>`:''}
+    </div>
+    <div class="stat-card" style="border-top:3px solid ${openAppeals>0?'var(--c-ban)':'var(--c-ok)'};">
+      <div class="sc-label">Open Appeals</div>
+      <div class="sc-val" id="sc-appeals" data-target="${openAppeals}" style="color:${openAppeals>0?'var(--c-ban)':'var(--c-ok)'};">0</div>
+      <div class="sc-sub">${openAppeals>0?'Awaiting review':'All caught up ✓'}</div>
+      ${canDo('canViewAppealLog')?`<div style="margin-top:8px;"><button class="btn small" onclick="nav('appeals')">Review →</button></div>`:''}
+    </div>
+    <div class="stat-card" style="border-top:3px solid ${highRisk>0?'var(--c-sus)':'var(--c-ok)'};">
+      <div class="sc-label">High Risk</div>
+      <div class="sc-val" id="sc-risk" data-target="${highRisk}" style="color:${highRisk>0?'var(--c-sus)':'var(--c-ok)'};">0</div>
+      <div class="sc-sub">Rep score &gt; 15 pts</div>
+      ${canDo('canViewContentModeration')?`<div style="margin-top:8px;"><button class="btn small" onclick="nav('reputation')">Reputation →</button></div>`:''}
+    </div>
+    <div class="stat-card" style="border-top:3px solid var(--c-text2);">
+      <div class="sc-label">Mod Actions</div>
+      <div class="sc-val" id="sc-modcount" data-target="${Object.keys(MOD_LOG).length}">0</div>
+      <div class="sc-sub">Total logged</div>
+      ${canDo('canViewModLog')?`<div style="margin-top:8px;"><button class="btn small" onclick="nav('modlog')">Mod Log →</button></div>`:''}
+    </div>
   </div>
   <div style="display:flex;gap:6px;flex-wrap:wrap;">
     <div style="flex:2;min-width:220px;">
       ${DASHBOARD_LOG_CONFIG.modlog!==false?`
       <div class="sbox"><div class="stitle">Recent Moderation Actions</div><div class="sbody">
-        ${recentMod.length===0?'<i style="color:var(--c-text2);">No recent actions.</i>':`
+        ${recentMod.length===0?`<div style="text-align:center;padding:16px 0;"><div style="font-size:24px;margin-bottom:6px;">📋</div><div style="font-size:12px;color:var(--c-text2);">No moderation actions recorded yet.</div></div>`:`
         <div class="tbl-wrap"><table class="tbl" style="width:100%;">
           <tr><th>User</th><th>Action</th><th>Moderator</th><th>Date</th></tr>
           ${recentMod.map(r=>`<tr>
@@ -1707,7 +1792,7 @@ function renderHome(c){
       </div></div>`:''}
       ${DASHBOARD_LOG_CONFIG.loginlog!==false?`
       <div class="sbox"><div class="stitle">Recent Staff Logins</div><div class="sbody">
-        ${recentLogins.length===0?'<i style="color:var(--c-text2);">No logins recorded.</i>':`
+        ${recentLogins.length===0?`<div style="text-align:center;padding:16px 0;"><div style="font-size:24px;margin-bottom:6px;">🔑</div><div style="font-size:12px;color:var(--c-text2);">No staff logins recorded yet.</div></div>`:`
         <div class="tbl-wrap"><table class="tbl" style="width:100%;">
           <tr><th>Username</th><th>Level</th><th>Time</th><th>Result</th></tr>
           ${recentLogins.map(r=>`<tr>
@@ -1718,7 +1803,7 @@ function renderHome(c){
       </div></div>`:''}
       ${DASHBOARD_LOG_CONFIG.appeals?`
       <div class="sbox"><div class="stitle">Recent Appeals</div><div class="sbody">
-        ${Object.values(APPEAL_LOG).length===0?'<i style="color:var(--c-text2);">No appeals yet.</i>':`
+        ${Object.values(APPEAL_LOG).length===0?`<div style="text-align:center;padding:16px 0;"><div style="font-size:24px;margin-bottom:6px;">⚖️</div><div style="font-size:12px;color:var(--c-text2);">No appeals submitted yet.</div></div>`:`
         <div class="tbl-wrap"><table class="tbl" style="width:100%;">
           <tr><th>User</th><th>Reason</th><th>Status</th><th>Date</th></tr>
           ${Object.values(APPEAL_LOG).sort((a,b)=>a.date>b.date?-1:1).slice(0,5).map(r=>`<tr>
@@ -1752,7 +1837,7 @@ function renderHome(c){
         </div>
       </div></div>
       <div class="sbox"><div class="stitle">Today's Actions</div><div class="sbody">
-        ${Object.keys(actionCounts).length===0?'<i style="color:var(--c-text2);font-size:11px;">No actions today.</i>':
+        ${Object.keys(actionCounts).length===0?`<div style="text-align:center;padding:10px 0;"><div style="font-size:18px;margin-bottom:4px;">✓</div><div style="font-size:11px;color:var(--c-text2);">No actions taken today.</div></div>`:
           Object.entries(actionCounts).map(([action,count])=>`
             <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px;color:var(--c-text);">
               <span>${action}</span><b>${count}</b>
@@ -1766,8 +1851,30 @@ function renderHome(c){
         <hr style="border:none;border-top:1px solid var(--c-border);margin:2px 0;">
         <button class="btn small" onclick="openUpdateLog()">&#9998; Update Log</button>
       </div></div>
+      <div class="sbox"><div class="stitle">Keyboard Shortcuts</div><div class="sbody">
+        <div style="font-size:10px;color:var(--c-text2);line-height:2;">
+          <div><span class="kbd">Ctrl+K</span> or <span class="kbd">/</span> — Global search</div>
+          <div><span class="kbd">Esc</span> — Close dialog/dropdown</div>
+          <div><span class="kbd">G</span> then <span class="kbd">H</span> — Dashboard</div>
+          <div><span class="kbd">G</span> then <span class="kbd">U</span> — User Admin</div>
+          <div><span class="kbd">G</span> then <span class="kbd">S</span> — Staff Registry</div>
+          <div><span class="kbd">G</span> then <span class="kbd">M</span> — Mod Log</div>
+        </div>
+      </div></div>
     </div>
   </div>`;
+  // Animate stat card numbers counting up
+  document.querySelectorAll('.sc-val[data-target]').forEach(el=>{
+    const target=parseInt(el.dataset.target)||0;
+    if(target===0){ el.textContent='0'; return; }
+    let current=0;
+    const step=Math.max(1,Math.floor(target/20));
+    const timer=setInterval(()=>{
+      current=Math.min(current+step,target);
+      el.textContent=current;
+      if(current>=target) clearInterval(timer);
+    },30);
+  });
 }
 
 // ── USER ADMIN ──
@@ -2131,7 +2238,11 @@ function renderMod(c){
       const idx=parseInt(sel.value);
       if(isNaN(idx)) return;
       const tpl=BAN_TEMPLATES[idx];
-      if(tpl){ document.getElementById('mMsg').value=tpl.message; }
+      if(tpl){
+        const username=document.getElementById('modUserInput').value.trim();
+        const reason=document.getElementById('mReason').value;
+        document.getElementById('mMsg').value=applyTemplateVars(tpl.message, username, reason);
+      }
     };
   }
 }
@@ -2616,9 +2727,9 @@ function renderStaff(c){
     const sl=document.getElementById('btn-setlevel'); if(sl) sl.onclick=()=>updateStaffLevel(currentStaffId);
   }
   if(canSuspend&&document.getElementById('btn-togglesusp'))
-    document.getElementById('btn-togglesusp').onclick=()=>promptSuspendStaff(currentStaffId,s.suspended);
+    document.getElementById('btn-togglesusp').onclick=()=>promptSuspendStaff(currentStaffId, !!(STAFF[currentStaffId]&&STAFF[currentStaffId].suspended));
   if(canSuspend&&document.getElementById('btn-secureaccount'))
-    document.getElementById('btn-secureaccount').onclick=()=>promptSecureStaff(currentStaffId,s.secured);
+    document.getElementById('btn-secureaccount').onclick=()=>promptSecureStaff(currentStaffId, !!(STAFF[currentStaffId]&&STAFF[currentStaffId].secured));
   if(isSuperAdmin()&&document.getElementById('btn-forcelogout'))
     document.getElementById('btn-forcelogout').onclick=()=>promptForceLogout(currentStaffId);
   if(canTerminate&&document.getElementById('btn-terminate'))    document.getElementById('btn-terminate').onclick=()=>promptTerminateStaff(currentStaffId);
@@ -2921,16 +3032,20 @@ function renderAlerts(c){
   <div class="sbox"><div class="stitle">Alert History</div><div class="sbody">
     ${allAlerts.length===0?'<i style="color:var(--c-text2);">No alerts on record.</i>':`
     <div class="tbl-wrap"><table class="tbl">
-      <tr><th>Type</th><th>Message</th><th>By</th><th>Date</th><th>Active</th><th>Expires</th>${isSuperAdmin()?'<th>Admin</th>':''}</tr>
+      <tr><th>Type</th><th>Message</th><th>By</th><th>Date</th><th>Active</th><th>Expires / Countdown</th>${isSuperAdmin()?'<th>Admin</th>':''}</tr>
       ${allAlerts.map(([lid,a])=>{
         const expired=a.expiresAt&&a.expiresAt>0&&Date.now()>a.expiresAt;
-        const expiryLabel=a.expiresAt&&a.expiresAt>0?new Date(a.expiresAt).toLocaleString(undefined,{year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true}):'Never';
+        const isActive=a.active&&!expired;
+        const hasExpiry=a.expiresAt&&a.expiresAt>0;
+        const expiryLabel=hasExpiry?new Date(a.expiresAt).toLocaleString(undefined,{month:'numeric',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true}):'Never';
+        const countdownId=hasExpiry&&isActive?`alert-cd-${lid}`:'';
         return `<tr>
-          <td><span style="font-weight:bold;color:${a.type==='critical'?'#880000':a.type==='info'?'#003388':'#886600'}">${(a.type||'warning').toUpperCase()}</span></td>
+          <td><span style="font-weight:bold;color:${a.type==='critical'?'var(--c-ban)':a.type==='info'?'var(--c-link)':'var(--c-sus)'}">${(a.type||'warning').toUpperCase()}</span></td>
           <td style="max-width:200px;white-space:normal;">${a.message}</td>
-          <td>${a.by}</td><td>${a.date}</td>
-          <td>${(a.active&&!expired)?'<span class="ok">Yes</span>':'<span style="color:var(--c-text2);">No</span>'}</td>
-          <td style="font-size:10px;color:var(--c-text2);">${expiryLabel}</td>
+          <td>${a.by}</td><td style="font-size:10px;">${a.date}</td>
+          <td>${isActive?'<span class="ok">Active</span>':'<span style="color:var(--c-text2);">Expired</span>'}</td>
+          <td style="font-size:10px;color:var(--c-text2);">${expiryLabel}${countdownId?` <span id="${countdownId}" style="font-size:10px;font-weight:600;color:var(--c-sus);"></span>`:''}
+          </td>
           ${isSuperAdmin()?`<td>${deleteLogBtn('siteAlerts',lid)}</td>`:''}
         </tr>`;
       }).join('')}
@@ -2970,9 +3085,37 @@ function renderAlerts(c){
     };
   }
   bindDeleteLogBtns(c);
+  // Live countdown ticker for active timed alerts
+  (function startAlertCountdowns(){
+    if(window._alertCdTimer) clearInterval(window._alertCdTimer);
+    function fmtRemaining(ms){
+      if(ms<=0) return 'Expired';
+      const s=Math.floor(ms/1000);
+      if(s<60) return `${s}s`;
+      const m=Math.floor(s/60), rs=s%60;
+      if(m<60) return `${m}m ${rs}s`;
+      const h=Math.floor(m/60), rm=m%60;
+      if(h<24) return `${h}h ${rm}m`;
+      return `${Math.floor(h/24)}d ${h%24}h`;
+    }
+    function tick(){
+      const now=Date.now();
+      let anyActive=false;
+      Object.entries(SITE_ALERTS).forEach(([lid,a])=>{
+        if(!a.active||!a.expiresAt||a.expiresAt<=0) return;
+        const el=document.getElementById(`alert-cd-${lid}`);
+        if(!el) return;
+        anyActive=true;
+        const rem=a.expiresAt-now;
+        el.textContent=rem>0?`(${fmtRemaining(rem)} left)`:'(Expired)';
+        el.style.color=rem<300000?'var(--c-ban)':'var(--c-sus)';
+      });
+      if(!anyActive) clearInterval(window._alertCdTimer);
+    }
+    tick();
+    window._alertCdTimer=setInterval(tick,1000);
+  })();
 }
-
-// ── STAFF MESSAGING ──
 function renderMessaging(c){
   const threads=Object.entries(STAFF_MESSAGES).sort((a,b)=>a[1].lastDate>b[1].lastDate?-1:1);
   const staffList=Object.values(STAFF).filter(s=>s.username!==ME);
@@ -3301,7 +3444,7 @@ function renderAdminLog(c){
         <div id="presetsMsg" style="font-size:11px;margin-top:3px;color:#006600;"></div>
       </div></div>
       <div class="sbox"><div class="stitle">Ban Message Templates</div><div class="sbody">
-        <div style="font-size:11px;color:var(--c-text2);margin-bottom:5px;">Templates appear in the "Message to User" field on the Moderate page.</div>
+        <div style="font-size:11px;color:var(--c-text2);margin-bottom:5px;">Templates appear in the "Message to User" field on the Moderate page. Use <span style="font-family:monospace;background:var(--bg-tbl-odd);padding:1px 4px;border-radius:3px;">{username}</span> and <span style="font-family:monospace;background:var(--bg-tbl-odd);padding:1px 4px;border-radius:3px;">{reason}</span> as variables — they'll be auto-filled when you click Use.</div>
         <div id="tplList" style="margin-bottom:6px;">
           ${BAN_TEMPLATES.length===0?'<i style="color:var(--c-text2);font-size:11px;">No templates yet.</i>':
             BAN_TEMPLATES.map((t,i)=>`
@@ -3570,6 +3713,7 @@ async function submitMod(){
   }
   await executeModAction(uid, u, action, reason, note);
   currentUserId=uid;
+  showToast(`"${action}" applied to ${u.username}.`,'success');
   el.style.color='#006600'; el.textContent=`"${action}" applied to ${u.username}.`;
   setTimeout(()=>nav('useradmin'),1000);
 }
@@ -3789,12 +3933,16 @@ function promptSuspendStaff(sid, isCurrentlySuspended){
     openDialog('Unsuspend Staff',`Unsuspend staff member <b>${s.username}</b>?`,
       `<div style="font-size:11px;color:var(--c-text);margin-bottom:3px;">Reason:</div><textarea id="dlgReason" style="width:100%;height:36px;"></textarea>`,
       async()=>{
-        const reason=document.getElementById('dlgReason').value.trim()||'No reason given.';
-        await update(ref(db,`staff/${sid}`),{suspended:false,suspendInfo:null,forceLogout:false});
+        const reasonEl=document.getElementById('dlgReason');
+        const reason=(reasonEl?reasonEl.value.trim():'')||'No reason given.';
+        // Use update for flags, remove() for the nested suspendInfo object
+        await update(ref(db,`staff/${sid}`),{suspended:false,forceLogout:false});
+        await remove(ref(db,`staff/${sid}/suspendInfo`));
         await push(ref(db,'logs/suspend'),{username:s.username,action:'Unsuspend',by:ME,date:nowStr(),reason,modNote:'',offensiveItem:''});
         auditLog('Staff Unsuspended',s.username);
-        // Update local cache immediately so re-render reflects the change
-        if(STAFF[sid]) STAFF[sid].suspended=false;
+        // Update local cache immediately
+        if(STAFF[sid]){ STAFF[sid].suspended=false; STAFF[sid].suspendInfo=null; STAFF[sid].forceLogout=false; }
+        showToast(`${s.username} has been unsuspended.`,'success');
         currentStaffId=sid;
         nav('staff');
       }
@@ -3817,6 +3965,7 @@ function promptSuspendStaff(sid, isCurrentlySuspended){
         await update(ref(db,`staff/${sid}`),{suspended:true,suspendInfo:suspInfo,forceLogout:true});
         await push(ref(db,'logs/suspend'),{username:s.username,action:'Suspend',by:ME,date:nowStr(),reason,modNote,offensiveItem});
         auditLog('Staff Suspended',`${s.username}: ${reason}`);
+        showToast(`${s.username} has been suspended.`,'warning');
       }
     );
   }
@@ -3846,11 +3995,14 @@ function promptSecureStaff(sid, isCurrentlySecured){
     openDialog('Unsecure Account',`Remove security lock from <b>${s.username}</b>?`,
       `<div style="font-size:11px;color:var(--c-text);margin-bottom:2px;">Reason:</div><textarea id="dlgReason" style="width:100%;height:36px;"></textarea>`,
       async()=>{
-        const reason=document.getElementById('dlgReason').value.trim()||'Cleared by admin.';
-        await update(ref(db,`staff/${sid}`),{secured:false,secureInfo:null});
+        const reasonEl=document.getElementById('dlgReason');
+        const reason=(reasonEl?reasonEl.value.trim():'')||'Cleared by admin.';
+        await update(ref(db,`staff/${sid}`),{secured:false});
+        await remove(ref(db,`staff/${sid}/secureInfo`));
         auditLog('Staff Account Unsecured',`${s.username}: ${reason}`);
         // Update local cache immediately
-        if(STAFF[sid]) STAFF[sid].secured=false;
+        if(STAFF[sid]){ STAFF[sid].secured=false; STAFF[sid].secureInfo=null; }
+        showToast(`${s.username}'s account has been unsecured.`,'success');
         currentStaffId=sid;
         nav('staff');
       });
@@ -3925,7 +4077,15 @@ function closeDialog(){
 }
 document.getElementById('dlgClose').onclick=closeDialog;
 document.getElementById('dlgCancel').onclick=closeDialog;
-document.getElementById('dlgOK').onclick=()=>{ if(dlgCallback) dlgCallback(); closeDialog(); };
+document.getElementById('dlgOK').onclick=async()=>{
+  if(dlgCallback){
+    // Read all form values BEFORE closing (closing destroys the DOM)
+    const cb=dlgCallback;
+    dlgCallback=null; // prevent double-fire
+    try{ await cb(); }catch(e){ console.error('Dialog callback error:',e); }
+  }
+  closeDialog();
+};
 
 // ── LOGIN / LOGOUT ──
 document.getElementById('loginBtn').onclick=doLogin;
@@ -4426,12 +4586,12 @@ function renderStaffConfig(c){
   </div></div>
 
   ${canSuperAdmin?`
-  <div class="sbox" style="border-color:#880000;"><div class="stitle" style="background:#880000;color:#fff;">Emergency</div><div class="sbody" style="padding:8px 12px;">
+  <div class="sbox" style="border-color:#880000;"><div class="stitle" style="background:#880000;color:#fff;">Emergency</div><div class="sbody" style="padding:8px 12px 10px;">
     <div style="display:flex;gap:8px;align-items:center;">
       <button class="btn red small" id="btn-logout-allstaff">Force Log Out ALL Staff</button>
       <span style="font-size:11px;color:var(--c-text2);">Logs out every active session except yours. Emergency use only.</span>
     </div>
-    <div id="massStaffMsg" style="font-size:11px;margin-top:4px;color:#006600;min-height:14px;"></div>
+    <div id="massStaffMsg" style="font-size:11px;margin-top:4px;color:#006600;min-height:0;"></div>
   </div></div>`:''}`;
 
   // ── Check-all ──
@@ -4474,15 +4634,17 @@ function renderStaffConfig(c){
               await push(ref(db,'logs/suspend'),{username,action:'Suspend',by:ME,date:nowStr(),reason,modNote:noteTag,offensiveItem:''});
               auditLog('Staff Suspended (Bulk)',`${username}: ${reason}`);
             } else if(action==='unsuspend'){
-              await update(ref(db,`staff/${sid}`),{suspended:false,suspendInfo:null,forceLogout:false});
+              await update(ref(db,`staff/${sid}`),{suspended:false,forceLogout:false});
+              await remove(ref(db,`staff/${sid}/suspendInfo`));
               await push(ref(db,'logs/suspend'),{username,action:'Unsuspend',by:ME,date:nowStr(),reason:reason||'Bulk unsuspend',modNote:'',offensiveItem:''});
-              if(STAFF[sid]) STAFF[sid].suspended=false;
+              if(STAFF[sid]){ STAFF[sid].suspended=false; STAFF[sid].suspendInfo=null; STAFF[sid].forceLogout=false; }
             } else if(action==='secure'){
               await update(ref(db,`staff/${sid}`),{secured:true,secureInfo:{reason,note:noteTag,by:ME,date:nowStr()},forceLogout:true});
               if(STAFF[sid]){ STAFF[sid].secured=true; STAFF[sid].forceLogout=true; }
             } else if(action==='unsecure'){
-              await update(ref(db,`staff/${sid}`),{secured:false,secureInfo:null,forceLogout:false});
-              if(STAFF[sid]) STAFF[sid].secured=false;
+              await update(ref(db,`staff/${sid}`),{secured:false,forceLogout:false});
+              await remove(ref(db,`staff/${sid}/secureInfo`));
+              if(STAFF[sid]){ STAFF[sid].secured=false; STAFF[sid].secureInfo=null; }
             } else if(action==='forcelogout'){
               await update(ref(db,`staff/${sid}`),{forceLogout:true,lastAction:'Force logged out by '+ME});
             } else if(action==='terminate'){
