@@ -188,6 +188,14 @@ select{height:28px;border:1px solid var(--c-border-input);background:var(--bg-in
 .avatar-box{background:var(--bg-sb-hdr);border:1px solid var(--c-border);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--c-text2);flex-shrink:0;overflow:hidden;border-radius:50%;}
 .avatar-box img{width:100%;height:100%;display:block;object-fit:cover;border-radius:50%;}
 
+/* ── SEARCH BAR ── */
+.page-search{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg-topinfo);border:1px solid var(--c-border);border-radius:6px;margin-bottom:10px;}
+.page-search .search-wrap{position:relative;flex:1;}
+.page-search .search-wrap input{width:100%;height:26px;background:var(--bg-input);border:1px solid var(--c-border-input);padding:0 8px 0 26px;font-size:12px;font-family:inherit;outline:none;color:var(--c-text);border-radius:6px;box-sizing:border-box;}
+.page-search .search-wrap input:focus{border-color:var(--c-link);box-shadow:0 0 0 3px rgba(9,105,218,0.15);}
+.page-search .search-wrap svg{position:absolute;left:7px;top:50%;transform:translateY(-50%);color:var(--c-text2);pointer-events:none;}
+.page-search .search-count{font-size:11px;color:var(--c-text2);white-space:nowrap;}
+
 /* ── MISC ── */
 .nonexistent{color:var(--c-ban);font-weight:600;}
 .invalid-cred{color:var(--c-ban);font-size:10px;font-style:italic;}
@@ -1074,15 +1082,24 @@ function updateTopInfo(){
   el.innerHTML=
     '<span style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px;">'+
     '<span style="display:flex;align-items:center;flex-wrap:wrap;row-gap:3px;">'+
-      lbl('Players')+' '+val(active,'var(--c-ok)')+dot+val(susp+' susp','var(--c-sus)')+dot+val(banned+' ban','var(--c-ban)')+
+      lbl('Players: ')+val(active,'var(--c-ok)')+
+      '<span style="color:var(--c-text2);font-size:11px;margin-left:3px;">active</span>'+
+      dot+val(susp,'var(--c-sus)')+
+      '<span style="color:var(--c-sus);font-size:11px;margin-left:3px;">suspended</span>'+
+      dot+val(banned,'var(--c-ban)')+
+      '<span style="color:var(--c-ban);font-size:11px;margin-left:3px;">banned</span>'+
       pipe+
-      lbl('Staff')+' '+val(staffCount)+dot+val(onlineStaff+' online','var(--c-ok)')+dot+val(suspStaff+' susp','var(--c-sus)')+
+      lbl('Staff: ')+val(staffCount,'var(--c-text)')+
+      dot+val(onlineStaff,'var(--c-ok)')+
+      '<span style="color:var(--c-ok);font-size:11px;margin-left:3px;">online</span>'+
+      (suspStaff>0?dot+val(suspStaff,'var(--c-sus)')+'<span style="color:var(--c-sus);font-size:11px;margin-left:3px;">suspended</span>':'')+
       pipe+
-      lbl('Appeals')+' '+val(openAppeals,openAppeals>0?'var(--c-ban)':'var(--c-ok)')+
+      lbl('Appeals: ')+val(openAppeals,openAppeals>0?'var(--c-ban)':'var(--c-ok)')+
       pipe+
-      lbl('High Risk')+' '+val(highRisk,highRisk>0?'var(--c-sus)':'var(--c-text2)')+
+      lbl('High Risk: ')+val(highRisk,highRisk>0?'var(--c-sus)':'var(--c-text2)')+
       pipe+
-      lbl('Mod Log')+' '+val(modCount)+' <span style="color:var(--c-text2);font-size:11px;">entries</span>'+
+      lbl('Mod Log: ')+val(modCount,'var(--c-text)')+
+      '<span style="color:var(--c-text2);font-size:11px;margin-left:3px;">entries</span>'+
       alertChip+
     '</span>'+
     '<span style="color:var(--c-text2);font-size:11px;white-space:nowrap;flex-shrink:0;">'+dateStr+' &nbsp; '+timeStr+'</span>'+
@@ -1386,6 +1403,78 @@ function renderSiteConfig(c){
         </div>
       </div></div>
     </div>
+  </div>
+
+  <div style="margin-top:6px;">
+    <div class="sbox" style="border:2px solid #0066aa;"><div class="stitle" style="background:#004466;color:#fff;">&#9998; Update Log Editor</div><div class="sbody">
+      <div style="font-size:11px;color:var(--c-text2);margin-bottom:6px;">Manage the changelog shown in the Update Log popup on the dashboard.</div>
+      <div id="ulVersionList" style="margin-bottom:6px;">
+        ${UPDATE_LOG.map((v,i)=>`
+          <div style="border:1px solid var(--c-border);background:var(--bg-tbl-odd);padding:5px 7px;margin-bottom:5px;border-radius:4px;">
+            <div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;flex-wrap:wrap;">
+              <span style="font-size:11px;font-weight:bold;color:var(--c-link);">v${v.version}</span>
+              <span style="font-size:10px;color:var(--c-text2);">${v.date}</span>
+              <div style="display:flex;gap:3px;margin-left:auto;">
+                <button class="btn small edit-ul-btn" data-idx="${i}">Edit</button>
+                <button class="btn red small del-ul-btn" data-idx="${i}">X</button>
+              </div>
+            </div>
+            <div style="font-size:10px;color:var(--c-text2);">${v.entries.slice(0,2).map(e=>`&#9658; ${e}`).join('<br>')}${v.entries.length>2?`<br><span style="color:var(--c-text2);">+${v.entries.length-2} more...</span>`:''}</div>
+          </div>`).join('')}
+      </div>
+      <hr style="border:none;border-top:1px solid var(--c-border);margin-bottom:6px;">
+      <div style="font-size:11px;font-weight:bold;color:var(--c-text);margin-bottom:4px;">Add New Version</div>
+      <div style="display:flex;gap:5px;margin-bottom:3px;">
+        <div style="flex:1;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:1px;">Version:</label>
+          <input type="text" id="ulVersion" style="width:100%;" placeholder="e.g. 2.5"/></div>
+        <div style="flex:1;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:1px;">Label:</label>
+          <input type="text" id="ulDate" style="width:100%;" placeholder="e.g. Current"/></div>
+      </div>
+      <div style="margin-bottom:4px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:1px;">Entries (one per line):</label>
+        <textarea id="ulEntries" style="width:100%;height:70px;" placeholder="Fixed login bug&#10;Added new feature&#10;..."></textarea></div>
+      <button class="btn" id="btn-addul">Add Version</button>
+      <div id="ulMsg" style="font-size:11px;margin-top:3px;color:#006600;"></div>
+    </div></div>
+
+    <div class="sbox" style="border:2px solid #0066aa;"><div class="stitle" style="background:#004466;color:#fff;">&#9733; Reputation Point Values</div><div class="sbody">
+      <div style="font-size:11px;color:var(--c-text2);margin-bottom:5px;">Points added to a player's reputation score per punishment action.</div>
+      <div style="display:flex;flex-wrap:wrap;gap:0 20px;">
+        ${Object.keys(DEFAULT_REP_POINTS).map(k=>`
+          <div style="display:flex;align-items:center;margin-bottom:4px;gap:6px;font-size:11px;min-width:160px;">
+            <label style="width:110px;flex-shrink:0;color:var(--c-text);">${k}:</label>
+            <input type="number" id="rep-${k.replace(/ /g,'_')}" value="${REP_POINTS[k]||0}" style="width:50px;height:24px;" min="0" max="100"/>
+          </div>`).join('')}
+      </div>
+      <button class="btn" id="btn-saverep" style="margin-top:6px;">Save Values</button>
+      <div id="repMsg" style="font-size:11px;margin-top:3px;color:#006600;"></div>
+    </div></div>
+
+    <div class="sbox" style="border:2px solid #880000;"><div class="stitle" style="background:#880000;color:#fff;">&#9888; Data Management</div><div class="sbody">
+      <div style="font-size:11px;color:#880000;font-weight:bold;margin-bottom:6px;">These actions are irreversible. All deletions are permanently logged.</div>
+      <div style="font-size:11px;font-weight:bold;color:var(--c-text);margin-bottom:4px;">Erase Log Category</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;">
+        <button class="btn red small" id="btn-erase-modlog">Erase Mod Log</button>
+        <button class="btn red small" id="btn-erase-revokelog">Erase Revoke Log</button>
+        <button class="btn red small" id="btn-erase-suspendlog">Erase Suspend Log</button>
+        <button class="btn red small" id="btn-erase-terminatelog">Erase Terminate Log</button>
+        <button class="btn red small" id="btn-erase-loginlog">Erase Login Log</button>
+        <button class="btn red small" id="btn-erase-auditlog">Erase Audit Log</button>
+        <button class="btn red small" id="btn-erase-appeals">Erase All Appeals</button>
+        <button class="btn red small" id="btn-erase-alerts">Erase All Alerts</button>
+        <button class="btn red small" id="btn-erase-requests">Erase All Requests</button>
+        <button class="btn red small" id="btn-erase-messages">Erase Staff Messages</button>
+      </div>
+      <div style="border-top:1px solid #880000;padding-top:8px;margin-bottom:4px;">
+        <div style="font-size:11px;font-weight:bold;color:var(--c-text);margin-bottom:4px;">Wipe All Users</div>
+        <button class="btn red" id="btn-wipe-all-users" style="width:100%;margin-bottom:8px;">Wipe All Player Data</button>
+      </div>
+      <div style="border-top:1px solid #880000;padding-top:8px;">
+        <div style="font-size:12px;font-weight:bold;color:#880000;margin-bottom:4px;">&#128308; Factory Reset</div>
+        <div style="font-size:11px;color:var(--c-text2);margin-bottom:6px;">Deletes ALL data including users, staff (except rpatoff), all logs, alerts, messages, and requests. Requires three confirmation codes.</div>
+        <button class="btn red" id="btn-factory-reset" style="width:100%;font-weight:bold;">FACTORY RESET</button>
+      </div>
+      <div id="dataManageMsg" style="font-size:11px;margin-top:5px;color:#006600;min-height:14px;"></div>
+    </div></div>
   </div>`;
 
   document.getElementById('btn-setsitestatus').onclick=async()=>{
@@ -1407,9 +1496,10 @@ function renderSiteConfig(c){
     SITE_STATUS=newStatusObj;
     await push(ref(db,'statusLog'),{prevStatus,newStatus,reason,by:ME,date:nowStr(),timestamp:Date.now()});
     const alertType=newStatus==='OK'?'info':newStatus==='UPDATING'?'warning':'critical';
-    // Remove ALL previous alerts entirely (including never-expiring ones), then post the new one
-    await remove(ref(db,'siteAlerts'));
-    SITE_ALERTS={};
+    // Deactivate previous alerts (preserve history), then post the new status alert
+    const deactivateUpdates={};
+    Object.keys(SITE_ALERTS).forEach(lid=>{ deactivateUpdates[`siteAlerts/${lid}/active`]=false; });
+    if(Object.keys(deactivateUpdates).length>0) await update(ref(db,'/'),deactivateUpdates);
     await push(ref(db,'siteAlerts'),{message:`Site status changed to ${newStatus}: ${reason}`,type:alertType,by:ME,date:nowStr(),active:true,expiresAt:0});
     updateSiteStatusBar(); updateAnnouncements();
     auditLog('Site Status Changed',`${prevStatus} -> ${newStatus}: ${reason}`);
@@ -1447,6 +1537,90 @@ function renderSiteConfig(c){
       nav('siteconfig');
     });
   };
+
+  // Update Log editor
+  document.getElementById('btn-addul').onclick=async()=>{
+    const version=document.getElementById('ulVersion').value.trim();
+    const date=document.getElementById('ulDate').value.trim();
+    const entries=document.getElementById('ulEntries').value.split('\n').map(l=>l.trim()).filter(l=>l);
+    const msgEl=document.getElementById('ulMsg');
+    if(!version){ msgEl.style.color='#880000'; msgEl.textContent='Version required.'; return; }
+    if(!entries.length){ msgEl.style.color='#880000'; msgEl.textContent='At least one entry required.'; return; }
+    const newLog=[{version,date:date||'Current',entries},...UPDATE_LOG];
+    await set(ref(db,'meta/updateLog'),newLog);
+    UPDATE_LOG=newLog;
+    auditLog('Update Log Modified',`Added version ${version}`);
+    msgEl.style.color='#006600'; msgEl.textContent=`Version ${version} added!`;
+    setTimeout(()=>nav('siteconfig'),800);
+  };
+  document.querySelectorAll('.del-ul-btn').forEach(btn=>{
+    btn.onclick=async()=>{
+      const idx=parseInt(btn.dataset.idx);
+      const newLog=[...UPDATE_LOG]; newLog.splice(idx,1);
+      await set(ref(db,'meta/updateLog'),newLog);
+      UPDATE_LOG=newLog;
+      auditLog('Update Log Modified',`Removed version index ${idx}`);
+      nav('siteconfig');
+    };
+  });
+  document.querySelectorAll('.edit-ul-btn').forEach(btn=>{
+    btn.onclick=()=>{
+      const idx=parseInt(btn.dataset.idx);
+      const v=UPDATE_LOG[idx]; if(!v) return;
+      openDialog(`Edit Version ${v.version}`,'',`
+        <div style="display:flex;gap:5px;margin-bottom:4px;">
+          <div style="flex:1;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:1px;">Version:</label>
+            <input type="text" id="editUlVersion" style="width:100%;" value="${v.version}"/></div>
+          <div style="flex:1;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:1px;">Label:</label>
+            <input type="text" id="editUlDate" style="width:100%;" value="${v.date}"/></div>
+        </div>
+        <label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:1px;">Entries (one per line):</label>
+        <textarea id="editUlEntries" style="width:100%;height:90px;">${v.entries.join('\n')}</textarea>`,
+        async()=>{
+          const version=document.getElementById('editUlVersion').value.trim()||v.version;
+          const date=document.getElementById('editUlDate').value.trim()||v.date;
+          const entries=document.getElementById('editUlEntries').value.split('\n').map(l=>l.trim()).filter(l=>l);
+          if(!entries.length) return;
+          const newLog=[...UPDATE_LOG];
+          newLog[idx]={version,date,entries};
+          await set(ref(db,'meta/updateLog'),newLog);
+          UPDATE_LOG=newLog;
+          auditLog('Update Log Modified',`Edited version ${version}`);
+        }
+      );
+    };
+  });
+
+  // Reputation Points
+  document.getElementById('btn-saverep').onclick=saveRepPoints;
+
+  // Data Management
+  const dmMsg=()=>document.getElementById('dataManageMsg');
+  const eraseLog=(path,label)=>{
+    openOpDialog(`Erase ALL entries from ${label}? This cannot be undone.`, async()=>{
+      await remove(ref(db,path));
+      auditLog('Log Erased',label);
+      const el=dmMsg(); if(el){ el.style.color='#006600'; el.textContent=`${label} erased.`; setTimeout(()=>{ if(el) el.textContent=''; },2500); }
+    });
+  };
+  document.getElementById('btn-erase-modlog').onclick=()=>eraseLog('logs/moderation','Moderation Log');
+  document.getElementById('btn-erase-revokelog').onclick=()=>eraseLog('logs/revoke','Revoke Log');
+  document.getElementById('btn-erase-suspendlog').onclick=()=>eraseLog('logs/suspend','Suspend Log');
+  document.getElementById('btn-erase-terminatelog').onclick=()=>eraseLog('logs/terminate','Terminate Log');
+  document.getElementById('btn-erase-loginlog').onclick=()=>eraseLog('logs/login','Login Log');
+  document.getElementById('btn-erase-auditlog').onclick=()=>eraseLog('logs/audit','Audit Log');
+  document.getElementById('btn-erase-appeals').onclick=()=>eraseLog('logs/appeals','Appeals');
+  document.getElementById('btn-erase-alerts').onclick=()=>eraseLog('siteAlerts','Site Alerts');
+  document.getElementById('btn-erase-requests').onclick=()=>eraseLog('modRequests','Mod Requests');
+  document.getElementById('btn-erase-messages').onclick=()=>eraseLog('staffMessages','Staff Messages');
+  document.getElementById('btn-wipe-all-users').onclick=()=>{
+    openOpDialog('WARNING: Permanently delete ALL player data? This wipes every user record, punishment, and appeal link. Cannot be undone.', async()=>{
+      await remove(ref(db,'users'));
+      auditLog('All Users Wiped',`By ${ME}`);
+      const el=dmMsg(); if(el){ el.style.color='#006600'; el.textContent='All user data wiped.'; setTimeout(()=>{ if(el) el.textContent=''; },2500); }
+    });
+  };
+  document.getElementById('btn-factory-reset').onclick=()=>openFactoryResetDialog();
 }
 
 // ── HOME DASHBOARD ──
@@ -1617,7 +1791,7 @@ function renderUA(c){
             <div class="row"><label>Roblox Username:</label><span>${u.robloxUsername||'N/A'}</span></div>
             <div class="row"><label>Player ID:</label><span>${u.playerId||'—'}</span></div>
             <div class="row"><label>User ID (Roblox):</label><span>${u.robloxId||'—'}</span></div>
-            <div class="row"><label>Status:</label><span>${statusBadge(u.status)}${u.protected?' <span style="font-size:10px;color:#880000;font-weight:bold;border:1px solid #cc6666;padding:1px 3px;background:#fde8e8;">&#9632; PROTECTED</span>':''}</span></div>
+            <div class="row"><label>Status:</label><span>${statusBadge(u.status)}</span></div>
             <div class="row"><label>Reputation:</label>${repBar(repScore)}</div>
             <div class="row"><label>&nbsp;</label><button class="btn small" id="btn-rephistory">&#9660; History</button></div>
             <div class="row"><label>System Entry:</label><span>${u.created}</span></div>
@@ -2120,15 +2294,22 @@ function renderReputation(c){
   const uArr=Object.entries(USERS).sort((a,b)=>calcReputation(b[1])-calcReputation(a[1]));
   c.innerHTML=`
   <div class="ptitle">Reputation System</div>
+  <div class="page-search">
+    <div class="search-wrap">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <input type="text" id="rep-search" placeholder="Search player…" oninput="filterRepTable(this.value)"/>
+    </div>
+    <span class="search-count" id="rep-count">${uArr.length} players</span>
+  </div>
   <div class="sbox"><div class="stitle">Player Reputation Scores</div><div class="sbody">
     ${uArr.length===0?'<i style="color:var(--c-text2);">No players yet.</i>':`
-    <div class="tbl-wrap"><table class="tbl">
+    <div class="tbl-wrap"><table class="tbl" id="rep-tbl">
       <tr><th>Player</th><th>Score</th><th>Standing</th><th>Punishments</th><th>Action</th></tr>
       ${uArr.map(([uid,u])=>{
         const score=calcReputation(u);
         const standing=score<=5?'<span class="ok">Good</span>':score<=15?'<span class="sus">Caution</span>':'<span class="ban">High Risk</span>';
         const pCount=u.punishments?Object.keys(u.punishments).length:0;
-        return `<tr>
+        return `<tr data-search="${u.username.toLowerCase()}">
           <td><b>${u.username}</b></td><td>${score} pts</td><td>${standing}</td><td>${pCount}</td>
           <td><button class="btn view-user-btn" data-uid="${uid}">View</button></td>
         </tr>`;
@@ -2137,17 +2318,41 @@ function renderReputation(c){
   </div></div>`;
   document.querySelectorAll('.view-user-btn').forEach(btn=>{btn.onclick=()=>{ currentUserId=btn.dataset.uid; nav('useradmin'); };});
 }
+// ── Shared table search helper ──
+window.filterTableById=function(tableId, countId, q){
+  const tbl=document.getElementById(tableId);
+  if(!tbl) return;
+  const rows=tbl.querySelectorAll('tr[data-search]');
+  const lq=q.toLowerCase().trim();
+  let shown=0;
+  rows.forEach(r=>{ const show=!lq||r.dataset.search.includes(lq); r.style.display=show?'':'none'; if(show) shown++; });
+  const cnt=document.getElementById(countId); if(cnt) cnt.textContent=`${shown} entries`;
+};
+window.filterRepTable=function(q){
+  const rows=document.querySelectorAll('#rep-tbl tr[data-search]');
+  const lq=q.toLowerCase();
+  let shown=0;
+  rows.forEach(r=>{ const show=!lq||r.dataset.search.includes(lq); r.style.display=show?'':'none'; if(show) shown++; });
+  const cnt=document.getElementById('rep-count'); if(cnt) cnt.textContent=`${shown} players`;
+};
 
 // ── APPEALS ──
 function renderAppeals(c){
   const entries=Object.entries(APPEAL_LOG).sort((a,b)=>a[1].date>b[1].date?-1:1);
   c.innerHTML=`
   <div class="ptitle">Appeal Log</div>
+  <div class="page-search">
+    <div class="search-wrap">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <input type="text" id="appeal-search" placeholder="Search user, submitter, reason…" oninput="filterAppealTable(this.value)"/>
+    </div>
+    <span class="search-count" id="appeal-count">${entries.length} entries</span>
+  </div>
   <div class="sbox"><div class="stitle">All Appeals</div><div class="sbody">
     ${entries.length===0?'<i style="color:var(--c-text2);">No appeals on record.</i>':`
-    <div class="tbl-wrap"><table class="tbl">
+    <div class="tbl-wrap"><table class="tbl" id="appeal-tbl">
       <tr><th>User</th><th>Appeal Status</th><th>Punishment</th><th>Preset Reason</th><th>Submitted By</th><th>Date</th><th>Reviewer</th><th>Review Note</th><th>Appeal(s)</th>${isSuperAdmin()?'<th>Admin</th>':''}</tr>
-      ${entries.map(([lid,r])=>`<tr>
+      ${entries.map(([lid,r])=>`<tr data-search="${[(r.user||''),(r.submittedBy||r.by||''),(r.presetReason||''),(r.reason||'')].join(' ').toLowerCase()}">
         <td><b>${r.user}</b></td>
         <td><span class="badge appeal-${(r.status||'pending').toLowerCase().replace(' ','-')}">${r.status||'Pending'}</span></td>
         <td style="font-size:10px;">${r.punishAction||'—'} (${r.punishDate||'—'})</td>
@@ -2166,6 +2371,13 @@ function renderAppeals(c){
   });
   bindDeleteLogBtns(c);
 }
+window.filterAppealTable=function(q){
+  const rows=document.querySelectorAll('#appeal-tbl tr[data-search]');
+  const lq=q.toLowerCase();
+  let shown=0;
+  rows.forEach(r=>{ const show=!lq||r.dataset.search.includes(lq); r.style.display=show?'':'none'; if(show) shown++; });
+  const cnt=document.getElementById('appeal-count'); if(cnt) cnt.textContent=`${shown} entries`;
+};
 
 function openReviewPanel(lid){
   const r=APPEAL_LOG[lid]; if(!r) return;
@@ -2510,31 +2722,47 @@ function renderModLog(c){
 function renderRevokeLog(c){
   const entries=Object.entries(REVOKE_LOG).sort((a,b)=>a[1].date>b[1].date?-1:1);
   const tbl=entries.length===0?'<i style="color:var(--c-text2);">No revocations on record.</i>':`
-  <div class="tbl-wrap"><table class="tbl">
+  <div class="tbl-wrap"><table class="tbl" id="revoke-tbl">
     <tr><th>User</th><th>Action</th><th>Orig. Mod</th><th>Revoked By</th><th>Date</th><th>Note</th>${isSuperAdmin()?'<th>Admin</th>':''}</tr>
-    ${entries.map(([lid,r])=>`<tr>
+    ${entries.map(([lid,r])=>`<tr data-search="${[(r.user||''),(r.origMod||''),(r.revokedBy||''),(r.action||''),(r.note||'')].join(' ').toLowerCase()}">
       <td>${r.user==='[WIPED]'?'<span class="wiped">[WIPED]</span>':(r.user||'—')}</td>
       <td>${r.action}</td><td>${r.origMod}</td><td><b>${r.revokedBy}</b></td><td>${r.date}</td><td>${r.note||''}</td>
       ${isSuperAdmin()?`<td>${deleteLogBtn('logs/revoke',lid)}</td>`:''}
     </tr>`).join('')}
   </table></div>`;
-  c.innerHTML=`<div class="ptitle">Revoke Log</div><div class="sbox"><div class="stitle">Revoked Punishments</div><div class="sbody">${tbl}</div></div>`;
+  c.innerHTML=`<div class="ptitle">Revoke Log</div>
+  <div class="page-search">
+    <div class="search-wrap">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <input type="text" id="revoke-search" placeholder="Search user, moderator, action…" oninput="filterTableById('revoke-tbl','revoke-count',this.value)"/>
+    </div>
+    <span class="search-count" id="revoke-count">${entries.length} entries</span>
+  </div>
+  <div class="sbox"><div class="stitle">Revoked Punishments</div><div class="sbody">${tbl}</div></div>`;
   bindDeleteLogBtns(c);
 }
 
 function renderSuspendLog(c){
   const entries=Object.entries(SUSPEND_LOG).sort((a,b)=>a[1].date>b[1].date?-1:1);
   const tbl=entries.length===0?'<i style="color:var(--c-text2);">No suspensions on record.</i>':`
-  <div class="tbl-wrap"><table class="tbl">
+  <div class="tbl-wrap"><table class="tbl" id="suspend-tbl">
     <tr><th>Username</th><th>Action</th><th>By</th><th>Date</th><th>Reason</th><th>Mod Note</th><th>Offensive Item</th><th>Edit</th>${isSuperAdmin()?'<th>Admin</th>':''}</tr>
-    ${entries.map(([lid,r])=>`<tr>
+    ${entries.map(([lid,r])=>`<tr data-search="${[(r.username||''),(r.by||''),(r.action||''),(r.reason||''),(r.modNote||'')].join(' ').toLowerCase()}">
       <td><b>${r.username}</b></td><td>${r.action}</td><td>${r.by}</td><td>${r.date}</td>
       <td>${r.reason||''}</td><td>${r.modNote||''}</td><td>${r.offensiveItem||''}</td>
       <td><button class="btn small edit-susp-btn" data-lid="${lid}">Edit</button></td>
       ${isSuperAdmin()?`<td>${deleteLogBtn('logs/suspend',lid)}</td>`:''}
     </tr>`).join('')}
   </table></div>`;
-  c.innerHTML=`<div class="ptitle">Suspension Log</div><div class="sbox"><div class="stitle">Staff Suspensions</div><div class="sbody">${tbl}</div></div>`;
+  c.innerHTML=`<div class="ptitle">Suspension Log</div>
+  <div class="page-search">
+    <div class="search-wrap">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <input type="text" id="suspend-search" placeholder="Search username, moderator, reason…" oninput="filterTableById('suspend-tbl','suspend-count',this.value)"/>
+    </div>
+    <span class="search-count" id="suspend-count">${entries.length} entries</span>
+  </div>
+  <div class="sbox"><div class="stitle">Staff Suspensions</div><div class="sbody">${tbl}</div></div>`;
   c.querySelectorAll('.edit-susp-btn').forEach(btn=>{btn.onclick=()=>openEditSuspend(btn.dataset.lid);});
   bindDeleteLogBtns(c);
 }
@@ -2542,15 +2770,23 @@ function renderSuspendLog(c){
 function renderTerminateLog(c){
   const entries=Object.entries(TERMINATE_LOG).sort((a,b)=>a[1].date>b[1].date?-1:1);
   const tbl=entries.length===0?'<i style="color:var(--c-text2);">No terminations on record.</i>':`
-  <div class="tbl-wrap"><table class="tbl">
+  <div class="tbl-wrap"><table class="tbl" id="terminate-tbl">
     <tr><th>Username</th><th>Type</th><th>By</th><th>Date</th><th>Reason</th><th>Mod Note</th><th>Offensive Item</th>${isSuperAdmin()?'<th>Admin</th>':''}</tr>
-    ${entries.map(([lid,r])=>`<tr>
+    ${entries.map(([lid,r])=>`<tr data-search="${[(r.username||''),(r.by||''),(r.reason||''),(r.type||'')].join(' ').toLowerCase()}">
       <td><b>${r.username}</b></td><td>${r.type||'Staff'}</td><td>${r.by}</td><td>${r.date}</td>
       <td>${r.reason||''}</td><td>${r.modNote||''}</td><td>${r.offensiveItem||''}</td>
       ${isSuperAdmin()?`<td>${deleteLogBtn('logs/terminate',lid)}</td>`:''}
     </tr>`).join('')}
   </table></div>`;
-  c.innerHTML=`<div class="ptitle">Termination Log</div><div class="sbox"><div class="stitle">Terminated Accounts</div><div class="sbody">${tbl}</div></div>`;
+  c.innerHTML=`<div class="ptitle">Termination Log</div>
+  <div class="page-search">
+    <div class="search-wrap">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <input type="text" id="terminate-search" placeholder="Search username, moderator, reason…" oninput="filterTableById('terminate-tbl','terminate-count',this.value)"/>
+    </div>
+    <span class="search-count" id="terminate-count">${entries.length} entries</span>
+  </div>
+  <div class="sbox"><div class="stitle">Terminated Accounts</div><div class="sbody">${tbl}</div></div>`;
   bindDeleteLogBtns(c);
 }
 
@@ -2558,9 +2794,9 @@ function renderLoginLog(c){
   const entries=Object.entries(LOGIN_LOG).sort((a,b)=>a[1].date>b[1].date?-1:1).slice(0,200);
   const isSM=isSoftwareManager();
   const tbl=entries.length===0?'<i style="color:var(--c-text2);">No logins recorded yet.</i>':`
-  <div class="tbl-wrap"><table class="tbl">
+  <div class="tbl-wrap"><table class="tbl" id="login-tbl">
     <tr><th>Username</th><th>Level</th><th>Date/Time</th><th>Result</th>${isSM?'<th>IP</th>':''}${isSuperAdmin()?'<th>Admin</th>':''}</tr>
-    ${entries.map(([lid,r])=>`<tr>
+    ${entries.map(([lid,r])=>`<tr data-search="${[(r.username||''),(r.level||''),(r.result||'')].join(' ').toLowerCase()}">
       <td><b>${r.username}</b></td><td>${r.level||'—'}</td><td>${r.date}</td>
       <td>${r.result==='success'?'<span class="ok">Success</span>':'<span class="ban">'+r.result+'</span>'}</td>
       ${isSM?`<td style="font-size:10px;color:var(--c-text2);">${r.ip||'—'}</td>`:''}
@@ -2569,6 +2805,13 @@ function renderLoginLog(c){
   </table></div>`;
   c.innerHTML=`<div class="ptitle">Login Log</div>
   ${isSM?`<div class="sbox" style="border-color:#0066aa;"><div class="stitle" style="background:#004466;color:#fff;">&#9888; Software Manager View</div><div class="sbody"><div style="font-size:11px;color:var(--c-text);">IP addresses shown below are placeholders (browser-based panel cannot access real IPs without a server component). <b>This column is reserved for future server integration.</b></div></div></div>`:''}
+  <div class="page-search">
+    <div class="search-wrap">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <input type="text" id="login-search" placeholder="Search username, level, result…" oninput="filterTableById('login-tbl','login-count',this.value)"/>
+    </div>
+    <span class="search-count" id="login-count">${entries.length} entries</span>
+  </div>
   <div class="sbox"><div class="stitle">Staff Login History (last 200)</div><div class="sbody">${tbl}</div></div>`;
   bindDeleteLogBtns(c);
 }
@@ -2576,14 +2819,22 @@ function renderLoginLog(c){
 function renderAuditLog(c){
   const entries=Object.entries(AUDIT_LOG).sort((a,b)=>a[1].date>b[1].date?-1:1).slice(0,200);
   const tbl=entries.length===0?'<i style="color:var(--c-text2);">No audit entries yet.</i>':`
-  <div class="tbl-wrap"><table class="tbl">
+  <div class="tbl-wrap"><table class="tbl" id="audit-tbl">
     <tr><th>Action</th><th>Detail</th><th>By</th><th>Date</th>${isSuperAdmin()?'<th>Admin</th>':''}</tr>
-    ${entries.map(([lid,r])=>`<tr>
+    ${entries.map(([lid,r])=>`<tr data-search="${[(r.action||''),(r.detail||''),(r.by||'')].join(' ').toLowerCase()}">
       <td>${r.action}</td><td>${r.detail||''}</td><td>${r.by}</td><td>${r.date}</td>
       ${isSuperAdmin()?`<td>${deleteLogBtn('logs/audit',lid)}</td>`:''}
     </tr>`).join('')}
   </table></div>`;
-  c.innerHTML=`<div class="ptitle">Audit Log</div><div class="sbox"><div class="stitle">All Admin Actions</div><div class="sbody">${tbl}</div></div>`;
+  c.innerHTML=`<div class="ptitle">Audit Log</div>
+  <div class="page-search">
+    <div class="search-wrap">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <input type="text" id="audit-search" placeholder="Search action, detail, staff…" oninput="filterTableById('audit-tbl','audit-count',this.value)"/>
+    </div>
+    <span class="search-count" id="audit-count">${entries.length} entries</span>
+  </div>
+  <div class="sbox"><div class="stitle">All Admin Actions</div><div class="sbody">${tbl}</div></div>`;
   bindDeleteLogBtns(c);
 }
 
@@ -2698,9 +2949,10 @@ function renderAlerts(c){
         expiryMins=d*1440+h*60+m;
       } else { expiryMins=parseInt(expiryVal)||0; }
       if(!msg) return;
-      // Remove all previous alerts before posting new one
-      await remove(ref(db,'siteAlerts'));
-      SITE_ALERTS={};
+      // Deactivate previous alerts (preserve history), then post new one
+      const deactivateUpdates={};
+      Object.keys(SITE_ALERTS).forEach(lid=>{ deactivateUpdates[`siteAlerts/${lid}/active`]=false; });
+      if(Object.keys(deactivateUpdates).length>0) await update(ref(db,'/'),deactivateUpdates);
       await push(ref(db,'siteAlerts'),{message:msg,type,by:ME,date:nowStr(),active:true,expiresAt:expiryMins>0?Date.now()+expiryMins*60000:0});
       auditLog('Site Alert Posted',`[${type}] ${msg.substring(0,50)}`);
       document.getElementById('newAlertMsg').value='';
@@ -2708,11 +2960,12 @@ function renderAlerts(c){
       el.textContent='Alert posted!'; setTimeout(()=>{ if(el) el.textContent=''; },1500);
     };
     document.getElementById('btn-clearalerts').onclick=async()=>{
-      // Remove all alerts entirely so they never reappear
-      await remove(ref(db,'siteAlerts'));
-      SITE_ALERTS={};
+      // Mark all alerts as inactive (preserves history) instead of deleting them
+      const updates={};
+      Object.keys(SITE_ALERTS).forEach(lid=>{ updates[`siteAlerts/${lid}/active`]=false; });
+      if(Object.keys(updates).length>0) await update(ref(db,'/'),updates);
       updateAnnouncements();
-      auditLog('Site Alerts Cleared','All alerts removed');
+      auditLog('Site Alerts Cleared','All alerts set to inactive');
       render();
     };
   }
@@ -2866,12 +3119,19 @@ function renderUserConfig(c){
   const canManage=canDo('canManageUserConfig');
   c.innerHTML=`
   <div class="ptitle">User Config</div>
+  <div class="page-search">
+    <div class="search-wrap">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <input type="text" id="ucfg-search" placeholder="Search player…" oninput="filterTableById('ucfg-tbl','ucfg-count',this.value)"/>
+    </div>
+    <span class="search-count" id="ucfg-count">${uArr.length} players</span>
+  </div>
   <div class="sbox"><div class="stitle">Player Configuration</div><div class="sbody">
     <div style="font-size:11px;color:var(--c-text2);margin-bottom:6px;">Manage per-player settings and variables. Protected players require escalated approval before any moderation action.</div>
     ${uArr.length===0?'<i style="color:var(--c-text2);">No players yet.</i>':`
-    <div class="tbl-wrap"><table class="tbl">
+    <div class="tbl-wrap"><table class="tbl" id="ucfg-tbl">
       <tr><th>Player</th><th>Status</th><th>Points</th><th>Protected</th><th>Rep Score</th><th>Notes</th><th>Action</th></tr>
-      ${uArr.map(([uid,u])=>`<tr>
+      ${uArr.map(([uid,u])=>`<tr data-search="${(u.username||'').toLowerCase()}">
         <td><b>${u.username}</b></td>
         <td>${statusBadge(u.status)}</td>
         <td>${u.points||0}</td>
@@ -2978,62 +3238,61 @@ function renderAdminLog(c){
   <div class="ptitle">Administrator</div>
   <div style="display:flex;gap:6px;flex-wrap:wrap;">
     <div style="flex:1;min-width:200px;">
-      <div class="sbox"><div class="stitle">Update Log Editor</div><div class="sbody">
-        <div style="font-size:11px;color:var(--c-text2);margin-bottom:6px;">Manage the changelog shown in the Update Log popup on the dashboard. Each entry is one bullet point.</div>
-        <div id="ulVersionList" style="margin-bottom:6px;">
-          ${UPDATE_LOG.map((v,i)=>`
-            <div style="border:1px solid var(--c-border);background:var(--bg-tbl-odd);padding:5px 7px;margin-bottom:5px;">
-              <div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;flex-wrap:wrap;">
-                <span style="font-size:11px;font-weight:bold;color:var(--c-link);">v${v.version}</span>
-                <span style="font-size:10px;color:var(--c-text2);">${v.date}</span>
-                <div style="display:flex;gap:3px;margin-left:auto;">
-                  <button class="btn small edit-ul-btn" data-idx="${i}">Edit</button>
-                  <button class="btn red small del-ul-btn" data-idx="${i}">X</button>
-                </div>
-              </div>
-              <div style="font-size:10px;color:var(--c-text2);">${v.entries.slice(0,2).map(e=>`&#9658; ${e}`).join('<br>')}${v.entries.length>2?`<br><span style="color:var(--c-text2);">+${v.entries.length-2} more...</span>`:''}</div>
-            </div>`).join('')}
+      <div class="sbox" style="border-color:var(--c-link);"><div class="stitle">&#8505; Moved to Machine Management</div><div class="sbody">
+        <div style="font-size:11px;color:var(--c-text2);line-height:1.7;">
+          The following sections have been relocated to <b>Machine Management → Configuration</b>:
+          <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;">
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--bg-tbl-odd);border:1px solid var(--c-border);border-radius:4px;">
+              <span style="font-size:13px;">📋</span>
+              <span style="font-size:11px;color:var(--c-text);">Update Log Editor</span>
+              <button class="btn small" style="margin-left:auto;" onclick="nav('siteconfig')">Go →</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--bg-tbl-odd);border:1px solid var(--c-border);border-radius:4px;">
+              <span style="font-size:13px;">⭐</span>
+              <span style="font-size:11px;color:var(--c-text);">Reputation Point Values</span>
+              <button class="btn small" style="margin-left:auto;" onclick="nav('siteconfig')">Go →</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--bg-tbl-odd);border:1px solid var(--c-border);border-radius:4px;">
+              <span style="font-size:13px;">⚠️</span>
+              <span style="font-size:11px;color:var(--c-text);">Data Management</span>
+              <button class="btn small" style="margin-left:auto;" onclick="nav('siteconfig')">Go →</button>
+            </div>
+          </div>
         </div>
-        <hr style="border:none;border-top:1px solid var(--c-border);margin-bottom:6px;">
-        <div style="font-size:11px;font-weight:bold;color:var(--c-text);margin-bottom:4px;">Add New Version</div>
-        <div style="display:flex;gap:5px;margin-bottom:3px;">
-          <div style="flex:1;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:1px;">Version:</label>
-            <input type="text" id="ulVersion" style="width:100%;" placeholder="e.g. 2.4"/></div>
-          <div style="flex:1;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:1px;">Label:</label>
-            <input type="text" id="ulDate" style="width:100%;" placeholder="e.g. Current"/></div>
-        </div>
-        <div style="margin-bottom:4px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:1px;">Entries (one per line):</label>
-          <textarea id="ulEntries" style="width:100%;height:70px;" placeholder="Fixed login bug&#10;Added new feature&#10;..."></textarea></div>
-        <button class="btn" id="btn-addul">Add Version</button>
-        <div id="ulMsg" style="font-size:11px;margin-top:3px;color:#006600;"></div>
       </div></div>
-        <div style="font-size:11px;color:var(--c-text2);margin-bottom:6px;">Choose which log panels appear on the Dashboard home page.</div>
-        <div style="display:flex;flex-direction:column;gap:5px;">
-          <label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer;">
-            <input type="checkbox" id="dlc-modlog" ${DASHBOARD_LOG_CONFIG.modlog!==false?'checked':''}/>Recent Moderation Actions</label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer;">
-            <input type="checkbox" id="dlc-loginlog" ${DASHBOARD_LOG_CONFIG.loginlog!==false?'checked':''}/>Recent Staff Logins</label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer;">
-            <input type="checkbox" id="dlc-appeals" ${DASHBOARD_LOG_CONFIG.appeals?'checked':''}/>Recent Appeals</label>
+      <div class="sbox"><div class="stitle">&#9660; Dashboard Panel Visibility</div><div class="sbody">
+        <div style="font-size:11px;color:var(--c-text2);margin-bottom:10px;">Choose which recent-activity panels appear on the Dashboard home page.</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <label style="display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--bg-tbl-odd);border:1px solid var(--c-border);border-radius:6px;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='var(--bg-tbl-hover)'" onmouseout="this.style.background='var(--bg-tbl-odd)'">
+            <input type="checkbox" id="dlc-modlog" ${DASHBOARD_LOG_CONFIG.modlog!==false?'checked':''} style="width:14px;height:14px;accent-color:var(--c-link);cursor:pointer;"/>
+            <span style="display:flex;flex-direction:column;gap:1px;">
+              <span style="font-size:12px;font-weight:600;color:var(--c-text);">Recent Moderation Actions</span>
+              <span style="font-size:10px;color:var(--c-text2);">Latest player mod actions from the Mod Log</span>
+            </span>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--bg-tbl-odd);border:1px solid var(--c-border);border-radius:6px;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='var(--bg-tbl-hover)'" onmouseout="this.style.background='var(--bg-tbl-odd)'">
+            <input type="checkbox" id="dlc-loginlog" ${DASHBOARD_LOG_CONFIG.loginlog!==false?'checked':''} style="width:14px;height:14px;accent-color:var(--c-link);cursor:pointer;"/>
+            <span style="display:flex;flex-direction:column;gap:1px;">
+              <span style="font-size:12px;font-weight:600;color:var(--c-text);">Recent Staff Logins</span>
+              <span style="font-size:10px;color:var(--c-text2);">Staff login activity from the Login Log</span>
+            </span>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--bg-tbl-odd);border:1px solid var(--c-border);border-radius:6px;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='var(--bg-tbl-hover)'" onmouseout="this.style.background='var(--bg-tbl-odd)'">
+            <input type="checkbox" id="dlc-appeals" ${DASHBOARD_LOG_CONFIG.appeals?'checked':''} style="width:14px;height:14px;accent-color:var(--c-link);cursor:pointer;"/>
+            <span style="display:flex;flex-direction:column;gap:1px;">
+              <span style="font-size:12px;font-weight:600;color:var(--c-text);">Recent Appeals</span>
+              <span style="font-size:10px;color:var(--c-text2);">Most recent appeals from the Appeals log</span>
+            </span>
+          </label>
         </div>
-        <button class="btn" id="btn-savedlc" style="margin-top:6px;">Save</button>
-        <div id="dlcMsg" style="font-size:11px;margin-top:3px;color:#006600;"></div>
+        <button class="btn" id="btn-savedlc" style="margin-top:10px;width:100%;">Save Visibility Settings</button>
+        <div id="dlcMsg" style="font-size:11px;margin-top:4px;color:var(--c-ok);text-align:center;"></div>
       </div></div>
       <div class="sbox"><div class="stitle">Staff Level Overview</div><div class="sbody">
         <table class="tbl" style="width:100%;">
           <tr><th>Level</th><th>Rank</th><th>Count</th></tr>
           ${[...LEVEL_LIST,'SOFTWARE MANAGER'].map(l=>`<tr><td>${levelBadge(l)}</td><td>${LEVEL_RANK[l]}</td><td>${counts[l]||0}</td></tr>`).join('')}
         </table>
-      </div></div>
-      <div class="sbox"><div class="stitle">Reputation Point Values</div><div class="sbody">
-        <div style="font-size:11px;color:var(--c-text2);margin-bottom:5px;">Points added per punishment action.</div>
-        ${repKeys.map(k=>`
-          <div style="display:flex;align-items:center;margin-bottom:3px;gap:6px;font-size:11px;">
-            <label style="width:120px;flex-shrink:0;color:var(--c-text);">${k}:</label>
-            <input type="number" id="rep-${k.replace(/ /g,'_')}" value="${REP_POINTS[k]||0}" style="width:50px;height:16px;" min="0" max="100"/>
-          </div>`).join('')}
-        <button class="btn" id="btn-saverep" style="margin-top:5px;">Save Values</button>
-        <div id="repMsg" style="font-size:11px;margin-top:3px;color:#006600;"></div>
       </div></div>
       <div class="sbox"><div class="stitle">Appeal Preset Reasons</div><div class="sbody">
         <div style="font-size:11px;color:var(--c-text2);margin-bottom:4px;">One preset per line.</div>
@@ -3111,117 +3370,10 @@ function renderAdminLog(c){
         <button class="btn" id="btn-saveperms" style="margin-top:6px;">Save Permissions</button>
         <div id="permMsg" style="font-size:11px;margin-top:3px;color:#006600;"></div>
       </div></div>
-      <div class="sbox" style="border:2px solid #880000;"><div class="stitle" style="background:#880000;color:#fff;">⚠ Data Management</div><div class="sbody">
-        <div style="font-size:11px;color:#880000;font-weight:bold;margin-bottom:6px;">These actions are irreversible. All deletions are permanently logged.</div>
-        <div style="font-size:11px;font-weight:bold;color:var(--c-text);margin-bottom:4px;">Erase Log Category</div>
-        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;">
-          <button class="btn red small" id="btn-erase-modlog">Erase Mod Log</button>
-          <button class="btn red small" id="btn-erase-revokelog">Erase Revoke Log</button>
-          <button class="btn red small" id="btn-erase-suspendlog">Erase Suspend Log</button>
-          <button class="btn red small" id="btn-erase-terminatelog">Erase Terminate Log</button>
-          <button class="btn red small" id="btn-erase-loginlog">Erase Login Log</button>
-          <button class="btn red small" id="btn-erase-auditlog">Erase Audit Log</button>
-          <button class="btn red small" id="btn-erase-appeals">Erase All Appeals</button>
-          <button class="btn red small" id="btn-erase-alerts">Erase All Alerts</button>
-          <button class="btn red small" id="btn-erase-requests">Erase All Requests</button>
-          <button class="btn red small" id="btn-erase-messages">Erase Staff Messages</button>
-        </div>
-        <div style="border-top:1px solid #880000;padding-top:8px;margin-bottom:4px;">
-          <div style="font-size:11px;font-weight:bold;color:var(--c-text);margin-bottom:4px;">Wipe All Users</div>
-          <button class="btn red" id="btn-wipe-all-users" style="width:100%;margin-bottom:8px;">Wipe All Player Data</button>
-        </div>
-        <div style="border-top:1px solid #880000;padding-top:8px;">
-          <div style="font-size:12px;font-weight:bold;color:#880000;margin-bottom:4px;">🔴 Factory Reset</div>
-          <div style="font-size:11px;color:var(--c-text2);margin-bottom:6px;">Deletes ALL data including users, staff (except rpatoff), all logs, alerts, messages, and requests. Requires three confirmation codes.</div>
-          <button class="btn red" id="btn-factory-reset" style="width:100%;font-weight:bold;">FACTORY RESET</button>
-        </div>
-        <div id="dataManageMsg" style="font-size:11px;margin-top:5px;color:#006600;min-height:14px;"></div>
-      </div></div>
     </div>
   </div>`;
   document.getElementById('btn-saveperms').onclick=savePerms;
-  document.getElementById('btn-saverep').onclick=saveRepPoints;
   document.getElementById('btn-savepresets').onclick=saveAppealPresets;
-
-  // Update Log editor
-  document.getElementById('btn-addul').onclick=async()=>{
-    const version=document.getElementById('ulVersion').value.trim();
-    const date=document.getElementById('ulDate').value.trim();
-    const entries=document.getElementById('ulEntries').value.split('\n').map(l=>l.trim()).filter(l=>l);
-    const msgEl=document.getElementById('ulMsg');
-    if(!version){ msgEl.style.color='#880000'; msgEl.textContent='Version required.'; return; }
-    if(!entries.length){ msgEl.style.color='#880000'; msgEl.textContent='At least one entry required.'; return; }
-    const newLog=[{version,date:date||'Current',entries},...UPDATE_LOG];
-    await set(ref(db,'meta/updateLog'),newLog);
-    UPDATE_LOG=newLog;
-    auditLog('Update Log Modified',`Added version ${version}`);
-    msgEl.style.color='#006600'; msgEl.textContent=`Version ${version} added!`;
-    setTimeout(()=>nav('adminlog'),800);
-  };
-  document.querySelectorAll('.del-ul-btn').forEach(btn=>{
-    btn.onclick=async()=>{
-      const idx=parseInt(btn.dataset.idx);
-      const newLog=[...UPDATE_LOG]; newLog.splice(idx,1);
-      await set(ref(db,'meta/updateLog'),newLog);
-      UPDATE_LOG=newLog;
-      auditLog('Update Log Modified',`Removed version index ${idx}`);
-      nav('adminlog');
-    };
-  });
-  document.querySelectorAll('.edit-ul-btn').forEach(btn=>{
-    btn.onclick=()=>{
-      const idx=parseInt(btn.dataset.idx);
-      const v=UPDATE_LOG[idx]; if(!v) return;
-      openDialog(`Edit Version ${v.version}`,'',`
-        <div style="display:flex;gap:5px;margin-bottom:4px;">
-          <div style="flex:1;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:1px;">Version:</label>
-            <input type="text" id="editUlVersion" style="width:100%;" value="${v.version}"/></div>
-          <div style="flex:1;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:1px;">Label:</label>
-            <input type="text" id="editUlDate" style="width:100%;" value="${v.date}"/></div>
-        </div>
-        <label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:1px;">Entries (one per line):</label>
-        <textarea id="editUlEntries" style="width:100%;height:90px;">${v.entries.join('\n')}</textarea>`,
-        async()=>{
-          const version=document.getElementById('editUlVersion').value.trim()||v.version;
-          const date=document.getElementById('editUlDate').value.trim()||v.date;
-          const entries=document.getElementById('editUlEntries').value.split('\n').map(l=>l.trim()).filter(l=>l);
-          if(!entries.length) return;
-          const newLog=[...UPDATE_LOG];
-          newLog[idx]={version,date,entries};
-          await set(ref(db,'meta/updateLog'),newLog);
-          UPDATE_LOG=newLog;
-          auditLog('Update Log Modified',`Edited version ${version}`);
-        }
-      );
-    };
-  });
-  // Data Management
-  const dmMsg=()=>document.getElementById('dataManageMsg');
-  const eraseLog=(path,label)=>{
-    openOpDialog(`Erase ALL entries from ${label}? This cannot be undone.`, async()=>{
-      await remove(ref(db,path));
-      auditLog('Log Erased',label);
-      const el=dmMsg(); if(el){ el.style.color='#006600'; el.textContent=`${label} erased.`; setTimeout(()=>{ if(el) el.textContent=''; },2500); }
-    });
-  };
-  document.getElementById('btn-erase-modlog').onclick=()=>eraseLog('logs/moderation','Moderation Log');
-  document.getElementById('btn-erase-revokelog').onclick=()=>eraseLog('logs/revoke','Revoke Log');
-  document.getElementById('btn-erase-suspendlog').onclick=()=>eraseLog('logs/suspend','Suspend Log');
-  document.getElementById('btn-erase-terminatelog').onclick=()=>eraseLog('logs/terminate','Terminate Log');
-  document.getElementById('btn-erase-loginlog').onclick=()=>eraseLog('logs/login','Login Log');
-  document.getElementById('btn-erase-auditlog').onclick=()=>eraseLog('logs/audit','Audit Log');
-  document.getElementById('btn-erase-appeals').onclick=()=>eraseLog('logs/appeals','Appeals');
-  document.getElementById('btn-erase-alerts').onclick=()=>eraseLog('siteAlerts','Site Alerts');
-  document.getElementById('btn-erase-requests').onclick=()=>eraseLog('modRequests','Mod Requests');
-  document.getElementById('btn-erase-messages').onclick=()=>eraseLog('staffMessages','Staff Messages');
-  document.getElementById('btn-wipe-all-users').onclick=()=>{
-    openOpDialog('WARNING: Permanently delete ALL player data? This wipes every user record, punishment, and appeal link. Cannot be undone.', async()=>{
-      await remove(ref(db,'users'));
-      auditLog('All Users Wiped',`By ${ME}`);
-      const el=dmMsg(); if(el){ el.style.color='#006600'; el.textContent='All user data wiped.'; setTimeout(()=>{ if(el) el.textContent=''; },2500); }
-    });
-  };
-  document.getElementById('btn-factory-reset').onclick=()=>openFactoryResetDialog();
   document.getElementById('btn-savedlc').onclick=async()=>{
     const cfg={
       modlog:document.getElementById('dlc-modlog').checked,
@@ -3641,6 +3793,9 @@ function promptSuspendStaff(sid, isCurrentlySuspended){
         await update(ref(db,`staff/${sid}`),{suspended:false,suspendInfo:null,forceLogout:false});
         await push(ref(db,'logs/suspend'),{username:s.username,action:'Unsuspend',by:ME,date:nowStr(),reason,modNote:'',offensiveItem:''});
         auditLog('Staff Unsuspended',s.username);
+        // Update local cache immediately so re-render reflects the change
+        if(STAFF[sid]) STAFF[sid].suspended=false;
+        currentStaffId=sid;
         nav('staff');
       }
     );
@@ -3693,7 +3848,11 @@ function promptSecureStaff(sid, isCurrentlySecured){
       async()=>{
         const reason=document.getElementById('dlgReason').value.trim()||'Cleared by admin.';
         await update(ref(db,`staff/${sid}`),{secured:false,secureInfo:null});
-        auditLog('Staff Account Unsecured',`${s.username}: ${reason}`); nav('staff');
+        auditLog('Staff Account Unsecured',`${s.username}: ${reason}`);
+        // Update local cache immediately
+        if(STAFF[sid]) STAFF[sid].secured=false;
+        currentStaffId=sid;
+        nav('staff');
       });
   } else {
     openDialog('Secure Account',`Lock account <b>${s.username}</b> due to suspected compromise?`,`
@@ -4233,8 +4392,15 @@ function renderStaffConfig(c){
   </div></div>`:''}
 
   <div class="sbox"><div class="stitle">Staff List</div><div class="sbody">
+    <div class="page-search" style="margin-bottom:8px;">
+      <div class="search-wrap">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <input type="text" id="scfg-search" placeholder="Search staff…" oninput="filterTableById('scfg-tbl','scfg-count',this.value)"/>
+      </div>
+      <span class="search-count" id="scfg-count">${sArr.length} staff</span>
+    </div>
     ${sArr.length===0?'<i style="color:var(--c-text2);">No staff yet.</i>':`
-    <div class="tbl-wrap"><table class="tbl">
+    <div class="tbl-wrap"><table class="tbl" id="scfg-tbl">
       <tr>
         ${canSuperAdmin?'<th><input type="checkbox" id="sblk-check-all" title="Select all"/></th>':''}
         <th>Username</th><th>Level</th><th>Status</th><th>Joined</th><th>Last Active</th><th>Mod Actions</th><th>Failed Logins</th><th>Overrides</th><th>View</th>
@@ -4243,7 +4409,7 @@ function renderStaffConfig(c){
         const actionsTaken=Object.values(MOD_LOG).filter(m=>m&&m.mod===s.username).length;
         const failed=failedByUser[s.username]||0;
         const status=s.suspended?'<span class="sus">SUSP</span>':s.secured?'<span class="ban">SECURED</span>':'<span class="ok">OK</span>';
-        return `<tr>
+        return `<tr data-search="${s.username.toLowerCase()}">
           ${canSuperAdmin?`<td><input type="checkbox" class="sblk-cb" data-sid="${sid}" data-username="${s.username}"/></td>`:''}
           <td><b>${s.username}</b></td>
           <td>${levelBadge(s.level)}</td>
@@ -4260,12 +4426,12 @@ function renderStaffConfig(c){
   </div></div>
 
   ${canSuperAdmin?`
-  <div class="sbox" style="border-color:#880000;"><div class="stitle" style="background:#880000;color:#fff;">Emergency</div><div class="sbody">
-    <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
+  <div class="sbox" style="border-color:#880000;"><div class="stitle" style="background:#880000;color:#fff;">Emergency</div><div class="sbody" style="padding:8px 12px;">
+    <div style="display:flex;gap:8px;align-items:center;">
       <button class="btn red small" id="btn-logout-allstaff">Force Log Out ALL Staff</button>
       <span style="font-size:11px;color:var(--c-text2);">Logs out every active session except yours. Emergency use only.</span>
     </div>
-    <div id="massStaffMsg" style="font-size:11px;margin-top:3px;color:#006600;min-height:14px;"></div>
+    <div id="massStaffMsg" style="font-size:11px;margin-top:4px;color:#006600;min-height:14px;"></div>
   </div></div>`:''}`;
 
   // ── Check-all ──
@@ -4310,10 +4476,13 @@ function renderStaffConfig(c){
             } else if(action==='unsuspend'){
               await update(ref(db,`staff/${sid}`),{suspended:false,suspendInfo:null,forceLogout:false});
               await push(ref(db,'logs/suspend'),{username,action:'Unsuspend',by:ME,date:nowStr(),reason:reason||'Bulk unsuspend',modNote:'',offensiveItem:''});
+              if(STAFF[sid]) STAFF[sid].suspended=false;
             } else if(action==='secure'){
               await update(ref(db,`staff/${sid}`),{secured:true,secureInfo:{reason,note:noteTag,by:ME,date:nowStr()},forceLogout:true});
+              if(STAFF[sid]){ STAFF[sid].secured=true; STAFF[sid].forceLogout=true; }
             } else if(action==='unsecure'){
               await update(ref(db,`staff/${sid}`),{secured:false,secureInfo:null,forceLogout:false});
+              if(STAFF[sid]) STAFF[sid].secured=false;
             } else if(action==='forcelogout'){
               await update(ref(db,`staff/${sid}`),{forceLogout:true,lastAction:'Force logged out by '+ME});
             } else if(action==='terminate'){
