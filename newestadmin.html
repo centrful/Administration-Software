@@ -5,205 +5,207 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Administration Panel</title>
 <style>
-/* ── ROBLOX INTERNAL ADMIN THEME (faithful recreation) ── */
+/* ── THEME VARIABLES ── */
+:root {
+  --bg-page:#f6f8fa; --bg-shell:#ffffff; --bg-topbar:#24292f; --bg-topbar2:#1c2128;
+  --bg-sidebar:#f6f8fa; --bg-sb-root:#eaeef2; --bg-sb-hdr:#eaeef2; --bg-sb-hdr-hover:#dde3ea;
+  --bg-sb-body:#f6f8fa; --bg-sb-active:#ddeeff;
+  --bg-content:#ffffff; --bg-menubar:#f6f8fa; --bg-topinfo:#eaeef2;
+  --bg-sbox:#ffffff; --bg-stitle:#0969da; --bg-sbody:#ffffff;
+  --bg-input:#ffffff; --bg-tbl-odd:#f6f8fa; --bg-tbl-even:#ffffff; --bg-tbl-hover:#ddeeff;
+  --bg-tbl-th:#0969da; --bg-dialog:#ffffff; --bg-announce:#fff8c5;
+  --bg-btn:#f6f8fa; --bg-overlay:rgba(1,4,9,0.5);
+  --c-text:#1f2328; --c-text2:#656d76; --c-link:#0969da; --c-link-hover:#d1242f;
+  --c-sb-label:#0969da; --c-sb-link:#0969da; --c-sb-active:#0969da;
+  --c-topbar-text:#e6edf3; --c-topbar-sub:#8b949e;
+  --c-border:#d0d7de; --c-border-sb:#d0d7de; --c-border-input:#d0d7de;
+  --c-tbl-border:#d0d7de; --c-stitle-text:#ffffff;
+  --c-ok:#1a7f37; --c-sus:#9a6700; --c-ban:#cf222e;
+  --c-ptitle-bg:#0969da; --c-ptitle-text:#ffffff;
+  --btn-border-top:#ffffff; --btn-border-left:#ffffff; --btn-border-right:#404040; --btn-border-bot:#404040;
+  --btn-bg:#d4d0c8; --btn-text:#000000;
+  --c-pm:#555; --bg-pm:#fff;
+}
+body.gh-dark {
+  --bg-page:#0d1117; --bg-shell:#0d1117; --bg-topbar:#161b22; --bg-topbar2:#0d1117;
+  --bg-sidebar:#161b22; --bg-sb-root:#1c2128; --bg-sb-hdr:#1c2128; --bg-sb-hdr-hover:#21262d;
+  --bg-sb-body:#161b22; --bg-sb-active:#1f3a5f;
+  --bg-content:#0d1117; --bg-menubar:#161b22; --bg-topinfo:#1c2128;
+  --bg-sbox:#161b22; --bg-stitle:#1f6feb; --bg-sbody:#161b22;
+  --bg-input:#0d1117; --bg-tbl-odd:#161b22; --bg-tbl-even:#0d1117; --bg-tbl-hover:#1f3a5f;
+  --bg-tbl-th:#1f6feb; --bg-dialog:#161b22; --bg-announce:#2d2a00;
+  --bg-btn:#21262d; --bg-overlay:rgba(1,4,9,0.8);
+  --c-text:#e6edf3; --c-text2:#8b949e; --c-link:#58a6ff; --c-link-hover:#ff7b72;
+  --c-sb-label:#58a6ff; --c-sb-link:#58a6ff; --c-sb-active:#58a6ff;
+  --c-topbar-text:#e6edf3; --c-topbar-sub:#8b949e;
+  --c-border:#30363d; --c-border-sb:#30363d; --c-border-input:#30363d;
+  --c-tbl-border:#30363d; --c-stitle-text:#e6edf3;
+  --c-ok:#3fb950; --c-sus:#d29922; --c-ban:#f85149;
+  --c-ptitle-bg:#1f6feb; --c-ptitle-text:#e6edf3;
+  --btn-border-top:#444; --btn-border-left:#444; --btn-border-right:#000; --btn-border-bot:#000;
+  --btn-bg:#21262d; --btn-text:#e6edf3;
+  --c-pm:#8b949e; --bg-pm:#21262d;
+}
+
+/* ── BASE ── */
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:Verdana,Arial,sans-serif;font-size:11px;background:#b0b8c8;min-height:100vh;display:flex;align-items:center;justify-content:center;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;background:var(--bg-page);min-height:100vh;display:block;}
 
 /* ── LOGIN ── */
 #loginScreen{display:flex;align-items:center;justify-content:center;width:100%;min-height:100vh;}
-.login-popup{background:#d4d0c8;border-top:2px solid #fff;border-left:2px solid #fff;border-right:2px solid #404040;border-bottom:2px solid #404040;width:400px;box-shadow:2px 2px 8px rgba(0,0,0,0.8);}
-.titlebar{background:linear-gradient(to right,#0a246a,#3a6ea5);padding:3px 4px 3px 6px;display:flex;align-items:center;justify-content:space-between;}
-.titlebar-title{color:#fff;font-size:11px;font-weight:bold;}
+.login-popup{background:var(--bg-dialog);border:1px solid var(--c-border);width:340px;border-radius:6px;box-shadow:0 8px 24px rgba(1,4,9,0.2);}
+.titlebar{background:var(--bg-topbar);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-radius:6px 6px 0 0;}
+.titlebar-title{color:var(--c-topbar-text);font-size:13px;font-weight:600;}
 .win-btns{display:flex;gap:2px;}
-.wcb{width:16px;height:14px;background:#d4d0c8;border-top:1px solid #fff;border-left:1px solid #fff;border-right:1px solid #404040;border-bottom:1px solid #404040;font-size:9px;color:#000;display:flex;align-items:center;justify-content:center;font-weight:bold;cursor:default;}
-.login-body{padding:16px 14px 14px;background:#d4d0c8;}
-.login-desc{font-size:11px;color:#000;line-height:1.55;margin-bottom:14px;}
-.field-row{display:flex;align-items:center;margin-bottom:8px;}
-.field-row label{width:82px;font-size:11px;color:#000;flex-shrink:0;}
-.field-row input{flex:1;height:20px;background:#fff;border:2px inset #808080;padding:0 3px;font-size:11px;font-family:inherit;outline:none;color:#000;border-radius:0;}
+.wcb{width:16px;height:14px;background:var(--bg-btn);border:1px solid var(--c-border);font-size:9px;color:var(--c-text);display:flex;align-items:center;justify-content:center;font-weight:bold;cursor:default;border-radius:3px;}
+.login-body{padding:20px 16px 16px;background:var(--bg-dialog);border-radius:0 0 6px 6px;}
+.login-desc{font-size:12px;color:var(--c-text2);line-height:1.6;margin-bottom:14px;}
+.field-row{display:flex;align-items:center;margin-bottom:10px;}
+.field-row label{width:90px;font-size:12px;color:var(--c-text);flex-shrink:0;font-weight:500;}
+.field-row input{flex:1;height:28px;background:var(--bg-input);border:1px solid var(--c-border-input);padding:0 8px;font-size:12px;font-family:inherit;outline:none;color:var(--c-text);border-radius:6px;}
+.field-row input:focus{border-color:var(--c-link);box-shadow:0 0 0 3px rgba(9,105,218,0.2);}
 .login-right{display:flex;flex-direction:column;align-items:center;gap:4px;width:90px;flex-shrink:0;}
 .login-wrap{display:flex;gap:12px;}
-.win98-btn,.btn{background:#d4d0c8;border-top:2px solid #fff;border-left:2px solid #fff;border-right:2px solid #404040;border-bottom:2px solid #404040;font-size:11px;font-family:inherit;color:#000;cursor:pointer;border-radius:0;display:inline-flex;align-items:center;justify-content:center;padding:0 8px;height:23px;}
+.login-status{font-size:11px;font-weight:600;color:var(--c-ban);text-align:center;min-height:14px;margin-top:4px;}
+
+/* ── BUTTONS ── */
+.win98-btn,.btn{background:var(--btn-bg);border:1px solid var(--c-border);font-size:12px;font-family:inherit;color:var(--btn-text);cursor:pointer;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;padding:0 12px;height:28px;font-weight:500;}
+.win98-btn:hover,.btn:hover{background:var(--bg-sb-hdr-hover);}
+.win98-btn:active,.btn:active{opacity:0.85;}
 .ok-btn{width:90px;}
-.win98-btn:active,.btn:active{border-top:2px solid #404040;border-left:2px solid #404040;border-right:2px solid #fff;border-bottom:2px solid #fff;}
-.login-status{font-size:11px;font-weight:bold;color:#cc0000;text-align:center;min-height:14px;}
-.btn.red{color:#880000;font-weight:bold;}
-.btn.small{height:19px;font-size:10px;padding:0 6px;}
+.btn.red{color:var(--c-ban);font-weight:600;}
+.btn.small{height:22px;font-size:11px;padding:0 8px;}
 
 /* ── SHELL ── */
-#adminScreen{display:none;width:100%;min-height:100vh;background:#c8cfd8;flex-direction:column;}
-.shell{font-family:Verdana,Arial,sans-serif;font-size:11px;background:#c8cfd8;min-height:100vh;display:flex;flex-direction:column;}
+#adminScreen{display:none;width:100%;min-height:100vh;background:var(--bg-page);}
+.shell{font-family:inherit;font-size:12px;background:var(--bg-shell);min-height:100vh;display:flex;flex-direction:column;width:100%;}
 
-/* ── TOPBAR (Roblox-style grey with logo area) ── */
-.topbar{background:linear-gradient(to bottom,#1a4a8a,#0a2a6a);color:#fff;padding:4px 8px;font-size:11px;font-weight:bold;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #0a1a4a;}
+/* ── TOPBAR ── */
+.topbar{background:var(--bg-topbar);color:var(--c-topbar-text);padding:0 16px;height:48px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--c-border);}
 .topbar-right{display:flex;align-items:center;gap:6px;}
-.logout-btn{background:#d4d0c8;border-top:2px solid #fff;border-left:2px solid #fff;border-right:2px solid #404040;border-bottom:2px solid #404040;font-size:10px;font-family:inherit;color:#000;cursor:pointer;padding:0 6px;height:20px;border-radius:0;}
-.logout-btn:active{border-top:2px solid #404040;border-left:2px solid #404040;border-right:2px solid #fff;border-bottom:2px solid #fff;}
-/* ── NIGHT MODE ── */
-body.night{background:#1a1a2a;}
-body.night .shell{background:#1e1e2e;}
-body.night .topbar{background:linear-gradient(to bottom,#0a0a1a,#050510);}
-body.night .menubar{background:#1a1a2e;border-bottom-color:#333;}
-body.night .menu-item{color:#ccc;}
-body.night .menu-item:hover{background:#2a2a5a;color:#fff;}
-body.night .topinfo{background:#1a1a2e;color:#aaa;border-bottom-color:#333;}
-body.night .sidebar{background:#13131f;border-right-color:#333;}
-body.night .sb-root{background:#0d0d1a;color:#aaa;border-bottom-color:#333;}
-body.night .sb-group{border-bottom-color:#2a2a3a;}
-body.night .sb-group-hdr{background:#13131f;}
-body.night .sb-group-hdr:hover{background:#1e1e35;}
-body.night .sb-plusminus{background:#1e1e35;border-color:#444;color:#aaa;}
-body.night .sb-group-label{color:#7799dd;}
-body.night .sb-group-body{background:#13131f;}
-body.night .sb-link{color:#7799dd;}
-body.night .sb-link:hover{color:#ff6666;}
-body.night .sb-link.active{color:#fff;font-weight:bold;}
-body.night .content{background:#1e1e2e;}
-body.night .sbox{background:#252535;border-color:#333;}
-body.night .stitle{background:#0a1a4a;color:#aad4ff;border-bottom-color:#0a0a2a;}
-body.night .sbody{background:#252535;color:#ccc;}
-body.night .ptitle{background:#0a0a2a;color:#aad4ff;}
-body.night .tbl th{background:#0a1a4a;}
-body.night .tbl td{border-bottom-color:#333;color:#ccc;}
-body.night .tbl tr:nth-child(odd) td{background:#1e2035;}
-body.night .tbl tr:nth-child(even) td{background:#252535;}
-body.night .tbl tr:hover td{background:#2a2a5a;}
-body.night input[type=text],body.night input[type=password],body.night input[type=number],body.night textarea,body.night select{background:#1a1a2e;color:#ddd;border-color:#444;}
-body.night .btn,.btn{transition:none;}
-body.night .row label{color:#aaa;}
-body.night .dropdown,.night .dialog,.night .susp-popup{background:#252535;}
-body.night .drop-item{color:#ccc;}
-body.night .drop-item:hover{background:#2a2a5a;}
+.logout-btn{background:transparent;border:1px solid rgba(255,255,255,0.2);font-size:11px;font-family:inherit;color:var(--c-topbar-text);cursor:pointer;padding:0 10px;height:26px;border-radius:6px;font-weight:500;}
+.logout-btn:hover{background:rgba(255,255,255,0.1);}
 
-/* ── MENUBAR (matches Roblox internal — grey bar with underlined items) ── */
-.menubar{background:#d4d0c8;border-bottom:1px solid #808080;padding:2px 6px;display:flex;gap:0;}
-.menu-item{cursor:default;padding:2px 8px;color:#000;user-select:none;font-size:11px;}
-.menu-item:hover,.menu-item.open{background:#0a246a;color:#fff;}
-.dropdown{display:none;position:absolute;top:100%;left:0;background:#d4d0c8;border-top:1px solid #fff;border-left:1px solid #fff;border-right:1px solid #404040;border-bottom:1px solid #404040;z-index:500;min-width:170px;box-shadow:2px 2px 4px rgba(0,0,0,0.4);}
+/* ── MENUBAR ── */
+.menubar{background:var(--bg-menubar);border-bottom:1px solid var(--c-border);padding:0 8px;display:flex;gap:0;height:32px;align-items:center;}
+.menu-item{cursor:default;padding:0 10px;color:var(--c-text);user-select:none;font-size:12px;height:32px;display:flex;align-items:center;}
+.menu-item:hover,.menu-item.open{background:var(--bg-sb-hdr-hover);border-radius:4px;}
+.dropdown{display:none;position:absolute;top:100%;left:0;background:var(--bg-dialog);border:1px solid var(--c-border);z-index:500;min-width:180px;box-shadow:0 8px 24px rgba(1,4,9,0.15);border-radius:6px;overflow:hidden;}
 .dropdown.show{display:block;}
-.drop-item{padding:3px 18px;font-size:11px;color:#000;cursor:default;white-space:nowrap;}
-.drop-item:hover{background:#0a246a;color:#fff;}
-.drop-sep{border-top:1px solid #808080;border-bottom:1px solid #fff;margin:2px 0;}
+.drop-item{padding:6px 16px;font-size:12px;color:var(--c-text);cursor:default;white-space:nowrap;}
+.drop-item:hover{background:var(--bg-sb-hdr-hover);}
+.drop-sep{border-top:1px solid var(--c-border);margin:4px 0;}
 
-/* ── TOP STATS BAR (like the Roblox internal page-top info strip) ── */
-.topinfo{font-size:11px;color:#000;padding:2px 8px;border-bottom:1px solid #808080;background:#d4d0c8;}
+/* ── TOP STATS BAR ── */
+.topinfo{font-size:11px;color:var(--c-text2);padding:4px 16px;border-bottom:1px solid var(--c-border);background:var(--bg-topinfo);}
 
 /* ── ANNOUNCE BAR ── */
-.announce-bar{background:#fffbcc;border-bottom:2px solid #c8a800;padding:3px 8px;font-size:11px;color:#000;display:none;}
+.announce-bar{background:var(--bg-announce);border-bottom:1px solid #b08800;padding:4px 16px;font-size:11px;color:var(--c-text);display:none;}
 .announce-bar b{color:#7a6000;}
 
 /* ── MAIN LAYOUT ── */
-.main{display:flex;flex:1;}
+.main{display:flex;flex:1;min-height:0;}
 
-/* ── SIDEBAR (exact Roblox internal admin recreation) ── */
-.sidebar{width:170px;flex-shrink:0;background:#fff;border-right:1px solid #9090a0;overflow-y:auto;font-size:11px;}
-/* "Admin Dashboard" root label — matches image 1 */
-.sb-root{padding:4px 6px;font-weight:bold;font-size:11px;color:#000;background:#d4d0c8;border-bottom:1px solid #a0a0a0;cursor:default;user-select:none;display:flex;align-items:center;gap:4px;}
-/* Group container */
-.sb-group{border-bottom:1px solid #c8c8d0;}
-/* Group header row — bullet + label, no background colour (just white) */
-.sb-group-hdr{display:flex;align-items:center;gap:3px;padding:2px 4px;cursor:pointer;user-select:none;background:#fff;padding-left:4px;}
-.sb-group-hdr:hover{background:#e8eef8;}
-/* The [−]/[+] box — matches the Roblox internal boxed minus/plus exactly */
-.sb-plusminus{display:inline-block;width:11px;height:11px;border:1px solid #808080;background:#fff;text-align:center;line-height:10px;font-size:10px;font-weight:bold;flex-shrink:0;color:#000;font-style:normal;}
-.sb-group-label{font-size:11px;color:#003399;text-decoration:underline;font-weight:bold;}
-/* Group body */
-.sb-group-body{background:#fff;}
+/* ── SIDEBAR ── */
+.sidebar{width:200px;flex-shrink:0;background:var(--bg-sidebar);border-right:1px solid var(--c-border-sb);overflow-y:auto;font-size:12px;}
+.sb-root{padding:12px 16px 8px;font-weight:600;font-size:11px;color:var(--c-text2);background:var(--bg-sb-root);border-bottom:1px solid var(--c-border-sb);text-transform:uppercase;letter-spacing:0.5px;cursor:default;user-select:none;}
+.sb-group{margin-bottom:0;}
+.sb-group-hdr{display:flex;align-items:center;gap:6px;padding:6px 16px 4px;cursor:pointer;user-select:none;background:var(--bg-sb-hdr);}
+.sb-group-hdr:hover{background:var(--bg-sb-hdr-hover);}
+.sb-plusminus{font-size:10px;color:var(--c-pm);flex-shrink:0;width:10px;text-align:center;font-weight:600;transition:transform 0.15s;}
+.sb-group-label{font-size:11px;font-weight:600;color:var(--c-text2);text-transform:uppercase;letter-spacing:0.5px;}
+.sb-group-body{background:var(--bg-sb-body);padding:2px 0 4px;}
 .sb-group-body.collapsed{display:none;}
-/* Individual links — indented bullet style */
-.sb-link{padding:1px 4px 1px 20px;cursor:pointer;color:#003399;text-decoration:underline;display:block;font-size:11px;white-space:nowrap;position:relative;}
-.sb-link:hover{color:#cc0000;}
-.sb-link.active{color:#000;text-decoration:none;font-weight:bold;}
-/* Connecting tree line on left edge of links */
-.sb-group-body:not(.collapsed) .sb-link::before{content:'';position:absolute;left:8px;top:50%;width:8px;height:1px;background:#a0a0a0;}
+.sb-link{padding:4px 16px 4px 28px;cursor:pointer;color:var(--c-sb-link);display:block;font-size:12px;white-space:nowrap;border-radius:0;text-decoration:none;}
+.sb-link:hover{background:var(--bg-sb-hdr-hover);color:var(--c-text);}
+.sb-link.active{background:var(--bg-sb-active);color:var(--c-sb-active);font-weight:600;border-left:2px solid var(--c-link);}
 
-/* ── CONTENT AREA ── */
-.content{flex:1;padding:8px;min-width:0;overflow-y:auto;background:#fff;}
+/* ── CONTENT ── */
+.content{flex:1;padding:16px;min-width:0;overflow-y:auto;background:var(--bg-content);}
 
-/* ── PAGE TITLE (blue bar like Roblox internal section headers) ── */
-.ptitle{background:#2a559c;color:#fff;padding:3px 8px;font-weight:bold;font-size:12px;margin-bottom:6px;}
+/* ── PAGE TITLE ── */
+.ptitle{background:var(--c-ptitle-bg);color:var(--c-ptitle-text);padding:6px 12px;font-weight:600;font-size:13px;margin-bottom:12px;border-radius:6px;}
 
 /* ── SECTION BOXES ── */
-.sbox{border:1px solid #a0a8b8;margin-bottom:8px;background:#fff;}
-/* Blue section title bar — exactly like the reference image */
-.stitle{background:#2a559c;border-bottom:1px solid #1a3a7a;padding:2px 6px;font-weight:bold;font-size:11px;color:#fff;}
-.sbody{padding:6px 8px;background:#fff;}
-.row{display:flex;align-items:flex-start;margin-bottom:2px;font-size:11px;}
-.row label{width:140px;flex-shrink:0;color:#000;padding-top:1px;font-weight:bold;}
-.row span,.row b{color:#000;}
+.sbox{border:1px solid var(--c-border);margin-bottom:12px;background:var(--bg-sbox);border-radius:6px;overflow:hidden;}
+.stitle{background:var(--bg-stitle);border-bottom:1px solid var(--c-border);padding:6px 10px;font-weight:600;font-size:12px;color:var(--c-stitle-text);}
+.sbody{padding:10px 12px;background:var(--bg-sbody);}
+.row{display:flex;align-items:flex-start;margin-bottom:4px;font-size:12px;}
+.row label{width:140px;flex-shrink:0;color:var(--c-text2);padding-top:1px;font-weight:500;}
+.row span,.row b{color:var(--c-text);}
 
 /* ── INPUTS ── */
-input[type=text],input[type=password],input[type=number]{height:20px;border:2px inset #808080;background:#fff;padding:0 3px;font-size:11px;font-family:inherit;outline:none;border-radius:0;color:#000;}
-textarea{border:2px inset #808080;background:#fff;font-size:11px;font-family:inherit;outline:none;border-radius:0;padding:3px;resize:vertical;color:#000;}
-select{height:20px;border:2px inset #808080;background:#fff;font-size:11px;font-family:inherit;border-radius:0;outline:none;color:#000;}
+input[type=text],input[type=password],input[type=number]{height:28px;border:1px solid var(--c-border-input);background:var(--bg-input);padding:0 8px;font-size:12px;font-family:inherit;outline:none;border-radius:6px;color:var(--c-text);}
+input[type=text]:focus,input[type=password]:focus,input[type=number]:focus{border-color:var(--c-link);box-shadow:0 0 0 3px rgba(9,105,218,0.2);}
+textarea{border:1px solid var(--c-border-input);background:var(--bg-input);font-size:12px;font-family:inherit;outline:none;border-radius:6px;padding:6px 8px;resize:vertical;color:var(--c-text);}
+textarea:focus{border-color:var(--c-link);}
+select{height:28px;border:1px solid var(--c-border-input);background:var(--bg-input);font-size:12px;font-family:inherit;border-radius:6px;outline:none;color:var(--c-text);padding:0 6px;}
 
 /* ── TABLES ── */
 .tbl-wrap{overflow-x:auto;width:100%;}
-.tbl{border-collapse:collapse;font-size:11px;white-space:nowrap;width:100%;}
-.tbl th{background:#2a559c;color:#fff;padding:3px 8px;text-align:left;font-weight:bold;border-right:1px solid #1a3a7a;}
-.tbl td{padding:3px 8px;border-bottom:1px solid #c8d0dc;color:#000;vertical-align:middle;}
-.tbl tr:nth-child(odd) td{background:#dce8f8;}
-.tbl tr:nth-child(even) td{background:#fff;}
-.tbl tr:hover td{background:#b8d0f0;}
+.tbl{border-collapse:collapse;font-size:12px;white-space:nowrap;width:100%;}
+.tbl th{background:var(--bg-tbl-th);color:#fff;padding:6px 10px;text-align:left;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.4px;}
+.tbl td{padding:6px 10px;border-bottom:1px solid var(--c-tbl-border);color:var(--c-text);vertical-align:middle;}
+.tbl tr:nth-child(odd) td{background:var(--bg-tbl-odd);}
+.tbl tr:nth-child(even) td{background:var(--bg-tbl-even);}
+.tbl tr:hover td{background:var(--bg-tbl-hover);}
 
-/* ── STATUS COLORS ── */
-.ok{color:#006600;font-weight:bold;}
-.sus{color:#995500;font-weight:bold;}
-.ban{color:#880000;font-weight:bold;}
-.wiped{color:#880000;font-style:italic;font-size:10px;}
+/* ── STATUS ── */
+.ok{color:var(--c-ok);font-weight:600;}
+.sus{color:var(--c-sus);font-weight:600;}
+.ban{color:var(--c-ban);font-weight:600;}
+.wiped{color:var(--c-ban);font-style:italic;font-size:10px;}
 
 /* ── BADGES ── */
-.badge{display:inline-block;padding:1px 5px;font-size:10px;font-weight:bold;border:1px solid #707070;white-space:nowrap;}
-.badge.intern{background:#c8e0c8;color:#003300;}
-.badge.moderator{background:#c8d0e8;color:#000055;}
-.badge.administrator{background:#e8d0a0;color:#553300;}
-.badge.superadmin{background:#e8c0c0;color:#550000;}
-.badge.senioradmin{background:#e8d4a0;color:#4a2800;}
-.badge.softwaremanager{background:#111;color:#e0e0e0;border-color:#555;}
-.badge.secured{background:#1a1a2e;color:#00d4ff;border-color:#00d4ff;}
-.badge.status-ok{background:#c8e0c8;color:#003300;border-color:#669966;}
-.badge.status-updating{background:#fff0cc;color:#664400;border-color:#cc8800;}
-.badge.status-paused{background:#f0c0c0;color:#660000;border-color:#cc6666;}
-.badge.appeal-open{background:#d0e8ff;color:#003366;border-color:#6699cc;}
-.badge.appeal-approved{background:#c8e0c8;color:#003300;border-color:#669966;}
-.badge.appeal-denied{background:#f0c0c0;color:#660000;border-color:#cc6666;}
+.badge{display:inline-block;padding:2px 6px;font-size:10px;font-weight:600;border:1px solid var(--c-border);white-space:nowrap;border-radius:20px;}
+.badge.intern{background:#dafbe1;color:#1a7f37;border-color:#82e89b;}
+.badge.moderator{background:#ddf4ff;color:#0969da;border-color:#79c0ff;}
+.badge.administrator{background:#fff8c5;color:#9a6700;border-color:#e3b341;}
+.badge.superadmin{background:#ffebe9;color:#cf222e;border-color:#ff8182;}
+.badge.senioradmin{background:#fff1e5;color:#bc4c00;border-color:#ffa657;}
+.badge.softwaremanager{background:#1c1c1c;color:#79c0ff;border-color:#388bfd;}
+.badge.secured{background:#ddf4ff;color:#0969da;border-color:#79c0ff;}
+.badge.status-ok{background:#dafbe1;color:#1a7f37;border-color:#82e89b;}
+.badge.status-updating{background:#fff8c5;color:#9a6700;border-color:#e3b341;}
+.badge.status-paused{background:#ffebe9;color:#cf222e;border-color:#ff8182;}
+.badge.appeal-open{background:#ddf4ff;color:#0969da;border-color:#79c0ff;}
+.badge.appeal-approved{background:#dafbe1;color:#1a7f37;border-color:#82e89b;}
+.badge.appeal-denied{background:#ffebe9;color:#cf222e;border-color:#ff8182;}
 
 /* ── SITE STATUS ── */
-.site-status-indicator{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:bold;padding:1px 7px;border:1px solid #808080;background:#d4d0c8;}
-.site-status-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
-.site-status-dot.ok{background:#006600;}
-.site-status-dot.updating{background:#cc8800;}
-.site-status-dot.paused{background:#cc0000;}
+.site-status-indicator{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:2px 8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.05);border-radius:20px;color:var(--c-topbar-text);}
+.site-status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.site-status-dot.ok{background:#3fb950;}
+.site-status-dot.updating{background:#e3b341;}
+.site-status-dot.paused{background:#f85149;}
 
 /* ── REP BAR ── */
-.rep-bar{height:10px;background:#e0dcd4;border:1px solid #808080;overflow:hidden;}
-.rep-fill{height:100%;background:#cc0000;}
-.rep-fill.low{background:#006600;}
-.rep-fill.mid{background:#cc8800;}
+.rep-bar{height:8px;background:var(--bg-tbl-odd);border:1px solid var(--c-border);overflow:hidden;border-radius:4px;}
+.rep-fill{height:100%;background:var(--c-ban);}
+.rep-fill.low{background:var(--c-ok);}
+.rep-fill.mid{background:var(--c-sus);}
 
 /* ── AVATAR ── */
-.avatar-box{background:#b0aca4;border:1px solid #707070;display:flex;align-items:center;justify-content:center;font-size:9px;color:#333;flex-shrink:0;overflow:hidden;}
-.avatar-box img{width:100%;height:100%;display:block;object-fit:cover;}
+.avatar-box{background:var(--bg-sb-hdr);border:1px solid var(--c-border);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--c-text2);flex-shrink:0;overflow:hidden;border-radius:50%;}
+.avatar-box img{width:100%;height:100%;display:block;object-fit:cover;border-radius:50%;}
 
 /* ── MISC ── */
-.nonexistent{color:#880000;font-weight:bold;}
-.invalid-cred{color:#880000;font-size:10px;font-style:italic;}
-
-/* ── ACTIVITY DOTS ── */
-.activity-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:3px;vertical-align:middle;flex-shrink:0;}
-.activity-dot.active{background:#00aa00;}
-.activity-dot.idle{background:#cc8800;}
-.activity-dot.offline{background:#808080;}
-.activity-dot.suspended{background:#cc4400;}
+.nonexistent{color:var(--c-ban);font-weight:600;}
+.invalid-cred{color:var(--c-ban);font-size:10px;font-style:italic;}
+.activity-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px;vertical-align:middle;flex-shrink:0;}
+.activity-dot.active{background:#3fb950;}
+.activity-dot.idle{background:#e3b341;}
+.activity-dot.offline{background:#6e7681;}
+.activity-dot.suspended{background:#e3b341;}
 
 /* ── OVERLAYS / DIALOGS ── */
-.overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;}
+.overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg-overlay);z-index:999;align-items:center;justify-content:center;}
 .overlay.show{display:flex;}
-.dialog{background:#d4d0c8;border-top:2px solid #fff;border-left:2px solid #fff;border-right:2px solid #404040;border-bottom:2px solid #404040;width:320px;box-shadow:4px 4px 10px rgba(0,0,0,0.7);}
-.susp-popup{background:#d4d0c8;border-top:2px solid #fff;border-left:2px solid #fff;border-right:2px solid #404040;border-bottom:2px solid #404040;width:390px;box-shadow:4px 4px 10px rgba(0,0,0,0.8);}
-.susp-field{margin-bottom:6px;}
-.susp-field label{display:block;font-size:11px;font-weight:bold;color:#000;margin-bottom:2px;}
-.susp-field .val{font-size:11px;color:#000;line-height:1.5;}
+.dialog{background:var(--bg-dialog);border:1px solid var(--c-border);width:360px;box-shadow:0 16px 32px rgba(1,4,9,0.2);border-radius:8px;overflow:hidden;}
+.susp-popup{background:var(--bg-dialog);border:1px solid var(--c-border);width:420px;box-shadow:0 16px 32px rgba(1,4,9,0.2);border-radius:8px;overflow:hidden;}
+.susp-field{margin-bottom:8px;}
+.susp-field label{display:block;font-size:12px;font-weight:600;color:var(--c-text);margin-bottom:2px;}
+.susp-field .val{font-size:12px;color:var(--c-text);line-height:1.5;}
 </style>
 </head>
 <body>
@@ -211,8 +213,7 @@ select{height:20px;border:2px inset #808080;background:#fff;font-size:11px;font-
 <div id="loginScreen">
   <div class="login-popup">
     <div class="titlebar">
-      <div class="titlebar-title">Enter System password</div>
-      <div class="win-btns"><div class="wcb">?</div><div class="wcb">&#10005;</div></div>
+      <div class="titlebar-title">Administration Panel — Sign In</div>
     </div>
     <div class="login-body">
       <div class="login-wrap">
@@ -233,9 +234,9 @@ select{height:20px;border:2px inset #808080;background:#fff;font-size:11px;font-
 <!-- SUSPENSION/TERMINATION POPUP -->
 <div class="overlay" id="suspOverlay">
   <div class="susp-popup">
-    <div class="titlebar">
-      <div class="titlebar-title" id="suspPopupTitle">Account Suspended</div>
-      <div class="win-btns"><div class="wcb">&#10005;</div></div>
+    <div style="background:#cf222e;color:#fff;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:13px;font-weight:600;" id="suspPopupTitle">Account Suspended</div>
+      <div style="cursor:pointer;opacity:0.7;font-size:16px;line-height:1;">&#10005;</div>
     </div>
     <div style="padding:14px 16px 12px;">
       <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:12px;">
@@ -245,7 +246,7 @@ select{height:20px;border:2px inset #808080;background:#fff;font-size:11px;font-
           <div style="font-size:11px;color:#000;line-height:1.6;" id="suspPopupMsg"></div>
         </div>
       </div>
-      <div style="border:1px solid #808080;background:#c8c4bc;padding:8px 10px;margin-bottom:10px;">
+      <div style="border:1px solid #808080;background:var(--bg-tbl-odd);padding:8px 10px;margin-bottom:10px;">
         <div class="susp-field"><label>Reviewed:</label><div class="val" id="suspReviewed"></div></div>
         <div class="susp-field"><label>Reason:</label><div class="val" id="suspReason"></div></div>
         <div class="susp-field"><label>Moderator Note:</label><div class="val" id="suspModNote"></div></div>
@@ -262,7 +263,7 @@ select{height:20px;border:2px inset #808080;background:#fff;font-size:11px;font-
   <div class="shell">
     <div class="topbar" id="mainTopbar">
       <span id="topbarTitle">Administration Panel</span>
-      <div id="siteStatusBar" style="display:none;align-items:center;gap:5px;font-size:11px;color:#fff;margin-left:10px;">
+      <div id="siteStatusBar" style="display:none;align-items:center;gap:5px;font-size:11px;color:var(--c-topbar-text);margin-left:10px;">
         <span id="siteStatusIndicator"></span>
       </div>
       <div class="topbar-right">
@@ -277,8 +278,8 @@ select{height:20px;border:2px inset #808080;background:#fff;font-size:11px;font-
         <div style="position:relative;display:inline-block;">
           <button class="logout-btn" id="notifBtn" style="width:22px;padding:0;font-size:12px;" title="Notifications">&#128276;</button>
           <span id="notifBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:#cc0000;color:#fff;font-size:8px;font-weight:bold;border-radius:50%;width:12px;height:12px;line-height:12px;text-align:center;pointer-events:none;"></span>
-          <div id="notifDropdown" style="display:none;position:absolute;top:100%;right:0;background:#d4d0c8;border-top:1px solid #fff;border-left:1px solid #fff;border-right:1px solid #404040;border-bottom:1px solid #404040;z-index:600;width:260px;box-shadow:2px 2px 4px rgba(0,0,0,0.4);">
-            <div style="background:#000080;color:#fff;font-size:11px;font-weight:bold;padding:2px 6px;display:flex;align-items:center;justify-content:space-between;">
+          <div id="notifDropdown" style="display:none;position:absolute;top:100%;right:0;background:var(--bg-dialog);border:1px solid var(--c-border);z-index:600;width:260px;box-shadow:0 8px 24px rgba(1,4,9,0.15);border-radius:6px;overflow:hidden;">
+            <div style="background:var(--bg-stitle);color:var(--c-stitle-text);font-size:12px;font-weight:600;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;">
               <span>Notifications</span>
               <span id="notifSettingsLink" style="font-size:10px;cursor:pointer;text-decoration:underline;color:#aad4ff;">Settings</span>
             </div>
@@ -333,92 +334,90 @@ select{height:20px;border:2px inset #808080;background:#fff;font-size:11px;font-
     <div class="main">
       <div class="sidebar" id="mainSidebar">
 
-        <!-- Root label exactly like Roblox internal -->
-        <div class="sb-root">&#x229F; Admin Dashboard</div>
+        <div class="sb-root">Admin Dashboard</div>
 
-        <!-- each group: minus box to collapse, exactly like image 1 -->
         <div class="sb-group" id="sbg-users">
           <div class="sb-group-hdr" onclick="toggleSbGroup('sbg-users')">
-            <span class="sb-plusminus" id="pm-sbg-users">&#x229F;</span>
+            <span class="sb-plusminus" id="pm-sbg-users">&#9660;</span>
             <span class="sb-group-label">People</span>
           </div>
           <div class="sb-group-body" id="body-sbg-users">
-            <span class="sb-link" id="nav-useradmin">&#x2022; User Admin</span>
-            <span class="sb-link" id="nav-moderate">&#x2022; Moderate User</span>
-            <span class="sb-link" id="nav-accounts">&#x2022; All Accounts</span>
-            <span class="sb-link" id="nav-requests">&#x2022; Requests</span>
-            <span class="sb-link" id="nav-home">&#x2022; Dashboard</span>
+            <span class="sb-link" id="nav-useradmin">User Admin</span>
+            <span class="sb-link" id="nav-moderate">Moderate User</span>
+            <span class="sb-link" id="nav-accounts">All Accounts</span>
+            <span class="sb-link" id="nav-requests">Requests</span>
+            <span class="sb-link" id="nav-home">Dashboard</span>
           </div>
         </div>
 
         <div class="sb-group" id="sbg-content" style="display:none;">
           <div class="sb-group-hdr" onclick="toggleSbGroup('sbg-content')">
-            <span class="sb-plusminus" id="pm-sbg-content">&#x229F;</span>
-            <span class="sb-group-label">Content Moderation</span>
+            <span class="sb-plusminus" id="pm-sbg-content">&#9660;</span>
+            <span class="sb-group-label">Moderation</span>
           </div>
           <div class="sb-group-body" id="body-sbg-content">
-            <span class="sb-link" id="nav-reputation">&#x2022; Reputation</span>
-            <span class="sb-link" id="nav-appeals">&#x2022; Appeals</span>
-            <span class="sb-link" id="nav-altdetect">&#x2022; Alt Detection</span>
-            <span class="sb-link" id="nav-msganalyze">&#x2022; Msg Analyze</span>
+            <span class="sb-link" id="nav-reputation">Reputation</span>
+            <span class="sb-link" id="nav-appeals">Appeals</span>
+            <span class="sb-link" id="nav-altdetect">Alt Detection</span>
+            <span class="sb-link" id="nav-msganalyze">Msg Analyze</span>
           </div>
         </div>
 
         <div class="sb-group" id="sbg-staff" style="display:none;">
           <div class="sb-group-hdr" onclick="toggleSbGroup('sbg-staff')">
-            <span class="sb-plusminus" id="pm-sbg-staff">&#x229F;</span>
+            <span class="sb-plusminus" id="pm-sbg-staff">&#9660;</span>
             <span class="sb-group-label">Staff</span>
           </div>
           <div class="sb-group-body" id="body-sbg-staff">
-            <span class="sb-link" id="nav-staff">&#x2022; Staff Registry</span>
-            <span class="sb-link" id="nav-activity">&#x2022; Staff Activity</span>
-            <span class="sb-link" id="nav-messaging">&#x2022; Messaging</span>
-            <span class="sb-link" id="nav-suggestions">&#x2022; Suggestions</span>
-            <span class="sb-link" id="nav-staffconfig">&#x2022; Staff Config</span>
+            <span class="sb-link" id="nav-staff">Staff Registry</span>
+            <span class="sb-link" id="nav-activity">Staff Activity</span>
+            <span class="sb-link" id="nav-messaging">Messaging</span>
+            <span class="sb-link" id="nav-suggestions">Suggestions</span>
+            <span class="sb-link" id="nav-staffconfig">Staff Config</span>
           </div>
         </div>
 
         <div class="sb-group" id="sbg-logs">
           <div class="sb-group-hdr" onclick="toggleSbGroup('sbg-logs')">
-            <span class="sb-plusminus" id="pm-sbg-logs">&#x229F;</span>
+            <span class="sb-plusminus" id="pm-sbg-logs">&#9660;</span>
             <span class="sb-group-label">Logs</span>
           </div>
           <div class="sb-group-body" id="body-sbg-logs">
-            <span class="sb-link" id="nav-modlog">&#x2022; Moderation</span>
-            <span class="sb-link" id="nav-revokelog">&#x2022; Revoke</span>
-            <span class="sb-link" id="nav-suspendlog">&#x2022; Suspension</span>
-            <span class="sb-link" id="nav-terminatelog">&#x2022; Termination</span>
-            <span class="sb-link" id="nav-loginlog">&#x2022; Login</span>
+            <span class="sb-link" id="nav-modlog">Moderation</span>
+            <span class="sb-link" id="nav-revokelog">Revoke</span>
+            <span class="sb-link" id="nav-suspendlog">Suspension</span>
+            <span class="sb-link" id="nav-terminatelog">Termination</span>
+            <span class="sb-link" id="nav-loginlog">Login</span>
           </div>
         </div>
 
         <div class="sb-group" id="sbg-config" style="display:none;">
           <div class="sb-group-hdr" onclick="toggleSbGroup('sbg-config')">
-            <span class="sb-plusminus" id="pm-sbg-config">&#x229F;</span>
+            <span class="sb-plusminus" id="pm-sbg-config">&#9660;</span>
             <span class="sb-group-label">Configuration</span>
           </div>
           <div class="sb-group-body" id="body-sbg-config">
-            <span class="sb-link" id="nav-userconfig">&#x2022; User Config</span>
-            <span class="sb-link" id="nav-auditlog">&#x2022; Audit Log</span>
-            <span class="sb-link" id="nav-alerts">&#x2022; Site Alerts</span>
-            <span class="sb-link" id="nav-adminlog">&#x2022; Administrator</span>
+            <span class="sb-link" id="nav-userconfig">User Config</span>
+            <span class="sb-link" id="nav-auditlog">Audit Log</span>
+            <span class="sb-link" id="nav-alerts">Site Alerts</span>
+            <span class="sb-link" id="nav-adminlog">Administrator</span>
           </div>
         </div>
 
         <div class="sb-group" id="sbg-machine" style="display:none;">
-          <div class="sb-group-hdr" onclick="toggleSbGroup('sbg-machine')">
-            <span class="sb-plusminus" id="pm-sbg-machine">&#x229F;</span>
-            <span class="sb-group-label">Machine Mgmt</span>
+          <div class="sb-group-hdr" onclick="toggleSbGroup('sbg-machine')" style="border-top:1px solid var(--c-border);">
+            <span class="sb-plusminus" id="pm-sbg-machine">&#9660;</span>
+            <span class="sb-group-label" style="color:#6e7681;">Machine Mgmt</span>
           </div>
           <div class="sb-group-body" id="body-sbg-machine">
-            <span class="sb-link" id="nav-siteconfig">&#x2022; Configuration</span>
-            <span class="sb-link" id="nav-statuslog">&#x2022; Status Log</span>
-            <span class="sb-link" id="nav-wipelog">&#x2022; Wipe Log</span>
-            <span class="sb-link" id="nav-badgemgmt">&#x2022; Badge Mgmt</span>
+            <span class="sb-link" id="nav-siteconfig">Configuration</span>
+            <span class="sb-link" id="nav-statuslog">Status Log</span>
+            <span class="sb-link" id="nav-wipelog">Wipe Log</span>
+            <span class="sb-link" id="nav-badgemgmt">Badge Mgmt</span>
           </div>
         </div>
 
-      </div>      </div>
+      </div></div>
       <div class="content" id="content"><div style="padding:10px;color:#444;font-style:italic;">Loading data...</div></div>
     </div>
   </div>
@@ -427,9 +426,9 @@ select{height:20px;border:2px inset #808080;background:#fff;font-size:11px;font-
 <!-- ADVANCED SEARCH OVERLAY -->
 <div class="overlay" id="searchOverlay">
   <div class="dialog" style="width:480px;">
-    <div class="titlebar">
-      <div class="titlebar-title">Advanced Search</div>
-      <div class="win-btns"><div class="wcb" id="searchClose">&#10005;</div></div>
+    <div style="background:var(--bg-stitle);color:var(--c-stitle-text);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:13px;font-weight:600;">Advanced Search</div>
+      <div id="searchClose" style="cursor:pointer;color:var(--c-stitle-text);opacity:0.7;font-size:16px;line-height:1;">&#10005;</div>
     </div>
     <div style="padding:12px 14px 10px;">
       <div style="font-size:11px;color:#555;margin-bottom:8px;">Search across accessible channels. Separate multiple terms with commas.</div>
@@ -451,9 +450,9 @@ select{height:20px;border:2px inset #808080;background:#fff;font-size:11px;font-
 
 <div class="overlay" id="overlay">
   <div class="dialog">
-    <div class="titlebar">
-      <div class="titlebar-title" id="dlgTitle">Confirm</div>
-      <div class="win-btns"><div class="wcb" id="dlgClose">&#10005;</div></div>
+    <div style="background:var(--bg-stitle);color:var(--c-stitle-text);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:13px;font-weight:600;" id="dlgTitle">Confirm</div>
+      <div id="dlgClose" style="cursor:pointer;color:var(--c-stitle-text);opacity:0.7;font-size:16px;line-height:1;">&#10005;</div>
     </div>
     <div style="padding:12px 14px 8px;">
       <div id="dlgBody" style="font-size:11px;color:#000;margin-bottom:10px;line-height:1.6;"></div>
@@ -469,9 +468,9 @@ select{height:20px;border:2px inset #808080;background:#fff;font-size:11px;font-
 <!-- OPERATOR CODE POPUP -->
 <div class="overlay" id="opOverlay">
   <div class="dialog">
-    <div class="titlebar">
-      <div class="titlebar-title">Log Deletion</div>
-      <div class="win-btns"><div class="wcb" id="opClose">&#10005;</div></div>
+    <div style="background:var(--bg-stitle);color:var(--c-stitle-text);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:13px;font-weight:600;">Log Deletion</div>
+      <div id="opClose" style="cursor:pointer;color:var(--c-stitle-text);opacity:0.7;font-size:16px;line-height:1;">&#10005;</div>
     </div>
     <div style="padding:12px 14px 10px;">
       <div style="font-size:11px;color:#000;margin-bottom:4px;line-height:1.5;" id="opWarning">To continue with this action please insert your operator code.</div>
@@ -488,7 +487,7 @@ select{height:20px;border:2px inset #808080;background:#fff;font-size:11px;font-
 <!-- ACCOUNT WIPED POPUP -->
 <div class="overlay" id="wipedOverlay">
   <div class="susp-popup">
-    <div class="titlebar" style="background:#880000;">
+    <div style="background:#cf222e;color:#fff;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">
       <div class="titlebar-title">ACCOUNT WIPED</div>
       <div class="win-btns"><div class="wcb">&#10005;</div></div>
     </div>
@@ -500,7 +499,7 @@ select{height:20px;border:2px inset #808080;background:#fff;font-size:11px;font-
           <div style="font-size:11px;color:#000;line-height:1.6;">Your staff account has been permanently removed from the system by an administrator.</div>
         </div>
       </div>
-      <div style="border:1px solid #808080;background:#c8c4bc;padding:8px 10px;margin-bottom:10px;">
+      <div style="border:1px solid #808080;background:var(--bg-tbl-odd);padding:8px 10px;margin-bottom:10px;">
         <div class="susp-field"><label>Reason:</label><div class="val" id="wipedReason">No reason provided.</div></div>
         <div class="susp-field"><label>Wiped by:</label><div class="val" id="wipedBy">Unknown</div></div>
         <div class="susp-field" style="margin-bottom:0;"><label>Timestamp:</label><div class="val" id="wipedDate">Unknown</div></div>
@@ -515,9 +514,9 @@ select{height:20px;border:2px inset #808080;background:#fff;font-size:11px;font-
 <!-- RESET NOTICE POPUP (shown once on first login after factory reset) -->
 <div class="overlay" id="resetNoticeOverlay">
   <div class="dialog" style="width:400px;">
-    <div class="titlebar" style="background:#880000;">
+    <div style="background:#cf222e;color:#fff;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">
       <div class="titlebar-title">🔴 System Reset Notice</div>
-      <div class="win-btns"><div class="wcb" id="resetNoticeClose">&#10005;</div></div>
+      <div id="resetNoticeClose" style="cursor:pointer;color:#fff;opacity:0.7;font-size:16px;line-height:1;">&#10005;</div>
     </div>
     <div style="padding:12px 14px 12px;">
       <div style="background:#fde8e8;border:1px solid #cc6666;padding:8px;margin-bottom:10px;font-size:11px;color:#880000;font-weight:bold;line-height:1.6;">
@@ -540,9 +539,9 @@ select{height:20px;border:2px inset #808080;background:#fff;font-size:11px;font-
 <!-- FACTORY RESET POPUP -->
 <div class="overlay" id="factoryResetOverlay">
   <div class="dialog" style="width:400px;">
-    <div class="titlebar" style="background:#880000;">
+    <div style="background:#cf222e;color:#fff;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">
       <div class="titlebar-title">🔴 Factory Reset — Final Confirmation</div>
-      <div class="win-btns"><div class="wcb" id="factoryResetClose">&#10005;</div></div>
+      <div id="factoryResetClose" style="cursor:pointer;color:#fff;opacity:0.7;font-size:16px;line-height:1;">&#10005;</div>
     </div>
     <div style="padding:12px 14px 12px;">
       <div style="background:#fde8e8;border:1px solid #cc6666;padding:8px;margin-bottom:10px;font-size:11px;color:#880000;font-weight:bold;line-height:1.6;">
@@ -582,15 +581,15 @@ select{height:20px;border:2px inset #808080;background:#fff;font-size:11px;font-
       </div>
       <div style="font-size:11px;color:#000;margin-bottom:8px;font-weight:bold;">How would you like to proceed?</div>
       <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;">
-        <label style="display:flex;align-items:flex-start;gap:7px;font-size:11px;cursor:pointer;padding:4px 6px;border:1px solid #c0bcb4;background:#e8e4dc;">
+        <label style="display:flex;align-items:flex-start;gap:7px;font-size:11px;cursor:pointer;padding:4px 6px;border:1px solid #c0bcb4;background:var(--bg-tbl-odd);">
           <input type="radio" name="protOpt" value="escalate" checked style="margin-top:1px;"/>
           <span><b>Escalate Report</b> — Send to a higher authority for review. No action will be taken until approved.</span>
         </label>
-        <label style="display:flex;align-items:flex-start;gap:7px;font-size:11px;cursor:pointer;padding:4px 6px;border:1px solid #c0bcb4;background:#e8e4dc;">
+        <label style="display:flex;align-items:flex-start;gap:7px;font-size:11px;cursor:pointer;padding:4px 6px;border:1px solid #c0bcb4;background:var(--bg-tbl-odd);">
           <input type="radio" name="protOpt" value="proceed" style="margin-top:1px;"/>
           <span><b>Ignore Warning &amp; Proceed</b> — Take action immediately. This override will be permanently logged.</span>
         </label>
-        <label style="display:flex;align-items:flex-start;gap:7px;font-size:11px;cursor:pointer;padding:4px 6px;border:1px solid #c0bcb4;background:#e8e4dc;">
+        <label style="display:flex;align-items:flex-start;gap:7px;font-size:11px;cursor:pointer;padding:4px 6px;border:1px solid #c0bcb4;background:var(--bg-tbl-odd);">
           <input type="radio" name="protOpt" value="cancel" style="margin-top:1px;"/>
           <span><b>Cancel</b> — Take no action and return.</span>
         </label>
@@ -622,9 +621,9 @@ select{height:20px;border:2px inset #808080;background:#fff;font-size:11px;font-
 <!-- NOTIFICATION SETTINGS POPUP -->
 <div class="overlay" id="notifSettingsOverlay">
   <div class="dialog" style="width:300px;">
-    <div class="titlebar">
-      <div class="titlebar-title">Notification Settings</div>
-      <div class="win-btns"><div class="wcb" id="notifSettingsClose">&#10005;</div></div>
+    <div style="background:var(--bg-stitle);color:var(--c-stitle-text);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:13px;font-weight:600;">Notification Settings</div>
+      <div id="notifSettingsClose" style="cursor:pointer;color:var(--c-stitle-text);opacity:0.7;font-size:16px;line-height:1;">&#10005;</div>
     </div>
     <div style="padding:10px 14px 10px;">
       <div style="font-size:11px;color:#000;margin-bottom:8px;">Choose which events you want to be notified about. Only categories you have access to are shown.</div>
@@ -776,8 +775,37 @@ const ALL_NOTIF_EVENTS=[
   {key:'newStaffMessage',label:'New Staff Message / Suggestion Review',perm:'canSendStaffMessage'},
 ];
 
-function today(){ return new Date().toLocaleDateString(); }
-function nowStr(){ return new Date().toLocaleString(); }
+// ── TIME: always store in viewer's local timezone ──
+function today(){
+  return new Date().toLocaleDateString(undefined,{year:'numeric',month:'numeric',day:'numeric'});
+}
+function nowStr(){
+  return new Date().toLocaleString(undefined,{
+    year:'numeric',month:'numeric',day:'numeric',
+    hour:'numeric',minute:'2-digit',second:'2-digit',
+    hour12:true
+  });
+}
+// Convert any stored date string to local timezone display
+function localDate(str){
+  if(!str||str==='Never'||str==='—') return str;
+  try{
+    const d=new Date(str);
+    if(isNaN(d)) return str; // already a display string, return as-is
+    return d.toLocaleString(undefined,{
+      year:'numeric',month:'numeric',day:'numeric',
+      hour:'numeric',minute:'2-digit',second:'2-digit',hour12:true
+    });
+  }catch(e){ return str; }
+}
+function localDateShort(str){
+  if(!str||str==='Never'||str==='—') return str;
+  try{
+    const d=new Date(str);
+    if(isNaN(d)) return str;
+    return d.toLocaleDateString(undefined,{year:'numeric',month:'numeric',day:'numeric'});
+  }catch(e){ return str; }
+}
 function rankOf(l){ if(l==='- NONE -') return 999; return LEVEL_RANK[l]||0; }
 function isSoftwareManager(){ return MY_LEVEL==='SOFTWARE MANAGER'; }
 function isSuperAdmin(){ return MY_LEVEL==='SUPER ADMINISTRATOR'||isSoftwareManager(); }
@@ -967,7 +995,7 @@ async function fetchRobloxInfo(username){
       proxyFetch(`https://users.roblox.com/v1/users/${robloxId}`)
     ]);
     let accountCreated='', displayName='';
-    if(d3&&d3.created) accountCreated=new Date(d3.created).toLocaleDateString();
+    if(d3&&d3.created) accountCreated=new Date(d3.created).toLocaleDateString(undefined,{year:'numeric',month:'numeric',day:'numeric'});
     if(d3&&d3.displayName) displayName=d3.displayName;
     let avatarUrl=d2&&d2.data&&d2.data[0]&&d2.data[0].imageUrl?d2.data[0].imageUrl:'';
     // Fallback thumbnail endpoint if primary fails
@@ -2060,7 +2088,7 @@ function renderAppeals(c){
 function openReviewPanel(lid){
   const r=APPEAL_LOG[lid]; if(!r) return;
   openDialog('Review Appeal',`Reviewing appeal for <b>${r.user}</b>:`,`
-    <div style="font-size:11px;color:#000;margin-bottom:8px;background:#e8e4dc;padding:6px;border:1px solid #b0aca4;">
+    <div style="font-size:11px;color:#000;margin-bottom:8px;background:var(--bg-tbl-odd);padding:6px;border:1px solid #b0aca4;">
       <div><b>Punishment:</b> ${r.punishAction||'—'} (${r.punishDate||'—'})</div>
       <div><b>Preset Reason:</b> ${r.presetReason||'—'}</div>
       <div><b>Reason:</b> ${r.reason||'None provided.'}</div>
@@ -2563,7 +2591,7 @@ function renderAlerts(c){
       <tr><th>Type</th><th>Message</th><th>By</th><th>Date</th><th>Active</th><th>Expires</th>${isSuperAdmin()?'<th>Admin</th>':''}</tr>
       ${allAlerts.map(([lid,a])=>{
         const expired=a.expiresAt&&a.expiresAt>0&&Date.now()>a.expiresAt;
-        const expiryLabel=a.expiresAt&&a.expiresAt>0?new Date(a.expiresAt).toLocaleString():'Never';
+        const expiryLabel=a.expiresAt&&a.expiresAt>0?new Date(a.expiresAt).toLocaleString(undefined,{year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true}):'Never';
         return `<tr>
           <td><span style="font-weight:bold;color:${a.type==='critical'?'#880000':a.type==='info'?'#003388':'#886600'}">${(a.type||'warning').toUpperCase()}</span></td>
           <td style="max-width:200px;white-space:normal;">${a.message}</td>
@@ -2710,7 +2738,7 @@ function renderRequests(c){
 function openReviewRequest(lid){
   const r=MOD_REQUESTS[lid]; if(!r) return;
   openDialog('Review Moderation Request',`Request from <b>${r.submittedBy}</b> against <b>${r.targetUser}</b> [PROTECTED]:`,`
-    <div style="font-size:11px;background:#e8e4dc;padding:6px;border:1px solid #b0aca4;margin-bottom:8px;">
+    <div style="font-size:11px;background:var(--bg-tbl-odd);padding:6px;border:1px solid #b0aca4;margin-bottom:8px;">
       <div><b>Requested Action:</b> ${r.action}</div>
       <div><b>Reason:</b> ${r.reason||'None provided.'}</div>
       <div><b>Submitted:</b> ${r.date}</div>
@@ -2872,7 +2900,7 @@ function renderAdminLog(c){
         <div style="font-size:11px;color:#555;margin-bottom:6px;">Manage the changelog shown in the Update Log popup on the dashboard. Each entry is one bullet point.</div>
         <div id="ulVersionList" style="margin-bottom:6px;">
           ${UPDATE_LOG.map((v,i)=>`
-            <div style="border:1px solid #b0aca4;background:#e8e4dc;padding:5px 7px;margin-bottom:5px;">
+            <div style="border:1px solid #b0aca4;background:var(--bg-tbl-odd);padding:5px 7px;margin-bottom:5px;">
               <div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;flex-wrap:wrap;">
                 <span style="font-size:11px;font-weight:bold;color:#000080;">v${v.version}</span>
                 <span style="font-size:10px;color:#808080;">${v.date}</span>
@@ -2936,7 +2964,7 @@ function renderAdminLog(c){
         <div id="tplList" style="margin-bottom:6px;">
           ${BAN_TEMPLATES.length===0?'<i style="color:#444;font-size:11px;">No templates yet.</i>':
             BAN_TEMPLATES.map((t,i)=>`
-              <div style="display:flex;gap:4px;align-items:flex-start;margin-bottom:4px;padding:4px;background:#c8c4bc;border:1px solid #a0a0a0;">
+              <div style="display:flex;gap:4px;align-items:flex-start;margin-bottom:4px;padding:4px;background:var(--bg-tbl-odd);border:1px solid #a0a0a0;">
                 <div style="flex:1;min-width:0;">
                   <div style="font-size:11px;font-weight:bold;color:#000;">${t.name}</div>
                   <div style="font-size:10px;color:#444;white-space:pre-wrap;word-break:break-word;">${t.message}</div>
@@ -3764,8 +3792,8 @@ async function doLogin(){
     await update(ref(db,`staff/${u}`),{lastActive:nowStr(),lastAction:'Logged in'});
     status.textContent='';
     document.getElementById('loginScreen').style.display='none';
-    document.getElementById('adminScreen').style.display='flex';
-    document.getElementById('topbarTitle').textContent=`Administration Panel \u2014 ${ME} [${MY_LEVEL}]`;
+    document.getElementById('adminScreen').style.display='block';
+    document.getElementById('topbarTitle').innerHTML=`<span style='color:#f78166;font-weight:700;'>&#11035; Admin Panel</span> <span style='color:var(--c-topbar-sub);font-weight:400;font-size:12px;'>&mdash; ${ME} <span style='color:var(--c-topbar-text);font-weight:600;'>[${MY_LEVEL}]</span></span>`;
     startListeners();
     startHeartbeat();
     loadNotifPrefs();
@@ -4055,7 +4083,7 @@ function renderSuggestions(c){
     c.querySelectorAll('.review-sugg-btn').forEach(btn=>{
       btn.onclick=()=>{
         const s=SUGGESTIONS[btn.dataset.lid]; if(!s) return;
-        openDialog('Review Suggestion',`From <b>${s.from}</b>: <b>${s.subject}</b><br><div style="font-size:10px;margin-top:3px;background:#e8e4dc;padding:5px;border:1px solid #b0aca4;white-space:pre-wrap;">${s.body}</div>`,`
+        openDialog('Review Suggestion',`From <b>${s.from}</b>: <b>${s.subject}</b><br><div style="font-size:10px;margin-top:3px;background:var(--bg-tbl-odd);padding:5px;border:1px solid #b0aca4;white-space:pre-wrap;">${s.body}</div>`,`
           <div style="margin-bottom:4px;"><label style="font-size:11px;color:#000;display:block;margin-bottom:2px;font-weight:bold;">Decision:</label>
             <select id="suggDecision" style="width:100%;font-family:inherit;font-size:11px;height:16px;"><option>Approved</option><option>Denied</option><option>Under Review</option></select></div>
           <div><label style="font-size:11px;color:#000;display:block;margin-bottom:2px;font-weight:bold;">Review Note:</label>
@@ -4905,7 +4933,7 @@ function setupMenus(){
 
   // Night mode button
   const nightBtn=document.getElementById('nightModeBtn');
-  if(nightBtn) nightBtn.onclick=()=>{ nightMode=!nightMode; applyNightMode(); };
+  if(nightBtn) nightBtn.onclick=()=>{ darkMode=!darkMode; applyTheme(); };
 
   // Refresh button
   const refreshBtn=document.getElementById('refreshBtn');
@@ -4952,20 +4980,22 @@ window.toggleSbGroup = function(groupId){
   const pm = document.getElementById('pm-' + groupId);
   if(!body) return;
   const collapsed = body.classList.toggle('collapsed');
-  if(pm) pm.innerHTML = collapsed ? '&#x229E;' : '&#x229F;'; // [+] / [-]
+  if(pm) pm.innerHTML = collapsed ? '&#9654;' : '&#9660;';
 };
 
-// ── NIGHT MODE ──
-let nightMode = false;
-try { nightMode = localStorage.getItem('nightMode') === '1'; } catch(e){}
-function applyNightMode(){
-  document.body.classList.toggle('night', nightMode);
+// ── THEME SYSTEM (GitHub Light / GitHub Dark) ──
+let darkMode = false;
+try { darkMode = localStorage.getItem('ghTheme') === 'dark'; } catch(e){}
+function applyTheme(){
+  document.body.classList.toggle('gh-dark', darkMode);
   const btn = document.getElementById('nightModeBtn');
-  if(btn) btn.title = nightMode ? 'Switch to Light Mode' : 'Toggle Night Mode';
-  if(btn) btn.textContent = nightMode ? '\u2600' : '\u263D';
-  try { localStorage.setItem('nightMode', nightMode ? '1' : '0'); } catch(e){}
+  if(btn){
+    btn.title = darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+    btn.textContent = darkMode ? '☀' : '☽';
+  }
+  try { localStorage.setItem('ghTheme', darkMode ? 'dark' : 'light'); } catch(e){}
 }
-applyNightMode();
+applyTheme();
 
 setupMenus();
 
