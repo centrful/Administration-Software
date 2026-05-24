@@ -97,12 +97,12 @@ body.night .drop-item:hover{background:#2a2a5a;}
 
 /* ── SIDEBAR (exact Roblox internal admin recreation) ── */
 .sidebar{width:170px;flex-shrink:0;background:#fff;border-right:1px solid #9090a0;overflow-y:auto;font-size:11px;}
-/* "Admin Dashboard" root label */
-.sb-root{padding:4px 6px;font-weight:bold;font-size:11px;color:#000;background:#d4d0c8;border-bottom:1px solid #a0a0a0;cursor:default;user-select:none;}
+/* "Admin Dashboard" root label — matches image 1 */
+.sb-root{padding:4px 6px;font-weight:bold;font-size:11px;color:#000;background:#d4d0c8;border-bottom:1px solid #a0a0a0;cursor:default;user-select:none;display:flex;align-items:center;gap:4px;}
 /* Group container */
 .sb-group{border-bottom:1px solid #c8c8d0;}
 /* Group header row — bullet + label, no background colour (just white) */
-.sb-group-hdr{display:flex;align-items:center;gap:3px;padding:2px 4px;cursor:pointer;user-select:none;background:#fff;}
+.sb-group-hdr{display:flex;align-items:center;gap:3px;padding:2px 4px;cursor:pointer;user-select:none;background:#fff;padding-left:4px;}
 .sb-group-hdr:hover{background:#e8eef8;}
 /* The [−]/[+] box — matches the Roblox internal boxed minus/plus exactly */
 .sb-plusminus{display:inline-block;width:11px;height:11px;border:1px solid #808080;background:#fff;text-align:center;line-height:10px;font-size:10px;font-weight:bold;flex-shrink:0;color:#000;font-style:normal;}
@@ -111,9 +111,11 @@ body.night .drop-item:hover{background:#2a2a5a;}
 .sb-group-body{background:#fff;}
 .sb-group-body.collapsed{display:none;}
 /* Individual links — indented bullet style */
-.sb-link{padding:1px 4px 1px 22px;cursor:pointer;color:#003399;text-decoration:underline;display:block;font-size:11px;white-space:nowrap;}
+.sb-link{padding:1px 4px 1px 20px;cursor:pointer;color:#003399;text-decoration:underline;display:block;font-size:11px;white-space:nowrap;position:relative;}
 .sb-link:hover{color:#cc0000;}
 .sb-link.active{color:#000;text-decoration:none;font-weight:bold;}
+/* Connecting tree line on left edge of links */
+.sb-group-body:not(.collapsed) .sb-link::before{content:'';position:absolute;left:8px;top:50%;width:8px;height:1px;background:#a0a0a0;}
 
 /* ── CONTENT AREA ── */
 .content{flex:1;padding:8px;min-width:0;overflow-y:auto;background:#fff;}
@@ -188,11 +190,11 @@ select{height:20px;border:2px inset #808080;background:#fff;font-size:11px;font-
 .invalid-cred{color:#880000;font-size:10px;font-style:italic;}
 
 /* ── ACTIVITY DOTS ── */
-.activity-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;}
-.activity-dot.active{background:#006600;}
+.activity-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:3px;vertical-align:middle;flex-shrink:0;}
+.activity-dot.active{background:#00aa00;}
 .activity-dot.idle{background:#cc8800;}
 .activity-dot.offline{background:#808080;}
-.activity-dot.suspended{background:#cc8800;}
+.activity-dot.suspended{background:#cc4400;}
 
 /* ── OVERLAYS / DIALOGS ── */
 .overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;}
@@ -1390,8 +1392,8 @@ function renderHome(c){
     <div class="sbox" style="flex:1;min-width:130px;"><div class="stitle">Staff</div><div class="sbody">
       <div style="font-size:18px;font-weight:bold;color:#000080;">${totalStaff}</div>
       <div style="font-size:11px;margin-top:3px;">
-        <span class="activity-dot active"></span> Online: <b>${onlineStaff}</b><br>
-        <span class="sus">&#9679;</span> Suspended: <b>${suspendedStaff}</b>
+        <span class="activity-dot active" style="width:7px;height:7px;"></span> Online: <b>${onlineStaff}</b><br>
+        <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#cc8800;margin-right:4px;vertical-align:middle;"></span><span class="sus">Suspended:</span> <b>${suspendedStaff}</b>
       </div>
       ${canDo('canViewStaff')?`<div style="margin-top:4px;"><button class="btn small" onclick="nav('activity')">Activity</button></div>`:''}
     </div></div>
@@ -2196,7 +2198,7 @@ function renderStaff(c){
           <tr><th>Username</th><th>Level</th><th>Status</th><th>Last Active</th><th>Action</th></tr>
           ${sArr.map(([sid2,s2])=>`<tr>
             <td><b>${s2.username||'—'}</b></td><td>${s2.level?levelBadge(s2.level):'—'}</td>
-            <td>${s2.suspended?'<span class="sus">SUSPENDED</span>':s2.secured?'<span class="ban">SECURED</span>':'<span class="ok">OK</span>'}</td>
+            <td>${(()=>{ const la2=s2.lastActive&&s2.lastActive!=='Never'?new Date(s2.lastActive):null; const diff2=la2?(new Date()-la2):Infinity; if(s2.suspended) return '<span class="sus">SUSPENDED</span>'; if(s2.secured) return '<span class="ban">SECURED</span>'; if(!la2||s2.lastAction==='Logged out') return '<span style="color:#808080;">Logged Out</span>'; if(diff2<300000) return '<span class="ok">Active</span>'; if(diff2<1200000) return '<span style="color:#cc8800;">Idle</span>'; return '<span style="color:#808080;">Offline</span>'; })()}</td>
             <td style="font-size:10px;">${s2.lastActive||'Never'}</td>
             <td>${canManage?`<button class="btn view-staff-btn" data-sid="${sid2}">View</button>`:'<span class="invalid-cred">INVALID CREDENTIALS</span>'}</td>
           </tr>`).join('')}
@@ -2224,7 +2226,7 @@ function renderStaff(c){
           <div style="min-width:0;flex:1;overflow:hidden;">
             <div style="font-size:11px;font-weight:bold;color:#000;word-break:break-all;">${s.username}</div>
             <div style="margin-top:2px;">${levelBadge(s.level)}</div>
-            <div style="font-size:10px;color:#000;margin-top:2px;">${s.suspended?'<span class="sus">SUSPENDED</span>':s.secured?'<span class="ban">SECURED</span>':'<span class="ok">Active</span>'}</div>
+            <div style="font-size:10px;color:#000;margin-top:2px;">${(()=>{ const la=s.lastActive&&s.lastActive!=='Never'?new Date(s.lastActive):null; const diffMs=la?(new Date()-la):Infinity; if(s.suspended) return '<span class="sus">&#9679; SUSPENDED</span>'; if(s.secured) return '<span class="ban">&#9679; SECURED</span>'; if(!la||s.lastAction==='Logged out') return '<span style="color:#808080;">&#9679; Logged Out</span>'; if(diffMs<300000) return '<span class="ok">&#9679; Active</span>'; if(diffMs<1200000) return '<span style="color:#cc8800;font-weight:bold;">&#9679; Idle</span>'; return '<span style="color:#808080;">&#9679; Logged Out</span>'; })()}</div>
           </div>
         </div>
         <div style="font-size:11px;color:#808080;margin-bottom:1px;">Joined: <span style="color:#000;">${s.joined||'—'}</span></div>
@@ -2835,9 +2837,10 @@ function openUserConfigDialog(uid){
         watched:document.getElementById('ucfWatched').checked,
         muted:document.getElementById('ucfMuted').checked,
       };
-      // Custom badges
+      // Custom badges — read fresh from USERS to avoid stale closure
       if(CUSTOM_BADGES.length){
-        const customBadges=u.customBadges||{};
+        const freshU=USERS[uid]||u;
+        const customBadges=Object.assign({},freshU.customBadges||{});
         CUSTOM_BADGES.forEach(cb=>{
           const el=document.getElementById('ucfbadge-'+cb.key);
           if(el) customBadges[cb.key]=el.checked;
@@ -3528,6 +3531,7 @@ function promptSuspendStaff(sid, isCurrentlySuspended){
         await update(ref(db,`staff/${sid}`),{suspended:false,suspendInfo:null,forceLogout:false});
         await push(ref(db,'logs/suspend'),{username:s.username,action:'Unsuspend',by:ME,date:nowStr(),reason,modNote:'',offensiveItem:''});
         auditLog('Staff Unsuspended',s.username);
+        nav('staff');
       }
     );
   }else{
@@ -3578,7 +3582,7 @@ function promptSecureStaff(sid, isCurrentlySecured){
       `<div style="font-size:11px;color:#000;margin-bottom:2px;">Reason:</div><textarea id="dlgReason" style="width:100%;height:36px;"></textarea>`,
       async()=>{
         const reason=document.getElementById('dlgReason').value.trim()||'Cleared by admin.';
-        await update(ref(db,`staff/${sid}`),{secured:false,secureInfo:null,forceLogout:false});
+        await update(ref(db,`staff/${sid}`),{secured:false,secureInfo:null});
         auditLog('Staff Account Unsecured',`${s.username}: ${reason}`); nav('staff');
       });
   } else {
