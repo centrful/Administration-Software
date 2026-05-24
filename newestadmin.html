@@ -387,6 +387,10 @@ select{height:28px;border:1px solid var(--c-border-input);background:var(--bg-in
           <span class="sb-link" id="nav-home" style="padding:4px 8px;border-radius:6px;font-size:11px;font-weight:600;display:block;margin:-2px -4px 0;">&#9632; Dashboard</span>
         </div>
 
+        <span class="sb-link" id="nav-information" style="padding:5px 8px 5px 10px;display:flex;align-items:center;gap:5px;font-size:11px;border-left:2px solid transparent;margin-bottom:2px;">
+          <span style="font-size:12px;opacity:0.7;">ℹ</span> Information
+        </span>
+
         <div class="sb-group" id="sbg-users">
           <div class="sb-group-hdr" onclick="toggleSbGroup('sbg-users')">
             <span class="sb-plusminus" id="pm-sbg-users">&#9660;</span>
@@ -410,7 +414,6 @@ select{height:28px;border:1px solid var(--c-border-input);background:var(--bg-in
             <span class="sb-link" id="nav-appeals">Appeals</span>
             <span class="sb-link" id="nav-altdetect">Alt Detection</span>
             <span class="sb-link" id="nav-msganalyze">Msg Analyze</span>
-            <span class="sb-link" id="nav-leakid">Leak Identifier</span>
           </div>
         </div>
 
@@ -452,7 +455,6 @@ select{height:28px;border:1px solid var(--c-border-input);background:var(--bg-in
             <span class="sb-link" id="nav-auditlog">Audit Log</span>
             <span class="sb-link" id="nav-alerts">Site Alerts</span>
             <span class="sb-link" id="nav-adminlog">Administrator</span>
-            <span class="sb-link" id="nav-information">&#9432; Information</span>
           </div>
         </div>
 
@@ -466,6 +468,7 @@ select{height:28px;border:1px solid var(--c-border-input);background:var(--bg-in
             <span class="sb-link" id="nav-statuslog">Status Log</span>
             <span class="sb-link" id="nav-wipelog">Wipe Log</span>
             <span class="sb-link" id="nav-badgemgmt">Badge Mgmt</span>
+            <span class="sb-link" id="nav-leakid">Leak Identifier</span>
           </div>
         </div>
 
@@ -950,7 +953,7 @@ function renderNotifDropdown(){
   renderNotifBadge();
   if(NOTIFICATIONS.length===0){ list.innerHTML='<div style="padding:6px 8px;color:var(--c-text2);font-style:italic;">No notifications.</div>'; return; }
   list.innerHTML=NOTIFICATIONS.map((n,i)=>`
-    <div style="padding:3px 8px;border-bottom:1px solid #c8c4bc;cursor:default;">
+    <div style="padding:3px 8px;border-bottom:1px solid var(--c-border);cursor:default;">
       <div style="font-size:11px;color:var(--c-text);">${n.message}</div>
       <div style="font-size:10px;color:var(--c-text2);">${n.time}</div>
     </div>`).join('');
@@ -982,6 +985,22 @@ function avatarHTML(u, size){
   }
   return `<span style="font-size:${Math.max(8,sz/4)}px;color:var(--c-text2);font-weight:bold;">${initials}</span>`;
 }
+// ── TINY INLINE AVATAR for tables ──
+// Returns a small avatar img or initials circle for use in table cells
+function tinyAvatar(username, avatarUrl, size){
+  const sz = size || 20;
+  const initials = (username||'?').substring(0,2).toUpperCase();
+  const img = avatarUrl
+    ? `<img src="${avatarUrl}" width="${sz}" height="${sz}" style="border-radius:50%;object-fit:cover;flex-shrink:0;vertical-align:middle;" onerror="this.outerHTML='<span style=\'width:${sz}px;height:${sz}px;border-radius:50%;background:var(--bg-tbl-odd);border:1px solid var(--c-border);display:inline-flex;align-items:center;justify-content:center;font-size:${Math.max(7,sz/3)}px;font-weight:700;color:var(--c-text2);flex-shrink:0;vertical-align:middle;\'>${initials}</span>'">`
+    : `<span style="width:${sz}px;height:${sz}px;border-radius:50%;background:var(--bg-tbl-odd);border:1px solid var(--c-border);display:inline-flex;align-items:center;justify-content:center;font-size:${Math.max(7,sz/3)}px;font-weight:700;color:var(--c-text2);flex-shrink:0;vertical-align:middle;">${initials}</span>`;
+  return `<span style="display:inline-flex;align-items:center;gap:5px;vertical-align:middle;">${img}<span style="vertical-align:middle;">${username||'—'}</span></span>`;
+}
+// Look up avatar URL for a username from USERS or STAFF
+function avatarUrlFor(username){
+  const u=Object.values(USERS).find(u=>u.username===username)||Object.values(STAFF).find(s=>s.username===username);
+  return u&&u.avatarUrl?u.avatarUrl:'';
+}
+
 function accountAge(dateStr){
   if(!dateStr||dateStr==='Never') return 'Unknown';
   const d=new Date(dateStr), now=new Date();
@@ -1108,8 +1127,9 @@ function updateTopInfo(){
   const active=ua.filter(u=>u.status==='active').length;
   const susp=ua.filter(u=>u.status==='suspended').length;
   const banned=ua.filter(u=>u.status==='banned').length;
-  const staffCount=Object.keys(STAFF).length;
+  const totalPlayers=ua.length;
   const staffArr=Object.values(STAFF);
+  const staffCount=staffArr.length;
   const onlineStaff=staffArr.filter(s=>{ if(!s.lastActive||s.lastActive==='Never') return false; return (new Date()-new Date(s.lastActive))<300000; }).length;
   const suspStaff=staffArr.filter(s=>s.suspended).length;
   const openAppeals=Object.values(APPEAL_LOG).filter(a=>a.status==='Pending').length;
@@ -1121,33 +1141,57 @@ function updateTopInfo(){
   const dateStr=now.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
   const el=document.getElementById('topinfo');
   if(!el) return;
-  // Build clean chips — each is a self-contained non-breaking unit
-  const chip=(label,value,color)=>`<span style="display:inline-flex;align-items:center;gap:3px;white-space:nowrap;"><span style="font-size:10px;color:var(--c-text2);">${label}</span><span style="font-weight:700;font-size:12px;color:${color};">${value}</span></span>`;
-  const sep=`<span style="color:var(--c-border);margin:0 6px;opacity:0.5;user-select:none;">|</span>`;
-  const alertSvg='<svg width="10" height="10" viewBox="0 0 16 16" fill="none" style="vertical-align:middle;margin-right:2px;"><circle cx="8" cy="8" r="7" stroke="var(--c-sus)" stroke-width="1.5" fill="rgba(227,179,65,0.15)"/><line x1="8" y1="4.5" x2="8" y2="8.5" stroke="var(--c-sus)" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="11" r="0.9" fill="var(--c-sus)"/></svg>';
 
-  const parts=[
-    chip('Players',active,'var(--c-ok)'),
-    susp>0?chip('Suspended',susp,'var(--c-sus)'):'',
-    banned>0?chip('Banned',banned,'var(--c-ban)'):'',
-    sep,
-    chip('Staff',staffCount,'var(--c-text)'),
-    chip('Online',onlineStaff,'var(--c-ok)'),
-    suspStaff>0?chip('Susp.',suspStaff,'var(--c-sus)'):'',
-    sep,
-    chip('Appeals',openAppeals,openAppeals>0?'var(--c-ban)':'var(--c-text2)'),
-    sep,
-    chip('High Risk',highRisk,highRisk>0?'var(--c-sus)':'var(--c-text2)'),
-    sep,
-    chip('Mod Log',modCount,'var(--c-text)'),
-    activeAlerts>0?(sep+alertSvg+`<span style="font-size:11px;font-weight:600;color:var(--c-sus);">${activeAlerts} alert${activeAlerts>1?'s':''}</span>`):'',
-  ].filter(Boolean);
+  // Each stat is a <span> with label + bold number, no inline concatenation between chips
+  // Vertical bar separators between groups
+  const PIPE = '<span style="display:inline-block;width:1px;height:12px;background:currentColor;opacity:0.2;margin:0 10px;vertical-align:middle;flex-shrink:0;"></span>';
+  function stat(label, value, color){
+    return '<span style="display:inline-flex;align-items:baseline;gap:4px;white-space:nowrap;flex-shrink:0;">'
+      + '<span style="font-size:10px;color:var(--c-text2);">' + label + '</span>'
+      + '<span style="font-size:12px;font-weight:700;color:' + color + ';">' + value + '</span>'
+      + '</span>';
+  }
+  function dot(){ return '<span style="display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--c-text2);opacity:0.4;margin:0 5px;vertical-align:middle;flex-shrink:0;"></span>'; }
 
-  el.innerHTML=`<span style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:4px;overflow:hidden;">
-    <span style="display:flex;align-items:center;gap:0;flex-wrap:nowrap;overflow:hidden;min-width:0;">${parts.join('')}</span>
-    <span style="color:var(--c-text2);font-size:11px;white-space:nowrap;flex-shrink:0;padding-left:8px;">${dateStr} &nbsp; ${timeStr}</span>
-  </span>`;
-  // Keep time ticking
+  // Build groups explicitly — no array concatenation that can merge adjacent chips
+  let html = '';
+  // Group 1: Players
+  html += stat('Players', totalPlayers, 'var(--c-text)');
+  html += dot();
+  html += stat('Active', active, 'var(--c-ok)');
+  if(susp > 0){ html += dot(); html += stat('Susp', susp, 'var(--c-sus)'); }
+  if(banned > 0){ html += dot(); html += stat('Banned', banned, 'var(--c-ban)'); }
+  html += PIPE;
+  // Group 2: Staff — explicit PIPE before AND explicit dot between Staff count and Online
+  html += stat('Staff', staffCount, 'var(--c-text)');
+  html += dot();
+  html += stat('Online', onlineStaff, 'var(--c-ok)');
+  if(suspStaff > 0){ html += dot(); html += stat('Susp', suspStaff, 'var(--c-sus)'); }
+  html += PIPE;
+  // Group 3: Appeals
+  html += stat('Appeals', openAppeals, openAppeals > 0 ? 'var(--c-ban)' : 'var(--c-text2)');
+  html += PIPE;
+  // Group 4: High Risk
+  html += stat('High Risk', highRisk, highRisk > 0 ? 'var(--c-sus)' : 'var(--c-text2)');
+  html += PIPE;
+  // Group 5: Mod Log
+  html += stat('Mod Log', modCount, 'var(--c-text)');
+  // Alerts chip if any
+  if(activeAlerts > 0){
+    html += PIPE;
+    html += '<span style="display:inline-flex;align-items:center;gap:3px;white-space:nowrap;flex-shrink:0;">'
+      + '<svg width="10" height="10" viewBox="0 0 16 16" fill="none" style="vertical-align:middle;">'
+      + '<circle cx="8" cy="8" r="7" stroke="var(--c-sus)" stroke-width="1.5" fill="rgba(227,179,65,0.15)"/>'
+      + '<line x1="8" y1="4.5" x2="8" y2="8.5" stroke="var(--c-sus)" stroke-width="1.5" stroke-linecap="round"/>'
+      + '<circle cx="8" cy="11" r="0.9" fill="var(--c-sus)"/></svg>'
+      + '<span style="font-size:11px;font-weight:600;color:var(--c-sus);">' + activeAlerts + ' alert' + (activeAlerts > 1 ? 's' : '') + '</span>'
+      + '</span>';
+  }
+
+  el.innerHTML = '<span style="display:flex;align-items:center;justify-content:space-between;width:100%;min-width:0;">'
+    + '<span style="display:flex;align-items:center;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;min-width:0;gap:0;line-height:2;">' + html + '</span>'
+    + '<span style="font-size:11px;color:var(--c-text2);white-space:nowrap;flex-shrink:0;padding-left:12px;">' + dateStr + ' \u00a0 ' + timeStr + '</span>'
+    + '</span>';
   if(!updateTopInfo._timer) updateTopInfo._timer=setInterval(()=>{ if(document.getElementById('topinfo')) updateTopInfo(); },30000);
 }
 
@@ -1210,12 +1254,14 @@ function updateSidebar(){
   const show=(id,cond)=>{ const el=document.getElementById(id); if(el) el.style.display=cond?'':'none'; };
   const showGroup=(id,cond)=>{ const el=document.getElementById(id); if(el) el.style.display=cond?'':'none'; };
 
+  // ── STANDALONE LINKS ──
+  show('nav-information', true); // Everyone sees Information
+
   // ── PEOPLE group ──
   show('nav-useradmin', canDo('canViewUserAdmin'));
   show('nav-moderate', canDo('canModerateUsers'));
   show('nav-accounts', true);
   show('nav-requests', canDo('canViewRequests'));
-  // People group always visible — All Accounts is always accessible
   showGroup('sbg-users', true);
 
   // ── MODERATION group ──
@@ -1223,7 +1269,6 @@ function updateSidebar(){
   show('nav-appeals', canDo('canViewAppealLog'));
   show('nav-altdetect', canDo('canViewContentModeration'));
   show('nav-msganalyze', canDo('canViewMessageAnalyze'));
-  show('nav-leakid', canDo('canViewContentModeration'));
   const canSeeModeration=canDo('canViewContentModeration')||canDo('canViewAppealLog')||canDo('canViewMessageAnalyze');
   showGroup('sbg-content', canSeeModeration);
 
@@ -1250,9 +1295,7 @@ function updateSidebar(){
   show('nav-auditlog', isSuperAdmin());
   show('nav-alerts', canDo('canManageStaff')||isSuperAdmin());
   show('nav-adminlog', isSuperAdmin());
-  show('nav-information', true); // Information is visible to everyone
-  // Config group visible if user can see any item, or Information (always true)
-  const canSeeConfig=true;
+  const canSeeConfig=canDo('canViewUserConfig')||isSuperAdmin()||canDo('canManageStaff');
   showGroup('sbg-config', canSeeConfig);
 
   // ── MACHINE MGMT (Software Manager only) ──
@@ -1260,6 +1303,7 @@ function updateSidebar(){
   show('nav-statuslog', isSoftwareManager());
   show('nav-wipelog', isSoftwareManager());
   show('nav-badgemgmt', isSoftwareManager());
+  show('nav-leakid', isSoftwareManager());
   showGroup('sbg-machine', isSoftwareManager());
 }
 
@@ -1345,7 +1389,7 @@ function render(){
   else if(page==='announcements') renderAlerts(c);
   else if(page==='adminlog'){ isSuperAdmin()?renderAdminLog(c):c.innerHTML=denied; }
   else if(page==='information') renderInformation(c);
-  else if(page==='leakid'){ canDo('canViewContentModeration')?renderLeakIdentifier(c):c.innerHTML=denied; }
+  else if(page==='leakid'){ isSoftwareManager()?renderLeakIdentifier(c):c.innerHTML=denied; }
   else if(page==='siteconfig'){ isSoftwareManager()?renderSiteConfig(c):c.innerHTML=denied; }
   else if(page==='statuslog'){ isSoftwareManager()?renderStatusLog(c):c.innerHTML=denied; }
   else if(page==='wipelog'){ isSoftwareManager()?renderWipeLog(c):c.innerHTML=denied; }
@@ -1557,6 +1601,12 @@ function renderSiteConfig(c){
         <button class="btn" id="btn-savevars" style="margin-top:10px;width:100%;">Save Variables</button>
         <div id="varMsg" style="font-size:11px;margin-top:3px;color:var(--c-ok);text-align:center;"></div>
       </div></div>
+      <div class="sbox" style="border:2px solid #0066aa;"><div class="stitle" style="background:#004466;color:#fff;">&#9998; Information Page — Notice Board</div><div class="sbody">
+        <div style="font-size:11px;color:var(--c-text2);margin-bottom:6px;">This content appears at the top of the Information page for all staff. HTML is supported. Good for announcements, policy reminders, or recent updates.</div>
+        <textarea id="infoContentEdit" style="width:100%;height:120px;font-size:11px;" placeholder="<b>Welcome!</b> Add your notice here...">${(cfg.infoContent||'')}</textarea>
+        <button class="btn" id="btn-saveinfo" style="margin-top:6px;">Save Notice Board</button>
+        <div id="infoMsg" style="font-size:11px;margin-top:3px;color:var(--c-ok);"></div>
+      </div></div>
     </div>
   </div>
 
@@ -1709,6 +1759,19 @@ function renderSiteConfig(c){
     const el=document.getElementById('varMsg');
     if(el){ el.textContent='Variables saved!'; setTimeout(()=>{ if(el) el.textContent=''; },2000); }
     showToast('Variable configuration saved.','success');
+  };
+
+  // Notice Board save
+  const infoBtn=document.getElementById('btn-saveinfo');
+  if(infoBtn) infoBtn.onclick=async()=>{
+    const raw=(document.getElementById('infoContentEdit')||{value:''}).value;
+    const newCfg={...SITE_CONFIG,infoContent:raw};
+    await set(ref(db,'meta/siteConfig'),newCfg);
+    SITE_CONFIG=newCfg;
+    auditLog('Information Notice Board Updated',`By ${ME}`);
+    const msgEl=document.getElementById('infoMsg');
+    if(msgEl){ msgEl.textContent='Notice board saved!'; setTimeout(()=>{ if(msgEl) msgEl.textContent=''; },2000); }
+    showToast('Notice board updated.','success');
   };
 
   // Update Log editor
@@ -2371,7 +2434,7 @@ function renderAccounts(c){
       <tr>${canDo('canBulkAction')?'<th><input type="checkbox" id="bulk-check-all" title="Select all"/></th>':''}<th>Player ID</th><th>Username</th><th>Roblox ID</th><th>Status</th><th>Rep</th><th>System Entry</th><th>Action</th></tr>
       ${uArr.map(([uid,u])=>`<tr>
         ${canDo('canBulkAction')?`<td><input type="checkbox" class="bulk-cb" data-uid="${uid}"/></td>`:''}
-        <td>${u.playerId||'—'}</td><td><b>${u.username}</b>${userBadges(u)}</td>
+        <td>${u.playerId||'—'}</td><td>${tinyAvatar(u.username,u.avatarUrl)}${userBadges(u)}</td>
         <td>${u.robloxId||'—'}</td><td>${statusBadge(u.status)}</td>
         <td>${calcReputation(u)} pts</td><td>${u.created}</td>
         <td style="display:flex;gap:3px;align-items:center;">
@@ -2512,7 +2575,7 @@ function renderReputation(c){
         const standing=score<=5?'<span class="ok">Good</span>':score<=15?'<span class="sus">Caution</span>':'<span class="ban">High Risk</span>';
         const pCount=u.punishments?Object.keys(u.punishments).length:0;
         return `<tr data-search="${u.username.toLowerCase()}">
-          <td><b>${u.username}</b></td><td>${score} pts</td><td>${standing}</td><td>${pCount}</td>
+          <td>${tinyAvatar(u.username,u.avatarUrl)}</td><td>${score} pts</td><td>${standing}</td><td>${pCount}</td>
           <td><button class="btn view-user-btn" data-uid="${uid}">View</button></td>
         </tr>`;
       }).join('')}
@@ -2555,7 +2618,7 @@ function renderAppeals(c){
     <div class="tbl-wrap"><table class="tbl" id="appeal-tbl">
       <tr><th>User</th><th>Appeal Status</th><th>Punishment</th><th>Preset Reason</th><th>Submitted By</th><th>Date</th><th>Reviewer</th><th>Review Note</th><th>Appeal(s)</th>${isSuperAdmin()?'<th>Admin</th>':''}</tr>
       ${entries.map(([lid,r])=>`<tr data-search="${[(r.user||''),(r.submittedBy||r.by||''),(r.presetReason||''),(r.reason||'')].join(' ').toLowerCase()}">
-        <td><b>${r.user}</b></td>
+        <td>${tinyAvatar(r.user,avatarUrlFor(r.user))}</td>
         <td><span class="badge appeal-${(r.status||'pending').toLowerCase().replace(' ','-')}">${r.status||'Pending'}</span></td>
         <td style="font-size:10px;">${r.punishAction||'—'} (${r.punishDate||'—'})</td>
         <td>${r.presetReason||'—'}</td>
@@ -2721,7 +2784,7 @@ function renderStaff(c){
         <div class="tbl-wrap"><table class="tbl">
           <tr><th>Username</th><th>Level</th><th>Status</th><th>Last Active</th><th>Action</th></tr>
           ${sArr.map(([sid2,s2])=>`<tr>
-            <td><b>${s2.username||'—'}</b>${s2.nickname?`<span style="font-size:9px;color:var(--c-text2);display:block;margin-top:1px;">"${s2.nickname}"</span>`:''}</td><td>${s2.level?levelBadge(s2.level):'—'}</td>
+            <td>${tinyAvatar(s2.username||'—',s2.avatarUrl)}${s2.nickname?`<span style="font-size:9px;color:var(--c-text2);display:block;margin-top:1px;">"${s2.nickname}"</span>`:''}</td><td>${s2.level?levelBadge(s2.level):'—'}</td>
             <td>${(()=>{ const la2=s2.lastActive&&s2.lastActive!=='Never'?new Date(s2.lastActive):null; const diff2=la2?(new Date()-la2):Infinity; if(s2.suspended) return '<span class="sus">SUSPENDED</span>'; if(s2.secured) return '<span class="ban">SECURED</span>'; if(!la2||s2.lastAction==='Logged out') return '<span style="color:var(--c-text2);">Logged Out</span>'; if(diff2<300000) return '<span class="ok">Active</span>'; if(diff2<1200000) return '<span style="color:#cc8800;">Idle</span>'; return '<span style="color:var(--c-text2);">Offline</span>'; })()}</td>
             <td style="font-size:10px;">${s2.lastActive||'Never'}</td>
             <td>${canManage?`<button class="btn view-staff-btn" data-sid="${sid2}">View</button>`:'<span class="invalid-cred">INVALID CREDENTIALS</span>'}</td>
@@ -2853,7 +2916,7 @@ function renderActivity(c){
         const isLoggedOut=!s.lastActive||s.lastAction==='Logged out'||s.lastActive==='Never';
         const dot=s.suspended?'suspended':isLoggedOut?'offline':diffMs<300000?'active':diffMs<1200000?'idle':'offline';
         return `<tr>
-          <td><span class="activity-dot ${dot}"></span><b>${s.username}</b></td>
+          <td><span class="activity-dot ${dot}" style="margin-right:4px;"></span>${tinyAvatar(s.username,s.avatarUrl)}</td>
           <td>${levelBadge(s.level)}</td>
           <td>${s.suspended?'<span class="sus">SUSPENDED</span>':s.secured?'<span class="ban">SECURED</span>':'<span class="ok">OK</span>'}</td>
           <td style="font-size:10px;">${lastActive}</td>
@@ -2926,8 +2989,10 @@ function renderModLog(c){
     <div class="tbl-wrap"><table class="tbl">
       <tr><th>User</th><th>Action</th><th>Moderator</th><th>Date</th><th>Reason</th><th>Note</th>${isSuperAdmin()?'<th>Admin</th>':''}</tr>
       ${entries.map(([lid,r])=>`<tr>
-        <td>${r.user==='[WIPED]'?'<span class="wiped">[WIPED]</span>':r.user}</td>
-        <td>${r.action}</td><td>${r.mod}</td><td style="font-size:10px;">${r.date}</td>
+        <td>${r.user==='[WIPED]'?'<span class="wiped">[WIPED]</span>':tinyAvatar(r.user,avatarUrlFor(r.user))}</td>
+        <td>${r.action}</td>
+        <td>${tinyAvatar(r.mod,avatarUrlFor(r.mod))}</td>
+        <td style="font-size:10px;">${r.date}</td>
         <td style="max-width:100px;white-space:normal;">${r.reason||''}</td>
         <td style="max-width:100px;white-space:normal;">${r.note||''}</td>
         ${isSuperAdmin()?`<td>${deleteLogBtn('logs/moderation',lid)}</td>`:''}
@@ -2951,8 +3016,8 @@ function renderRevokeLog(c){
   <div class="tbl-wrap"><table class="tbl" id="revoke-tbl">
     <tr><th>User</th><th>Action</th><th>Orig. Mod</th><th>Revoked By</th><th>Date</th><th>Note</th>${isSuperAdmin()?'<th>Admin</th>':''}</tr>
     ${entries.map(([lid,r])=>`<tr data-search="${[(r.user||''),(r.origMod||''),(r.revokedBy||''),(r.action||''),(r.note||'')].join(' ').toLowerCase()}">
-      <td>${r.user==='[WIPED]'?'<span class="wiped">[WIPED]</span>':(r.user||'—')}</td>
-      <td>${r.action}</td><td>${r.origMod}</td><td><b>${r.revokedBy}</b></td><td>${r.date}</td><td>${r.note||''}</td>
+      <td>${r.user==='[WIPED]'?'<span class="wiped">[WIPED]</span>':tinyAvatar(r.user,avatarUrlFor(r.user))}</td>
+      <td>${r.action}</td><td>${tinyAvatar(r.origMod,avatarUrlFor(r.origMod))}</td><td>${tinyAvatar(r.revokedBy,avatarUrlFor(r.revokedBy))}</td><td style="font-size:10px;">${r.date}</td><td>${r.note||''}</td>
       ${isSuperAdmin()?`<td>${deleteLogBtn('logs/revoke',lid)}</td>`:''}
     </tr>`).join('')}
   </table></div>`;
@@ -2974,8 +3039,8 @@ function renderSuspendLog(c){
   <div class="tbl-wrap"><table class="tbl" id="suspend-tbl">
     <tr><th>Username</th><th>Action</th><th>By</th><th>Date</th><th>Reason</th><th>Mod Note</th><th>Offensive Item</th><th>Edit</th>${isSuperAdmin()?'<th>Admin</th>':''}</tr>
     ${entries.map(([lid,r])=>`<tr data-search="${[(r.username||''),(r.by||''),(r.action||''),(r.reason||''),(r.modNote||'')].join(' ').toLowerCase()}">
-      <td><b>${r.username}</b></td><td>${r.action}</td><td>${r.by}</td><td>${r.date}</td>
-      <td>${r.reason||''}</td><td>${r.modNote||''}</td><td>${r.offensiveItem||''}</td>
+      <td>${tinyAvatar(r.username,avatarUrlFor(r.username))}</td><td>${r.action}</td><td>${tinyAvatar(r.by,avatarUrlFor(r.by))}</td><td style="font-size:10px;">${r.date}</td>
+      <td style="max-width:80px;white-space:normal;">${r.reason||''}</td><td style="max-width:80px;white-space:normal;">${r.modNote||''}</td><td>${r.offensiveItem||''}</td>
       <td><button class="btn small edit-susp-btn" data-lid="${lid}">Edit</button></td>
       ${isSuperAdmin()?`<td>${deleteLogBtn('logs/suspend',lid)}</td>`:''}
     </tr>`).join('')}
@@ -2999,8 +3064,8 @@ function renderTerminateLog(c){
   <div class="tbl-wrap"><table class="tbl" id="terminate-tbl">
     <tr><th>Username</th><th>Type</th><th>By</th><th>Date</th><th>Reason</th><th>Mod Note</th><th>Offensive Item</th>${isSuperAdmin()?'<th>Admin</th>':''}</tr>
     ${entries.map(([lid,r])=>`<tr data-search="${[(r.username||''),(r.by||''),(r.reason||''),(r.type||'')].join(' ').toLowerCase()}">
-      <td><b>${r.username}</b></td><td>${r.type||'Staff'}</td><td>${r.by}</td><td>${r.date}</td>
-      <td>${r.reason||''}</td><td>${r.modNote||''}</td><td>${r.offensiveItem||''}</td>
+      <td>${tinyAvatar(r.username,avatarUrlFor(r.username))}</td><td>${r.type||'Staff'}</td><td>${tinyAvatar(r.by,avatarUrlFor(r.by))}</td><td style="font-size:10px;">${r.date}</td>
+      <td style="max-width:80px;white-space:normal;">${r.reason||''}</td><td style="max-width:80px;white-space:normal;">${r.modNote||''}</td><td>${r.offensiveItem||''}</td>
       ${isSuperAdmin()?`<td>${deleteLogBtn('logs/terminate',lid)}</td>`:''}
     </tr>`).join('')}
   </table></div>`;
@@ -3023,7 +3088,7 @@ function renderLoginLog(c){
   <div class="tbl-wrap"><table class="tbl" id="login-tbl">
     <tr><th>Username</th><th>Level</th><th>Date/Time</th><th>Result</th>${isSM?'<th>IP</th>':''}${isSuperAdmin()?'<th>Admin</th>':''}</tr>
     ${entries.map(([lid,r])=>`<tr data-search="${[(r.username||''),(r.level||''),(r.result||'')].join(' ').toLowerCase()}">
-      <td><b>${r.username}</b></td><td>${r.level||'—'}</td><td>${r.date}</td>
+      <td>${tinyAvatar(r.username,avatarUrlFor(r.username))}</td><td>${r.level||'—'}</td><td style="font-size:10px;">${r.date}</td>
       <td>${r.result==='success'?'<span class="ok">Success</span>':'<span class="ban">'+r.result+'</span>'}</td>
       ${isSM?`<td style="font-size:10px;color:var(--c-text2);">${r.ip||'—'}</td>`:''}
       ${isSuperAdmin()?`<td>${deleteLogBtn('logs/login',lid)}</td>`:''}
@@ -3048,7 +3113,7 @@ function renderAuditLog(c){
   <div class="tbl-wrap"><table class="tbl" id="audit-tbl">
     <tr><th>Action</th><th>Detail</th><th>By</th><th>Date</th>${isSuperAdmin()?'<th>Admin</th>':''}</tr>
     ${entries.map(([lid,r])=>`<tr data-search="${[(r.action||''),(r.detail||''),(r.by||'')].join(' ').toLowerCase()}">
-      <td>${r.action}</td><td>${r.detail||''}</td><td>${r.by}</td><td>${r.date}</td>
+      <td>${r.action}</td><td>${r.detail||''}</td><td>${tinyAvatar(r.by,avatarUrlFor(r.by))}</td><td style="font-size:10px;">${r.date}</td>
       ${isSuperAdmin()?`<td>${deleteLogBtn('logs/audit',lid)}</td>`:''}
     </tr>`).join('')}
   </table></div>`;
@@ -3400,7 +3465,7 @@ function renderUserConfig(c){
     <div class="tbl-wrap"><table class="tbl" id="ucfg-tbl">
       <tr><th>Player</th><th>Status</th><th>Points</th><th>Protected</th><th>Rep Score</th><th>Notes</th><th>Action</th></tr>
       ${uArr.map(([uid,u])=>`<tr data-search="${(u.username||'').toLowerCase()}">
-        <td><b>${u.username}</b></td>
+        <td>${tinyAvatar(u.username,u.avatarUrl)}</td>
         <td>${statusBadge(u.status)}</td>
         <td>${u.points||0}</td>
         <td>${u.protected?'<span style="color:#880000;font-weight:bold;">&#9632; YES</span>':'<span style="color:var(--c-text2);">No</span>'}</td>
@@ -3609,8 +3674,6 @@ function renderLeakIdentifier(c){
 // ── INFORMATION PAGE ──
 function renderInformation(c){
   const cfg={...SITE_CONFIG_DEFAULTS,...SITE_CONFIG};
-  const canEdit=isSoftwareManager();
-
   const rankCaps=[
     {rank:'TRIAL MODERATOR',badge:'intern',caps:['View User Admin (read-only)','View All Accounts','Access Dashboard & Information','Submit suggestions','View Reputation scores','Send & receive staff messages']},
     {rank:'MODERATOR',badge:'moderator',caps:['Everything Trial Moderator can do','Moderate users (warn, ban, suspend, etc.)','View Moderation Log, Revoke Log','Submit & view Appeals','Alt Detection & Message Analyze','View own profile','Request moderation against protected users']},
@@ -3639,14 +3702,14 @@ function renderInformation(c){
 
   const customHTML=cfg.infoContent||'';
   c.innerHTML=`
-  <div class="ptitle" style="background:linear-gradient(90deg,var(--c-link) 0%,#2ea043 100%);display:flex;align-items:center;gap:8px;">
-    <span>ℹ Information &amp; Reference</span>
+  <div class="ptitle" style="background:linear-gradient(90deg,var(--c-link) 0%,#0550ae 100%);display:flex;align-items:center;gap:8px;">
+    <span>Information &amp; Reference</span>
     <span style="font-size:10px;font-weight:400;opacity:0.8;margin-left:4px;">Always up to date</span>
   </div>
 
-  ${customHTML?`<div class="sbox" style="border-color:var(--c-link);"><div class="stitle">📌 Staff Notice Board</div><div class="sbody"><div style="font-size:12px;color:var(--c-text);line-height:1.8;">${customHTML}</div></div></div>`:''}
+  ${customHTML?`<div class="sbox" style="border-color:var(--c-link);"><div class="stitle">Staff Notice Board</div><div class="sbody"><div style="font-size:12px;color:var(--c-text);line-height:1.8;">${customHTML}</div></div></div>`:''}
 
-  <div class="sbox"><div class="stitle">🗂 Rank Capabilities</div><div class="sbody">
+  <div class="sbox"><div class="stitle">Rank Capabilities</div><div class="sbody">
     <div style="font-size:11px;color:var(--c-text2);margin-bottom:10px;">What each rank has access to. Higher ranks inherit all permissions from lower ranks unless overridden.</div>
     <div style="display:flex;flex-direction:column;gap:8px;">
       ${rankCaps.map(r=>`
@@ -3663,7 +3726,7 @@ function renderInformation(c){
 
   <div style="display:flex;gap:6px;flex-wrap:wrap;">
     <div style="flex:1;min-width:240px;">
-      <div class="sbox"><div class="stitle">🏷 Mod Note Keywords</div><div class="sbody">
+      <div class="sbox"><div class="stitle">Mod Note Keywords</div><div class="sbody">
         <div style="font-size:11px;color:var(--c-text2);margin-bottom:8px;">Standard keywords used in moderation notes and what they mean.</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           ${modNoteKeywords.map(k=>`
@@ -3675,7 +3738,7 @@ function renderInformation(c){
       </div></div>
     </div>
     <div style="flex:1;min-width:240px;">
-      <div class="sbox"><div class="stitle">⚙ Staff Actions Explained</div><div class="sbody">
+      <div class="sbox"><div class="stitle">Staff Actions Explained</div><div class="sbody">
         <div style="display:flex;flex-direction:column;gap:8px;">
           ${staffActions.map(a=>`
             <div style="padding:8px 10px;background:var(--bg-tbl-odd);border:1px solid var(--c-border);border-radius:6px;">
@@ -3689,7 +3752,7 @@ function renderInformation(c){
 
   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:0;">
     <div style="flex:1;min-width:200px;">
-      <div class="sbox"><div class="stitle">⌨ Keyboard Shortcuts</div><div class="sbody">
+      <div class="sbox"><div class="stitle">Keyboard Shortcuts</div><div class="sbody">
         <div style="display:flex;flex-direction:column;gap:6px;font-size:11px;color:var(--c-text);">
           <div style="display:flex;align-items:center;gap:6px;"><span class="kbd">Ctrl+K</span><span style="color:var(--c-text2);">or</span><span class="kbd">/</span><span>Global Search</span></div>
           <div style="display:flex;align-items:center;gap:6px;"><span class="kbd">Esc</span><span>Close dialog/dropdown</span></div>
@@ -3699,7 +3762,7 @@ function renderInformation(c){
           <div style="display:flex;align-items:center;gap:6px;"><span class="kbd">G</span><span style="color:var(--c-text2);">+</span><span class="kbd">M</span><span>Mod Log</span></div>
         </div>
       </div></div>
-      <div class="sbox"><div class="stitle">💡 Quick Tips</div><div class="sbody">
+      <div class="sbox"><div class="stitle">Quick Tips</div><div class="sbody">
         <div style="font-size:11px;color:var(--c-text2);line-height:2;">
           <div>▶ Templates support <code style="background:var(--bg-tbl-odd);padding:1px 4px;border-radius:3px;">{username}</code> & <code style="background:var(--bg-tbl-odd);padding:1px 4px;border-radius:3px;">{reason}</code></div>
           <div>▶ Wiped accounts show as <span class="wiped">[WIPED #####]</span> in logs</div>
@@ -3710,7 +3773,7 @@ function renderInformation(c){
       </div></div>
     </div>
     <div style="flex:1;min-width:200px;">
-      <div class="sbox"><div class="stitle">🔑 System Status</div><div class="sbody">
+      <div class="sbox"><div class="stitle">System Status</div><div class="sbody">
         <div style="font-size:11px;line-height:1.8;color:var(--c-text);">
           <div>Status: <span class="badge status-${(SITE_STATUS&&SITE_STATUS.status||'ok').toLowerCase()}">${SITE_STATUS&&SITE_STATUS.status||'OK'}</span></div>
           ${SITE_STATUS&&SITE_STATUS.status!=='OK'?`<div style="color:var(--c-text2);">Reason: ${SITE_STATUS.reason||'—'}</div>`:''}
@@ -3722,26 +3785,6 @@ function renderInformation(c){
     </div>
   </div>
 
-  ${canEdit?`
-  <div class="sbox" style="border-color:var(--c-link);"><div class="stitle">✏ Edit Notice Board <span style="font-size:10px;font-weight:400;opacity:0.7;">(Software Manager only)</span></div><div class="sbody">
-    <div style="font-size:11px;color:var(--c-text2);margin-bottom:6px;">HTML supported. Shows at the top of this page for all staff. Good for announcements, policy changes, or reminders.</div>
-    <textarea id="infoContentEdit" style="width:100%;height:120px;font-size:11px;">${(cfg.infoContent||'')}</textarea>
-    <button class="btn" id="btn-saveinfo" style="margin-top:6px;">Save Notice</button>
-    <div id="infoMsg" style="font-size:11px;margin-top:3px;color:var(--c-ok);"></div>
-  </div></div>`:''}`;
-
-  if(canEdit){
-    document.getElementById('btn-saveinfo').onclick=async()=>{
-      const raw=document.getElementById('infoContentEdit').value;
-      const newCfg={...SITE_CONFIG,infoContent:raw};
-      await set(ref(db,'meta/siteConfig'),newCfg);
-      SITE_CONFIG=newCfg;
-      auditLog('Information Page Updated',`By ${ME}`);
-      const el=document.getElementById('infoMsg');
-      if(el){ el.textContent='Saved!'; setTimeout(()=>{ if(el) el.textContent=''; },2000); }
-      showToast('Notice board updated.','success');
-    };
-  }
 }
 
 // ── ADMIN LOG ──
@@ -4956,7 +4999,7 @@ function renderStaffConfig(c){
         const status=s.suspended?'<span class="sus">SUSP</span>':s.secured?'<span class="ban">SECURED</span>':'<span class="ok">OK</span>';
         return `<tr data-search="${s.username.toLowerCase()}">
           ${canSuperAdmin?`<td><input type="checkbox" class="sblk-cb" data-sid="${sid}" data-username="${s.username}"/></td>`:''}
-          <td><b>${s.username}</b></td>
+          <td>${tinyAvatar(s.username,s.avatarUrl)}</td>
           <td>${levelBadge(s.level)}</td>
           <td>${status}</td>
           <td style="font-size:10px;">${s.joined||'—'}</td>
