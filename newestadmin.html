@@ -410,6 +410,7 @@ select{height:28px;border:1px solid var(--c-border-input);background:var(--bg-in
             <span class="sb-link" id="nav-appeals">Appeals</span>
             <span class="sb-link" id="nav-altdetect">Alt Detection</span>
             <span class="sb-link" id="nav-msganalyze">Msg Analyze</span>
+            <span class="sb-link" id="nav-leakid">Leak Identifier</span>
           </div>
         </div>
 
@@ -427,7 +428,7 @@ select{height:28px;border:1px solid var(--c-border-input);background:var(--bg-in
           </div>
         </div>
 
-        <div class="sb-group" id="sbg-logs">
+        <div class="sb-group" id="sbg-logs" style="display:none;">
           <div class="sb-group-hdr" onclick="toggleSbGroup('sbg-logs')">
             <span class="sb-plusminus" id="pm-sbg-logs">&#9660;</span>
             <span class="sb-group-label">Logs</span>
@@ -451,6 +452,7 @@ select{height:28px;border:1px solid var(--c-border-input);background:var(--bg-in
             <span class="sb-link" id="nav-auditlog">Audit Log</span>
             <span class="sb-link" id="nav-alerts">Site Alerts</span>
             <span class="sb-link" id="nav-adminlog">Administrator</span>
+            <span class="sb-link" id="nav-information">&#9432; Information</span>
           </div>
         </div>
 
@@ -494,7 +496,7 @@ select{height:28px;border:1px solid var(--c-border-input);background:var(--bg-in
         <!-- Channels rendered by JS based on permissions -->
       </div>
       <div id="srchStatus" style="font-size:11px;font-weight:bold;color:var(--c-link);min-height:14px;margin-bottom:4px;"></div>
-      <div id="srchResults" style="max-height:300px;overflow-y:auto;font-size:11px;color:var(--c-text);border-top:1px solid #b0aca4;padding-top:6px;min-height:30px;"></div>
+      <div id="srchResults" style="max-height:300px;overflow-y:auto;font-size:11px;color:var(--c-text);border-top:1px solid var(--c-border);padding-top:6px;min-height:30px;"></div>
     </div>
   </div>
 </div>
@@ -632,15 +634,15 @@ select{height:28px;border:1px solid var(--c-border-input);background:var(--bg-in
       </div>
       <div style="font-size:11px;color:var(--c-text);margin-bottom:8px;font-weight:bold;">How would you like to proceed?</div>
       <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;">
-        <label style="display:flex;align-items:flex-start;gap:7px;font-size:11px;cursor:pointer;padding:4px 6px;border:1px solid #c0bcb4;background:var(--bg-tbl-odd);">
+        <label style="display:flex;align-items:flex-start;gap:7px;font-size:11px;color:var(--c-text);cursor:pointer;padding:4px 6px;border:1px solid var(--c-border);border-radius:4px;background:var(--bg-tbl-odd);">
           <input type="radio" name="protOpt" value="escalate" checked style="margin-top:1px;"/>
           <span><b>Escalate Report</b> — Send to a higher authority for review. No action will be taken until approved.</span>
         </label>
-        <label style="display:flex;align-items:flex-start;gap:7px;font-size:11px;cursor:pointer;padding:4px 6px;border:1px solid #c0bcb4;background:var(--bg-tbl-odd);">
+        <label style="display:flex;align-items:flex-start;gap:7px;font-size:11px;color:var(--c-text);cursor:pointer;padding:4px 6px;border:1px solid var(--c-border);border-radius:4px;background:var(--bg-tbl-odd);">
           <input type="radio" name="protOpt" value="proceed" style="margin-top:1px;"/>
           <span><b>Ignore Warning &amp; Proceed</b> — Take action immediately. This override will be permanently logged.</span>
         </label>
-        <label style="display:flex;align-items:flex-start;gap:7px;font-size:11px;cursor:pointer;padding:4px 6px;border:1px solid #c0bcb4;background:var(--bg-tbl-odd);">
+        <label style="display:flex;align-items:flex-start;gap:7px;font-size:11px;color:var(--c-text);cursor:pointer;padding:4px 6px;border:1px solid var(--c-border);border-radius:4px;background:var(--bg-tbl-odd);">
           <input type="radio" name="protOpt" value="cancel" style="margin-top:1px;"/>
           <span><b>Cancel</b> — Take no action and return.</span>
         </label>
@@ -1207,34 +1209,57 @@ function updateAnnouncements(){
 function updateSidebar(){
   const show=(id,cond)=>{ const el=document.getElementById(id); if(el) el.style.display=cond?'':'none'; };
   const showGroup=(id,cond)=>{ const el=document.getElementById(id); if(el) el.style.display=cond?'':'none'; };
-  // Individual links
-  show('nav-home', true);
+
+  // ── PEOPLE group ──
+  show('nav-useradmin', canDo('canViewUserAdmin'));
   show('nav-moderate', canDo('canModerateUsers'));
+  show('nav-accounts', true);
+  show('nav-requests', canDo('canViewRequests'));
+  // People group always visible — All Accounts is always accessible
+  showGroup('sbg-users', true);
+
+  // ── MODERATION group ──
+  show('nav-reputation', canDo('canViewContentModeration'));
+  show('nav-appeals', canDo('canViewAppealLog'));
+  show('nav-altdetect', canDo('canViewContentModeration'));
+  show('nav-msganalyze', canDo('canViewMessageAnalyze'));
+  show('nav-leakid', canDo('canViewContentModeration'));
+  const canSeeModeration=canDo('canViewContentModeration')||canDo('canViewAppealLog')||canDo('canViewMessageAnalyze');
+  showGroup('sbg-content', canSeeModeration);
+
+  // ── STAFF group ──
+  show('nav-staff', canDo('canViewStaff'));
+  show('nav-activity', canDo('canViewStaffActivity'));
+  show('nav-messaging', canDo('canSendStaffMessage'));
+  show('nav-suggestions', canDo('canViewSuggestions'));
+  show('nav-staffconfig', canDo('canViewStaffConfig'));
+  const canSeeStaff=canDo('canViewStaff')||canDo('canViewStaffActivity')||canDo('canSendStaffMessage')||canDo('canViewSuggestions')||canDo('canViewStaffConfig');
+  showGroup('sbg-staff', canSeeStaff);
+
+  // ── LOGS group — only show if user can see at least one log ──
   show('nav-modlog', canDo('canViewModLog'));
   show('nav-revokelog', canDo('canViewRevokeLogs'));
   show('nav-suspendlog', canDo('canViewSuspendLogs'));
   show('nav-terminatelog', canDo('canViewTerminateLogs'));
   show('nav-loginlog', canDo('canViewLoginLog'));
-  show('nav-activity', canDo('canViewStaffActivity'));
-  show('nav-appeals', canDo('canViewAppealLog'));
-  show('nav-auditlog', isSuperAdmin());
-  show('nav-adminlog', isSuperAdmin());
-  show('nav-messaging', canDo('canSendStaffMessage'));
-  show('nav-requests', canDo('canViewRequests'));
+  const canSeeLogs=canDo('canViewModLog')||canDo('canViewRevokeLogs')||canDo('canViewSuspendLogs')||canDo('canViewTerminateLogs')||canDo('canViewLoginLog');
+  showGroup('sbg-logs', canSeeLogs);
+
+  // ── CONFIGURATION group ──
   show('nav-userconfig', canDo('canViewUserConfig'));
+  show('nav-auditlog', isSuperAdmin());
   show('nav-alerts', canDo('canManageStaff')||isSuperAdmin());
-  show('nav-suggestions', canDo('canViewSuggestions'));
-  show('nav-staffconfig', canDo('canViewStaffConfig'));
-  show('nav-msganalyze', canDo('canViewMessageAnalyze'));
+  show('nav-adminlog', isSuperAdmin());
+  show('nav-information', true); // Information is visible to everyone
+  // Config group visible if user can see any item, or Information (always true)
+  const canSeeConfig=true;
+  showGroup('sbg-config', canSeeConfig);
+
+  // ── MACHINE MGMT (Software Manager only) ──
+  show('nav-siteconfig', isSoftwareManager());
   show('nav-statuslog', isSoftwareManager());
   show('nav-wipelog', isSoftwareManager());
   show('nav-badgemgmt', isSoftwareManager());
-  show('nav-altdetect', canDo('canViewContentModeration'));
-  // Groups — show/hide entire group based on permissions
-  showGroup('sbg-content', canDo('canViewContentModeration'));
-  showGroup('sbg-staff', canDo('canViewStaff'));
-  const canSeeConfig=canDo('canViewUserConfig')||isSuperAdmin()||canDo('canManageStaff');
-  showGroup('sbg-config', canSeeConfig);
   showGroup('sbg-machine', isSoftwareManager());
 }
 
@@ -1319,6 +1344,8 @@ function render(){
   else if(page==='auditlog'){ isSuperAdmin()?renderAuditLog(c):c.innerHTML=denied; }
   else if(page==='announcements') renderAlerts(c);
   else if(page==='adminlog'){ isSuperAdmin()?renderAdminLog(c):c.innerHTML=denied; }
+  else if(page==='information') renderInformation(c);
+  else if(page==='leakid'){ canDo('canViewContentModeration')?renderLeakIdentifier(c):c.innerHTML=denied; }
   else if(page==='siteconfig'){ isSoftwareManager()?renderSiteConfig(c):c.innerHTML=denied; }
   else if(page==='statuslog'){ isSoftwareManager()?renderStatusLog(c):c.innerHTML=denied; }
   else if(page==='wipelog'){ isSoftwareManager()?renderWipeLog(c):c.innerHTML=denied; }
@@ -1379,6 +1406,11 @@ const SITE_CONFIG_DEFAULTS = {
   dashboardWelcome: 'Dashboard',
   aboutText: 'Administration Panel — Built for your Roblox game.',
   wipedAccountTTL: '1440',
+  autoLogoutMins: 60,
+  defaultTheme: 'dark',
+  heartbeatSecs: 30,
+  maxLogsPerPage: 200,
+  infoContent: '',
 };
 
 function applySiteConfig(){
@@ -1412,7 +1444,6 @@ function renderSiteConfig(c){
     {key:'sectionStaff',label:'Sidebar: Staff Section Name',placeholder:'Staff'},
     {key:'sectionLogs',label:'Sidebar: Logs Section Name',placeholder:'Logs'},
     {key:'sectionConfig',label:'Sidebar: Configuration Name',placeholder:'Configuration'},
-    {key:'wipedAccountTTL',label:'Wiped Account Auto-Delete (minutes, 0 = never)',placeholder:'1440'},
   ];
   c.innerHTML=`
   <div class="ptitle" style="background:#004466;">Machine Management &mdash; Configuration</div>
@@ -1445,11 +1476,11 @@ function renderSiteConfig(c){
           </select>
           <div id="statusCustomExpiry" style="display:none;gap:5px;align-items:center;margin-top:3px;flex-wrap:wrap;">
             <input type="number" id="statusCustomDays" style="width:45px;" placeholder="d" min="0" value="0"/>
-            <span style="font-size:11px;">d</span>
+            <span style="font-size:11px;color:var(--c-text);">d</span>
             <input type="number" id="statusCustomHours" style="width:45px;" placeholder="h" min="0" max="23" value="0"/>
-            <span style="font-size:11px;">h</span>
+            <span style="font-size:11px;color:var(--c-text);">h</span>
             <input type="number" id="statusCustomMins" style="width:45px;" placeholder="m" min="0" max="59" value="0"/>
-            <span style="font-size:11px;">m</span>
+            <span style="font-size:11px;color:var(--c-text);">m</span>
           </div></div>
         <button class="btn" id="btn-setsitestatus">Apply Status Change</button>
         <div id="statusMsg" style="font-size:11px;margin-top:4px;color:#006600;"></div>
@@ -1484,6 +1515,48 @@ function renderSiteConfig(c){
           <div style="margin-top:5px;">&#9658; SOFTWARE MANAGER bypasses all permission checks and cannot be suspended, terminated, or have their level changed via the panel.</div>
         </div>
       </div></div>
+      <div class="sbox" style="border:2px solid #0066aa;"><div class="stitle" style="background:#004466;color:#fff;">&#9881; Variable Configuration</div><div class="sbody">
+        <div style="font-size:11px;color:var(--c-text2);margin-bottom:8px;">System-wide behavior variables. Changes take effect immediately for all users.</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div>
+            <label style="font-size:11px;font-weight:bold;color:var(--c-text);display:block;margin-bottom:2px;">Wiped Account Auto-Delete (minutes, 0 = never)</label>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <input type="number" id="var-wipedTTL" value="${cfg.wipedAccountTTL||1440}" min="0" style="width:90px;"/>
+              <span style="font-size:10px;color:var(--c-text2);">Default: 1440 (1 day)</span>
+            </div>
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:bold;color:var(--c-text);display:block;margin-bottom:2px;">Auto-Logout Idle Time (minutes, 0 = disabled)</label>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <input type="number" id="var-autoLogout" value="${cfg.autoLogoutMins||60}" min="0" style="width:90px;"/>
+              <span style="font-size:10px;color:var(--c-text2);">Default: 60</span>
+            </div>
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:bold;color:var(--c-text);display:block;margin-bottom:2px;">Default Theme for New Users</label>
+            <select id="var-defaultTheme" style="width:140px;">
+              <option value="dark" ${(cfg.defaultTheme||'dark')==='dark'?'selected':''}>Dark Mode</option>
+              <option value="light" ${(cfg.defaultTheme||'dark')==='light'?'selected':''}>Light Mode</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:bold;color:var(--c-text);display:block;margin-bottom:2px;">Staff Session Heartbeat Interval (seconds)</label>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <input type="number" id="var-heartbeat" value="${cfg.heartbeatSecs||30}" min="10" max="300" style="width:90px;"/>
+              <span style="font-size:10px;color:var(--c-text2);">Default: 30 (checks force-logout flag)</span>
+            </div>
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:bold;color:var(--c-text);display:block;margin-bottom:2px;">Max Mod Log Entries per Page</label>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <input type="number" id="var-maxLogs" value="${cfg.maxLogsPerPage||200}" min="25" max="1000" style="width:90px;"/>
+              <span style="font-size:10px;color:var(--c-text2);">Default: 200</span>
+            </div>
+          </div>
+        </div>
+        <button class="btn" id="btn-savevars" style="margin-top:10px;width:100%;">Save Variables</button>
+        <div id="varMsg" style="font-size:11px;margin-top:3px;color:var(--c-ok);text-align:center;"></div>
+      </div></div>
     </div>
   </div>
 
@@ -1515,7 +1588,7 @@ function renderSiteConfig(c){
       <div style="margin-bottom:4px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:1px;">Entries (one per line):</label>
         <textarea id="ulEntries" style="width:100%;height:70px;" placeholder="Fixed login bug&#10;Added new feature&#10;..."></textarea></div>
       <button class="btn" id="btn-addul">Add Version</button>
-      <div id="ulMsg" style="font-size:11px;margin-top:3px;color:#006600;"></div>
+      <div id="ulMsg" style="font-size:11px;margin-top:3px;color:var(--c-ok);"></div>
     </div></div>
 
     <div class="sbox" style="border:2px solid #0066aa;"><div class="stitle" style="background:#004466;color:#fff;">&#9733; Reputation Point Values</div><div class="sbody">
@@ -1528,7 +1601,7 @@ function renderSiteConfig(c){
           </div>`).join('')}
       </div>
       <button class="btn" id="btn-saverep" style="margin-top:6px;">Save Values</button>
-      <div id="repMsg" style="font-size:11px;margin-top:3px;color:#006600;"></div>
+      <div id="repMsg" style="font-size:11px;margin-top:3px;color:var(--c-ok);"></div>
     </div></div>
 
     <div class="sbox" style="border:2px solid #880000;"><div class="stitle" style="background:#880000;color:#fff;">&#9888; Data Management</div><div class="sbody">
@@ -1618,6 +1691,24 @@ function renderSiteConfig(c){
       auditLog('Site Config Reset','Defaults restored');
       nav('siteconfig');
     });
+  };
+
+  // Variable Configuration save
+  const varBtn=document.getElementById('btn-savevars');
+  if(varBtn) varBtn.onclick=async()=>{
+    const newCfg={...SITE_CONFIG,
+      wipedAccountTTL:(document.getElementById('var-wipedTTL')||{value:'1440'}).value||'1440',
+      autoLogoutMins:parseInt((document.getElementById('var-autoLogout')||{value:'60'}).value)||60,
+      defaultTheme:(document.getElementById('var-defaultTheme')||{value:'dark'}).value||'dark',
+      heartbeatSecs:parseInt((document.getElementById('var-heartbeat')||{value:'30'}).value)||30,
+      maxLogsPerPage:parseInt((document.getElementById('var-maxLogs')||{value:'200'}).value)||200,
+    };
+    await set(ref(db,'meta/siteConfig'),newCfg);
+    SITE_CONFIG=newCfg;
+    auditLog('Variable Config Updated',`By ${ME}`);
+    const el=document.getElementById('varMsg');
+    if(el){ el.textContent='Variables saved!'; setTimeout(()=>{ if(el) el.textContent=''; },2000); }
+    showToast('Variable configuration saved.','success');
   };
 
   // Update Log editor
@@ -2630,7 +2721,7 @@ function renderStaff(c){
         <div class="tbl-wrap"><table class="tbl">
           <tr><th>Username</th><th>Level</th><th>Status</th><th>Last Active</th><th>Action</th></tr>
           ${sArr.map(([sid2,s2])=>`<tr>
-            <td><b>${s2.username||'—'}</b></td><td>${s2.level?levelBadge(s2.level):'—'}</td>
+            <td><b>${s2.username||'—'}</b>${s2.nickname?`<span style="font-size:9px;color:var(--c-text2);display:block;margin-top:1px;">"${s2.nickname}"</span>`:''}</td><td>${s2.level?levelBadge(s2.level):'—'}</td>
             <td>${(()=>{ const la2=s2.lastActive&&s2.lastActive!=='Never'?new Date(s2.lastActive):null; const diff2=la2?(new Date()-la2):Infinity; if(s2.suspended) return '<span class="sus">SUSPENDED</span>'; if(s2.secured) return '<span class="ban">SECURED</span>'; if(!la2||s2.lastAction==='Logged out') return '<span style="color:var(--c-text2);">Logged Out</span>'; if(diff2<300000) return '<span class="ok">Active</span>'; if(diff2<1200000) return '<span style="color:#cc8800;">Idle</span>'; return '<span style="color:var(--c-text2);">Offline</span>'; })()}</td>
             <td style="font-size:10px;">${s2.lastActive||'Never'}</td>
             <td>${canManage?`<button class="btn view-staff-btn" data-sid="${sid2}">View</button>`:'<span class="invalid-cred">INVALID CREDENTIALS</span>'}</td>
@@ -2657,13 +2748,18 @@ function renderStaff(c){
             ${s.avatarUrl?`<img src="${s.avatarUrl}" style="width:52px;height:52px;object-fit:cover;display:block;" onerror="this.parentElement.innerHTML='<span style=\\'font-size:14px;font-weight:bold;color:var(--c-text2);\\'>${(s.username||'?').substring(0,2).toUpperCase()}</span>'">`:`<span style="font-size:14px;font-weight:bold;color:var(--c-text2);">${(s.username||'?').substring(0,2).toUpperCase()}</span>`}
           </div>
           <div style="min-width:0;flex:1;overflow:hidden;">
-            <div style="font-size:11px;font-weight:bold;color:var(--c-text);word-break:break-all;">${s.username}</div>
+            <div style="font-size:11px;font-weight:bold;color:var(--c-text);word-break:break-all;">${s.username}${s.nickname?` <span style="font-size:10px;color:var(--c-text2);font-weight:400;">"${s.nickname}"</span>`:''}</div>
             <div style="margin-top:2px;">${levelBadge(s.level)}</div>
             <div style="font-size:10px;color:var(--c-text);margin-top:2px;">${(()=>{ const la=s.lastActive&&s.lastActive!=='Never'?new Date(s.lastActive):null; const diffMs=la?(new Date()-la):Infinity; if(s.suspended) return '<span class="sus">&#9679; SUSPENDED</span>'; if(s.secured) return '<span class="ban">&#9679; SECURED</span>'; if(!la||s.lastAction==='Logged out') return '<span style="color:var(--c-text2);">&#9679; Logged Out</span>'; if(diffMs<300000) return '<span class="ok">&#9679; Active</span>'; if(diffMs<1200000) return '<span style="color:#cc8800;font-weight:bold;">&#9679; Idle</span>'; return '<span style="color:var(--c-text2);">&#9679; Logged Out</span>'; })()}</div>
           </div>
         </div>
         <div style="font-size:11px;color:var(--c-text2);margin-bottom:1px;">Joined: <span style="color:var(--c-text);">${s.joined||'—'}</span></div>
         <div style="font-size:11px;color:var(--c-text2);margin-bottom:4px;">Last Active: <span style="color:var(--c-text);font-size:10px;">${s.lastActive||'Never'}</span></div>
+        <div style="font-size:11px;margin:3px 0 2px;color:var(--c-text);">Nickname (optional):</div>
+        <div style="display:flex;gap:3px;margin-bottom:5px;">
+          <input type="text" id="snNickname" style="flex:1;min-width:0;" placeholder="Display nickname" value="${s.nickname||''}" maxlength="30"/>
+          <button class="btn" id="btn-savenickname">Set</button>
+        </div>
         <div style="font-size:11px;margin:3px 0 2px;color:var(--c-text);">Notes:</div>
         <textarea id="snTA" style="width:100%;height:40px;box-sizing:border-box;">${s.notes||''}</textarea>
         <button class="btn" id="btn-savestaffnote" style="margin-top:2px;width:100%;">Save Note</button>
@@ -2672,7 +2768,7 @@ function renderStaff(c){
           <input type="text" id="saInput" style="flex:1;min-width:0;" placeholder="Roblox username" value="${s.avatarRobloxUser||''}"/>
           <button class="btn" id="btn-refreshavatar">Set</button>
         </div>
-        <div id="avatarMsg" style="font-size:11px;margin-top:2px;color:#006600;"></div>
+        <div id="avatarMsg" style="font-size:11px;margin-top:2px;color:var(--c-ok);"></div>
         ${canDo('canChangeStaffPassword')?`
         <div style="font-size:11px;margin:5px 0 2px;color:var(--c-text);">Update Password:</div>
         <div style="display:flex;gap:3px;">
@@ -2704,12 +2800,20 @@ function renderStaff(c){
   }
   if(canDo('canViewStaffProfile')){
     const sn=document.getElementById('btn-savestaffnote'); if(sn) sn.onclick=()=>saveStaffNote(currentStaffId);
+    const nnBtn=document.getElementById('btn-savenickname');
+    if(nnBtn) nnBtn.onclick=async()=>{
+      const nn=(document.getElementById('snNickname')||{value:''}).value.trim();
+      await update(ref(db,`staff/${currentStaffId}`),{nickname:nn||null});
+      if(STAFF[currentStaffId]) STAFF[currentStaffId].nickname=nn||null;
+      showToast(nn?`Nickname set to "${nn}"`:'Nickname cleared.','success');
+      nav('staff');
+    };
     const saBtn=document.getElementById('btn-refreshavatar');
     if(saBtn) saBtn.onclick=async()=>{
       const robloxUser=document.getElementById('saInput').value.trim();
       const msgEl=document.getElementById('avatarMsg');
       if(!msgEl) return;
-      msgEl.style.color='#000080'; msgEl.textContent='Fetching...';
+      msgEl.style.color='var(--c-text2)'; msgEl.textContent='Fetching...';
       let avatarUrl='';
       if(robloxUser){
         try{ const info=await fetchRobloxInfo(robloxUser); if(info&&info.avatarUrl) avatarUrl=info.avatarUrl; }catch(e){}
@@ -2782,6 +2886,8 @@ function renderModLog(c){
       <input type="date" id="flt-from" style="width:110px;"/>
       <div style="font-size:11px;color:var(--c-text);">To:</div>
       <input type="date" id="flt-to" style="width:110px;"/>
+      <div style="font-size:11px;color:var(--c-text);">Note/Reason:</div>
+      <input type="text" id="flt-note" style="width:90px;" placeholder="keyword"/>
       <button class="btn small" id="btn-applyfilter">Apply</button>
       <button class="btn small" id="btn-clearfilter">Clear</button>
     </div>
@@ -2790,29 +2896,40 @@ function renderModLog(c){
   <div class="sbox"><div class="stitle">All Player Moderation Actions</div><div class="sbody" id="modlog-tbl-body"></div></div>`;
 
   function applyFilters(){
-    const fMod=document.getElementById('flt-mod').value;
-    const fAction=document.getElementById('flt-action').value;
-    const fUser=document.getElementById('flt-user').value.trim().toLowerCase();
-    const fFrom=document.getElementById('flt-from').value;
-    const fTo=document.getElementById('flt-to').value;
+    const fMod=(document.getElementById('flt-mod')||{}).value||'';
+    const fAction=(document.getElementById('flt-action')||{}).value||'';
+    const fUser=((document.getElementById('flt-user')||{}).value||'').trim().toLowerCase();
+    const fFrom=(document.getElementById('flt-from')||{}).value||'';
+    const fTo=(document.getElementById('flt-to')||{}).value||'';
+    const fNote=((document.getElementById('flt-note')||{}).value||'').trim().toLowerCase();
     let entries=allEntries.filter(([,r])=>{
       if(fMod && r.mod!==fMod) return false;
       if(fAction && r.action!==fAction) return false;
       if(fUser && !(r.user||'').toLowerCase().includes(fUser)) return false;
-      if(fFrom && r.date && r.date < fFrom) return false;
-      if(fTo && r.date && r.date > fTo+'z') return false;
+      if(fNote && !(r.note||'').toLowerCase().includes(fNote) && !(r.reason||'').toLowerCase().includes(fNote)) return false;
+      // Date filtering: r.date is "YYYY-MM-DD HH:MM" format
+      if(fFrom){
+        const entryDate=(r.date||'').substring(0,10);
+        if(entryDate && entryDate < fFrom) return false;
+      }
+      if(fTo){
+        const entryDate=(r.date||'').substring(0,10);
+        if(entryDate && entryDate > fTo) return false;
+      }
       return true;
     });
     const countEl=document.getElementById('flt-count');
     if(countEl) countEl.textContent=`Showing ${entries.length} of ${allEntries.length} entries`;
     const tblBody=document.getElementById('modlog-tbl-body');
     if(!tblBody) return;
-    tblBody.innerHTML=entries.length===0?'<i style="color:var(--c-text2);">No matching entries.</i>':`
+    tblBody.innerHTML=entries.length===0?`<div style="text-align:center;padding:16px 0;color:var(--c-text2);font-size:12px;">No entries match your filters.</div>`:`
     <div class="tbl-wrap"><table class="tbl">
       <tr><th>User</th><th>Action</th><th>Moderator</th><th>Date</th><th>Reason</th><th>Note</th>${isSuperAdmin()?'<th>Admin</th>':''}</tr>
       ${entries.map(([lid,r])=>`<tr>
         <td>${r.user==='[WIPED]'?'<span class="wiped">[WIPED]</span>':r.user}</td>
-        <td>${r.action}</td><td>${r.mod}</td><td>${r.date}</td><td>${r.reason||''}</td><td>${r.note||''}</td>
+        <td>${r.action}</td><td>${r.mod}</td><td style="font-size:10px;">${r.date}</td>
+        <td style="max-width:100px;white-space:normal;">${r.reason||''}</td>
+        <td style="max-width:100px;white-space:normal;">${r.note||''}</td>
         ${isSuperAdmin()?`<td>${deleteLogBtn('logs/moderation',lid)}</td>`:''}
       </tr>`).join('')}
     </table></div>`;
@@ -2821,11 +2938,9 @@ function renderModLog(c){
   applyFilters();
   document.getElementById('btn-applyfilter').onclick=applyFilters;
   document.getElementById('btn-clearfilter').onclick=()=>{
-    document.getElementById('flt-mod').value='';
-    document.getElementById('flt-action').value='';
-    document.getElementById('flt-user').value='';
-    document.getElementById('flt-from').value='';
-    document.getElementById('flt-to').value='';
+    ['flt-mod','flt-action','flt-user','flt-from','flt-to','flt-note'].forEach(id=>{
+      const el=document.getElementById(id); if(el) el.value='';
+    });
     applyFilters();
   };
 }
@@ -3011,11 +3126,11 @@ function renderAlerts(c){
             </select>
             <div id="alertCustomExpiry" style="display:none;gap:5px;align-items:center;margin-top:3px;flex-wrap:wrap;">
               <input type="number" id="alertCustomDays" style="width:45px;" placeholder="d" min="0" value="0"/>
-              <span style="font-size:11px;">d</span>
+              <span style="font-size:11px;color:var(--c-text);">d</span>
               <input type="number" id="alertCustomHours" style="width:45px;" placeholder="h" min="0" max="23" value="0"/>
-              <span style="font-size:11px;">h</span>
+              <span style="font-size:11px;color:var(--c-text);">h</span>
               <input type="number" id="alertCustomMins" style="width:45px;" placeholder="m" min="0" max="59" value="0"/>
-              <span style="font-size:11px;">m</span>
+              <span style="font-size:11px;color:var(--c-text);">m</span>
             </div>
           </div>
         </div>
@@ -3025,7 +3140,7 @@ function renderAlerts(c){
           <button class="btn" id="btn-postalert">Post Alert</button>
           <button class="btn" id="btn-clearalerts">Clear All Active</button>
         </div>
-        <div id="alertMsg" style="font-size:11px;margin-top:3px;color:#006600;"></div>
+        <div id="alertMsg" style="font-size:11px;margin-top:3px;color:var(--c-ok);"></div>
       </div>
     </div>
   </div></div>`:''}
@@ -3187,24 +3302,34 @@ function renderMessaging(c){
 
 // ── REQUESTS ──
 function renderRequests(c){
-  const entries=Object.entries(MOD_REQUESTS).sort((a,b)=>a[1].date>b[1].date?-1:1);
+  // Sort: Pending first, then by date descending
+  const entries=Object.entries(MOD_REQUESTS).sort((a,b)=>{
+    const aPend=(!a[1].status||a[1].status==='Pending')?0:1;
+    const bPend=(!b[1].status||b[1].status==='Pending')?0:1;
+    if(aPend!==bPend) return aPend-bPend;
+    return a[1].date>b[1].date?-1:1;
+  });
+  const pending=entries.filter(([,r])=>!r.status||r.status==='Pending').length;
   c.innerHTML=`
   <div class="ptitle">Moderation Requests</div>
-  <div class="sbox"><div class="stitle">Pending Escalated Reports</div><div class="sbody">
-    <div style="font-size:11px;color:var(--c-text2);margin-bottom:5px;">These are escalated moderation requests submitted by staff against protected users.</div>
-    ${entries.length===0?'<i style="color:var(--c-text2);">No pending requests.</i>':`
+  <div class="sbox"><div class="stitle">Escalated Moderation Reports ${pending>0?`<span style="background:var(--c-ban);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;margin-left:6px;font-weight:700;">${pending} pending</span>`:''}</div><div class="sbody">
+    <div style="font-size:11px;color:var(--c-text2);margin-bottom:8px;">Requests against <span class="badge protected" style="font-size:9px;">PROT</span> protected users, sorted by pending first. Actions require reviewer approval.</div>
+    ${entries.length===0?`<div style="text-align:center;padding:16px 0;"><div style="font-size:24px;margin-bottom:6px;">✅</div><div style="font-size:12px;color:var(--c-text2);">No moderation requests on record.</div></div>`:`
     <div class="tbl-wrap"><table class="tbl">
       <tr><th>Target User</th><th>Action Requested</th><th>Submitted By</th><th>Reason</th><th>Date</th><th>Status</th><th>Review</th>${isSuperAdmin()?'<th>Admin</th>':''}</tr>
-      ${entries.map(([lid,r])=>`<tr>
-        <td><b>${r.targetUser}</b> <span style="font-size:9px;color:#880000;">[PROTECTED]</span></td>
-        <td>${r.action}</td>
-        <td>${r.submittedBy}</td>
-        <td style="max-width:120px;white-space:normal;">${r.reason||'—'}</td>
-        <td style="font-size:10px;">${r.date}</td>
-        <td><span class="badge ${r.status==='Approved'?'appeal-approved':r.status==='Denied'?'appeal-denied':'appeal-open'}">${r.status||'Pending'}</span></td>
-        <td>${canDo('canReviewAppeals')?`<button class="btn small review-req-btn" data-lid="${lid}">Review</button>`:'<span style="color:var(--c-text2);font-size:10px;">No access</span>'}</td>
-        ${isSuperAdmin()?`<td>${deleteLogBtn('modRequests',lid)}</td>`:''}
-      </tr>`).join('')}
+      ${entries.map(([lid,r])=>{
+        const isPending=!r.status||r.status==='Pending';
+        return `<tr style="${isPending?'background:rgba(227,179,65,0.06);':''}">
+          <td><b>${r.targetUser}</b> <span class="badge protected" style="font-size:9px;vertical-align:middle;margin-left:3px;">PROT</span></td>
+          <td>${r.action}</td>
+          <td>${r.submittedBy}</td>
+          <td style="max-width:120px;white-space:normal;">${r.reason||'—'}</td>
+          <td style="font-size:10px;">${r.date}</td>
+          <td><span class="badge ${r.status==='Approved'?'appeal-approved':r.status==='Denied'?'appeal-denied':'appeal-open'}">${r.status||'Pending'}</span></td>
+          <td>${canDo('canReviewAppeals')?`<button class="btn small review-req-btn" data-lid="${lid}">Review</button>`:'<span style="color:var(--c-text2);font-size:10px;">No access</span>'}</td>
+          ${isSuperAdmin()?`<td>${deleteLogBtn('modRequests',lid)}</td>`:''}
+        </tr>`;
+      }).join('')}
     </table></div>`}
   </div></div>`;
   c.querySelectorAll('.review-req-btn').forEach(btn=>{
@@ -3369,6 +3494,256 @@ function openUserConfigDialog(uid){
   );
 }
 
+// ── LEAK IDENTIFIER ──
+function renderLeakIdentifier(c){
+  c.innerHTML=`
+  <div class="ptitle">🔍 Leak Identifier</div>
+  <div class="sbox" style="border-color:var(--c-sus);"><div class="stitle" style="background:rgba(227,179,65,0.15);">What is this tool?</div><div class="sbody">
+    <div style="font-size:11px;color:var(--c-text);line-height:1.8;">
+      When a staff member leaks internal panel screenshots, this tool helps identify who it was by cross-referencing visible clues with staff data.
+      <br><b style="color:var(--c-sus);">Upload a leaked screenshot or paste clues below to match them against your staff roster.</b>
+    </div>
+  </div></div>
+
+  <div style="display:flex;gap:6px;flex-wrap:wrap;">
+    <div style="flex:2;min-width:260px;">
+      <div class="sbox"><div class="stitle">🧩 Clue Input</div><div class="sbody">
+        <div style="font-size:11px;color:var(--c-text2);margin-bottom:8px;">Fill in any details visible in the leaked image. Leave blank if not visible.</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div>
+            <label style="font-size:11px;font-weight:bold;color:var(--c-text);display:block;margin-bottom:2px;">Username visible in image (full or partial):</label>
+            <input type="text" id="leak-username" style="width:100%;" placeholder="e.g. rpa or rpatoff"/>
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:bold;color:var(--c-text);display:block;margin-bottom:2px;">Staff level badge visible:</label>
+            <select id="leak-level" style="width:100%;">
+              <option value="">Unknown / Not visible</option>
+              ${LEVEL_LIST.map(l=>`<option value="${l}">${l}</option>`).join('')}
+              <option value="SOFTWARE MANAGER">SOFTWARE MANAGER</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:bold;color:var(--c-text);display:block;margin-bottom:2px;">Page / section visible in screenshot:</label>
+            <select id="leak-page" style="width:100%;">
+              <option value="">Unknown</option>
+              <option value="Dashboard">Dashboard</option>
+              <option value="User Admin">User Admin</option>
+              <option value="Moderate">Moderate User</option>
+              <option value="All Accounts">All Accounts</option>
+              <option value="Staff Registry">Staff Registry</option>
+              <option value="Mod Log">Moderation Log</option>
+              <option value="Appeals">Appeals</option>
+              <option value="Staff Config">Staff Config</option>
+              <option value="Configuration">Configuration (Machine Mgmt)</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:bold;color:var(--c-text);display:block;margin-bottom:2px;">Approximate time of screenshot (if known):</label>
+            <input type="text" id="leak-time" style="width:100%;" placeholder="e.g. May 24 2026, around 3pm"/>
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:bold;color:var(--c-text);display:block;margin-bottom:2px;">Other visible text (usernames, chat, etc):</label>
+            <textarea id="leak-other" style="width:100%;height:60px;" placeholder="Any other text, usernames, IDs, or content visible in the image…"></textarea>
+          </div>
+        </div>
+        <button class="btn" id="btn-runleakid" style="margin-top:10px;width:100%;">🔍 Identify Potential Suspects</button>
+      </div></div>
+    </div>
+    <div style="flex:1;min-width:220px;">
+      <div class="sbox"><div class="stitle">📋 Results</div><div class="sbody" id="leak-results">
+        <div style="text-align:center;padding:20px 0;color:var(--c-text2);font-size:12px;">Fill in clues and click Identify.</div>
+      </div></div>
+      <div class="sbox"><div class="stitle">📋 Staff Online at Time</div><div class="sbody" id="leak-online">
+        <div style="font-size:11px;color:var(--c-text2);">Staff who were active recently:</div>
+        <div style="margin-top:6px;">
+          ${Object.values(STAFF).filter(s=>{
+            if(!s.lastActive||s.lastActive==='Never') return false;
+            return (new Date()-new Date(s.lastActive))<7200000; // 2 hours
+          }).map(s=>`
+            <div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--c-border);">
+              <div class="avatar-box" style="width:22px;height:22px;flex-shrink:0;">${s.avatarUrl?`<img src="${s.avatarUrl}" style="width:22px;height:22px;object-fit:cover;" onerror="this.style.display='none'">`:''}<span style="font-size:9px;font-weight:bold;color:var(--c-text2);">${(s.username||'?').substring(0,2).toUpperCase()}</span></div>
+              <span style="font-size:11px;font-weight:bold;color:var(--c-text);">${s.username}</span>
+              ${levelBadge(s.level)}
+              <span style="font-size:9px;color:var(--c-text2);">Last: ${s.lastActive}</span>
+            </div>`).join('') || '<div style="font-size:11px;color:var(--c-text2);">No active staff in past 2 hours.</div>'}
+        </div>
+      </div></div>
+    </div>
+  </div>`;
+
+  document.getElementById('btn-runleakid').onclick=()=>{
+    const uInput=(document.getElementById('leak-username').value||'').trim().toLowerCase();
+    const levelInput=(document.getElementById('leak-level').value||'');
+    const otherText=(document.getElementById('leak-other').value||'').toLowerCase();
+    const results=document.getElementById('leak-results');
+
+    const scored=Object.values(STAFF).map(s=>{
+      let score=0; const reasons=[];
+      if(uInput && s.username.toLowerCase().includes(uInput)){ score+=10; reasons.push(`Username "${s.username}" matches "${uInput}"`); }
+      if(levelInput && s.level===levelInput){ score+=5; reasons.push(`Level matches: ${s.level}`); }
+      if(otherText && s.username && otherText.includes(s.username.toLowerCase())){ score+=8; reasons.push(`Username found in visible text`); }
+      if(otherText && s.nickname && otherText.includes(s.nickname.toLowerCase())){ score+=6; reasons.push(`Nickname "${s.nickname}" found in visible text`); }
+      return {s,score,reasons};
+    }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score);
+
+    if(!scored.length){
+      results.innerHTML=`<div style="text-align:center;padding:16px 0;"><div style="font-size:20px;margin-bottom:6px;">🔎</div><div style="font-size:12px;color:var(--c-text2);">No matches found. Try adding more clues.</div></div>`;
+      return;
+    }
+    results.innerHTML=`
+      <div style="font-size:11px;color:var(--c-text2);margin-bottom:8px;">${scored.length} potential suspect${scored.length>1?'s':''} found, ranked by match strength:</div>
+      ${scored.map((x,i)=>`
+        <div style="border:1px solid ${i===0?'var(--c-sus)':'var(--c-border)'};border-radius:6px;padding:8px;margin-bottom:6px;background:${i===0?'rgba(227,179,65,0.08)':'var(--bg-tbl-odd)'};">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+            <span style="font-size:12px;font-weight:800;color:${i===0?'var(--c-sus)':'var(--c-text)'};">#${i+1}</span>
+            <div class="avatar-box" style="width:24px;height:24px;flex-shrink:0;">${x.s.avatarUrl?`<img src="${x.s.avatarUrl}" style="width:24px;height:24px;object-fit:cover;" onerror="this.style.display='none'">`:''}</div>
+            <span style="font-size:12px;font-weight:bold;color:var(--c-text);">${x.s.username}</span>
+            ${levelBadge(x.s.level)}
+            <span style="font-size:10px;color:var(--c-text2);margin-left:auto;">Score: ${x.score}</span>
+          </div>
+          <div style="font-size:10px;color:var(--c-text2);">${x.reasons.map(r=>`✓ ${r}`).join(' · ')}</div>
+        </div>`).join('')}`;
+  };
+}
+
+// ── INFORMATION PAGE ──
+function renderInformation(c){
+  const cfg={...SITE_CONFIG_DEFAULTS,...SITE_CONFIG};
+  const canEdit=isSoftwareManager();
+
+  const rankCaps=[
+    {rank:'TRIAL MODERATOR',badge:'intern',caps:['View User Admin (read-only)','View All Accounts','Access Dashboard & Information','Submit suggestions','View Reputation scores','Send & receive staff messages']},
+    {rank:'MODERATOR',badge:'moderator',caps:['Everything Trial Moderator can do','Moderate users (warn, ban, suspend, etc.)','View Moderation Log, Revoke Log','Submit & view Appeals','Alt Detection & Message Analyze','View own profile','Request moderation against protected users']},
+    {rank:'ADMINISTRATOR',badge:'administrator',caps:['Everything Moderator can do','View Suspension & Termination Logs','View Login Log & Staff Activity','Review appeals','View User Config','Manage Site Alerts','Suspend staff members','Run bulk mod actions','Access Requests channel']},
+    {rank:'SUPER ADMINISTRATOR',badge:'superadmin',caps:['Everything Administrator can do','Full Staff Registry access','Manage staff levels & passwords','Terminate staff accounts','View Audit Log & Admin panel','Manage permissions & custom fields','Staff Config & permission overrides','Wipe player accounts']},
+    {rank:'SOFTWARE MANAGER',badge:'softwaremanager',caps:['All permissions, bypasses all checks','Machine Management access','Set Site Status (OK/Updating/Paused)','Configure all panel text & variables','Edit Update Log, manage badges','View Status Log & Wipe Log','Execute Factory Reset','Cannot be suspended or terminated via panel']},
+  ];
+
+  const modNoteKeywords=[
+    {kw:'[ESC]',desc:'Escalated — action was escalated from a lower rank via Requests channel'},
+    {kw:'[OVRR]',desc:'Override — action was taken despite protected status, logged as override'},
+    {kw:'[BULK]',desc:'Bulk action — applied as part of a bulk moderation action'},
+    {kw:'[REV]',desc:'Reversed — this action was later reversed/revoked'},
+    {kw:'[TEMP]',desc:'Temporary — time-limited action, check expiry for details'},
+    {kw:'[ALT]',desc:'Alt account — punishment applied to a suspected alt account'},
+    {kw:'[AFK]',desc:'Away — staff member was marked AFK/offline when this was applied'},
+  ];
+
+  const staffActions=[
+    {name:'Suspension',icon:'🟡',desc:'Temporarily locks a staff member out of the panel. Suspended staff cannot log in. Automatically triggers a force-logout on their next heartbeat. Requires Operator Code to lift.'},
+    {name:'Secure Account',icon:'🔴',desc:'Flags a staff account as potentially compromised. Blocks all logins until an administrator explicitly clears the security lock. Use when you suspect credentials were leaked.'},
+    {name:'Force Log Out',icon:'⚡',desc:'Sets a flag that forces the target staff member offline on their next heartbeat (within 30 seconds). They will see a session-expired message. Does not lock their account.'},
+    {name:'Terminate',icon:'🚫',desc:'Permanently removes the staff member\'s account from the system. Irreversible — requires Super Administrator rank and Operator Code. All their log entries are preserved under their username.'},
+    {name:'Emergency Log Out ALL',icon:'🆘',desc:'Mass-forces every active session except yours offline instantly. Software Manager only. For use when there is a suspected breach or unauthorized access event.'},
+  ];
+
+  const customHTML=cfg.infoContent||'';
+  c.innerHTML=`
+  <div class="ptitle" style="background:linear-gradient(90deg,var(--c-link) 0%,#2ea043 100%);display:flex;align-items:center;gap:8px;">
+    <span>ℹ Information &amp; Reference</span>
+    <span style="font-size:10px;font-weight:400;opacity:0.8;margin-left:4px;">Always up to date</span>
+  </div>
+
+  ${customHTML?`<div class="sbox" style="border-color:var(--c-link);"><div class="stitle">📌 Staff Notice Board</div><div class="sbody"><div style="font-size:12px;color:var(--c-text);line-height:1.8;">${customHTML}</div></div></div>`:''}
+
+  <div class="sbox"><div class="stitle">🗂 Rank Capabilities</div><div class="sbody">
+    <div style="font-size:11px;color:var(--c-text2);margin-bottom:10px;">What each rank has access to. Higher ranks inherit all permissions from lower ranks unless overridden.</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      ${rankCaps.map(r=>`
+        <div style="border:1px solid var(--c-border);border-radius:6px;overflow:hidden;">
+          <div style="padding:7px 12px;background:var(--bg-topinfo);display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--c-border);">
+            ${levelBadge(r.rank)}
+          </div>
+          <div style="padding:8px 12px;display:flex;flex-wrap:wrap;gap:3px 16px;">
+            ${r.caps.map(cap=>`<div style="font-size:11px;color:var(--c-text);display:flex;align-items:flex-start;gap:5px;min-width:200px;flex:1;"><span style="color:var(--c-ok);flex-shrink:0;">✓</span>${cap}</div>`).join('')}
+          </div>
+        </div>`).join('')}
+    </div>
+  </div></div>
+
+  <div style="display:flex;gap:6px;flex-wrap:wrap;">
+    <div style="flex:1;min-width:240px;">
+      <div class="sbox"><div class="stitle">🏷 Mod Note Keywords</div><div class="sbody">
+        <div style="font-size:11px;color:var(--c-text2);margin-bottom:8px;">Standard keywords used in moderation notes and what they mean.</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          ${modNoteKeywords.map(k=>`
+            <div style="display:flex;align-items:flex-start;gap:8px;padding:5px 8px;background:var(--bg-tbl-odd);border:1px solid var(--c-border);border-radius:4px;">
+              <code style="background:var(--bg-topinfo);border:1px solid var(--c-border);padding:1px 5px;border-radius:3px;font-size:11px;font-weight:bold;color:var(--c-link);white-space:nowrap;flex-shrink:0;">${k.kw}</code>
+              <span style="font-size:11px;color:var(--c-text);">${k.desc}</span>
+            </div>`).join('')}
+        </div>
+      </div></div>
+    </div>
+    <div style="flex:1;min-width:240px;">
+      <div class="sbox"><div class="stitle">⚙ Staff Actions Explained</div><div class="sbody">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          ${staffActions.map(a=>`
+            <div style="padding:8px 10px;background:var(--bg-tbl-odd);border:1px solid var(--c-border);border-radius:6px;">
+              <div style="font-size:12px;font-weight:700;color:var(--c-text);margin-bottom:4px;">${a.icon} ${a.name}</div>
+              <div style="font-size:11px;color:var(--c-text2);line-height:1.6;">${a.desc}</div>
+            </div>`).join('')}
+        </div>
+      </div></div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:0;">
+    <div style="flex:1;min-width:200px;">
+      <div class="sbox"><div class="stitle">⌨ Keyboard Shortcuts</div><div class="sbody">
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:11px;color:var(--c-text);">
+          <div style="display:flex;align-items:center;gap:6px;"><span class="kbd">Ctrl+K</span><span style="color:var(--c-text2);">or</span><span class="kbd">/</span><span>Global Search</span></div>
+          <div style="display:flex;align-items:center;gap:6px;"><span class="kbd">Esc</span><span>Close dialog/dropdown</span></div>
+          <div style="display:flex;align-items:center;gap:6px;"><span class="kbd">G</span><span style="color:var(--c-text2);">+</span><span class="kbd">H</span><span>Dashboard</span></div>
+          <div style="display:flex;align-items:center;gap:6px;"><span class="kbd">G</span><span style="color:var(--c-text2);">+</span><span class="kbd">U</span><span>User Admin</span></div>
+          <div style="display:flex;align-items:center;gap:6px;"><span class="kbd">G</span><span style="color:var(--c-text2);">+</span><span class="kbd">S</span><span>Staff Registry</span></div>
+          <div style="display:flex;align-items:center;gap:6px;"><span class="kbd">G</span><span style="color:var(--c-text2);">+</span><span class="kbd">M</span><span>Mod Log</span></div>
+        </div>
+      </div></div>
+      <div class="sbox"><div class="stitle">💡 Quick Tips</div><div class="sbody">
+        <div style="font-size:11px;color:var(--c-text2);line-height:2;">
+          <div>▶ Templates support <code style="background:var(--bg-tbl-odd);padding:1px 4px;border-radius:3px;">{username}</code> & <code style="background:var(--bg-tbl-odd);padding:1px 4px;border-radius:3px;">{reason}</code></div>
+          <div>▶ Wiped accounts show as <span class="wiped">[WIPED #####]</span> in logs</div>
+          <div>▶ Operator code required for all deletions</div>
+          <div>▶ Force-logout uses a 30s heartbeat flag check</div>
+          <div>▶ Staff heartbeat updates <b>lastActive</b> every 30s</div>
+        </div>
+      </div></div>
+    </div>
+    <div style="flex:1;min-width:200px;">
+      <div class="sbox"><div class="stitle">🔑 System Status</div><div class="sbody">
+        <div style="font-size:11px;line-height:1.8;color:var(--c-text);">
+          <div>Status: <span class="badge status-${(SITE_STATUS&&SITE_STATUS.status||'ok').toLowerCase()}">${SITE_STATUS&&SITE_STATUS.status||'OK'}</span></div>
+          ${SITE_STATUS&&SITE_STATUS.status!=='OK'?`<div style="color:var(--c-text2);">Reason: ${SITE_STATUS.reason||'—'}</div>`:''}
+          <div>Your Rank: ${levelBadge(MY_LEVEL)}</div>
+          <div>Logged in as: <b>${ME}</b></div>
+          <div>Panel Version: <b>${UPDATE_LOG&&UPDATE_LOG.length?'v'+UPDATE_LOG[0].version:'—'}</b></div>
+        </div>
+      </div></div>
+    </div>
+  </div>
+
+  ${canEdit?`
+  <div class="sbox" style="border-color:var(--c-link);"><div class="stitle">✏ Edit Notice Board <span style="font-size:10px;font-weight:400;opacity:0.7;">(Software Manager only)</span></div><div class="sbody">
+    <div style="font-size:11px;color:var(--c-text2);margin-bottom:6px;">HTML supported. Shows at the top of this page for all staff. Good for announcements, policy changes, or reminders.</div>
+    <textarea id="infoContentEdit" style="width:100%;height:120px;font-size:11px;">${(cfg.infoContent||'')}</textarea>
+    <button class="btn" id="btn-saveinfo" style="margin-top:6px;">Save Notice</button>
+    <div id="infoMsg" style="font-size:11px;margin-top:3px;color:var(--c-ok);"></div>
+  </div></div>`:''}`;
+
+  if(canEdit){
+    document.getElementById('btn-saveinfo').onclick=async()=>{
+      const raw=document.getElementById('infoContentEdit').value;
+      const newCfg={...SITE_CONFIG,infoContent:raw};
+      await set(ref(db,'meta/siteConfig'),newCfg);
+      SITE_CONFIG=newCfg;
+      auditLog('Information Page Updated',`By ${ME}`);
+      const el=document.getElementById('infoMsg');
+      if(el){ el.textContent='Saved!'; setTimeout(()=>{ if(el) el.textContent=''; },2000); }
+      showToast('Notice board updated.','success');
+    };
+  }
+}
+
 // ── ADMIN LOG ──
 function renderAdminLog(c){
   const sArr=Object.entries(STAFF);
@@ -3441,7 +3816,7 @@ function renderAdminLog(c){
         <div style="font-size:11px;color:var(--c-text2);margin-bottom:4px;">One preset per line.</div>
         <textarea id="appealPresetsTA" style="width:100%;height:80px;">${APPEAL_PRESETS.join('\n')}</textarea>
         <button class="btn" id="btn-savepresets" style="margin-top:4px;">Save Presets</button>
-        <div id="presetsMsg" style="font-size:11px;margin-top:3px;color:#006600;"></div>
+        <div id="presetsMsg" style="font-size:11px;margin-top:3px;color:var(--c-ok);"></div>
       </div></div>
       <div class="sbox"><div class="stitle">Ban Message Templates</div><div class="sbody">
         <div style="font-size:11px;color:var(--c-text2);margin-bottom:5px;">Templates appear in the "Message to User" field on the Moderate page. Use <span style="font-family:monospace;background:var(--bg-tbl-odd);padding:1px 4px;border-radius:3px;">{username}</span> and <span style="font-family:monospace;background:var(--bg-tbl-odd);padding:1px 4px;border-radius:3px;">{reason}</span> as variables — they'll be auto-filled when you click Use.</div>
@@ -3463,7 +3838,7 @@ function renderAdminLog(c){
         <div style="margin-bottom:3px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:1px;">Message to User:</label>
           <textarea id="tplMsg" style="width:100%;height:60px;" placeholder="Your account has been actioned for..."></textarea></div>
         <button class="btn" id="btn-addtpl">Add Template</button>
-        <div id="tplMsg2" style="font-size:11px;margin-top:3px;color:#006600;"></div>
+        <div id="tplMsg2" style="font-size:11px;margin-top:3px;color:var(--c-ok);"></div>
       </div></div>
       ${canDo('canManageCustomFields')?`
       <div class="sbox"><div class="stitle">Custom User Fields</div><div class="sbody">
@@ -3496,22 +3871,26 @@ function renderAdminLog(c){
           <input type="text" id="cfOptions" style="width:100%;" placeholder="e.g. Rookie, Veteran, Elite"/>
         </div>
         <button class="btn" id="btn-addcf" style="margin-top:3px;">Add Field</button>
-        <div id="cfMsg" style="font-size:11px;margin-top:3px;color:#006600;"></div>
+        <div id="cfMsg" style="font-size:11px;margin-top:3px;color:var(--c-ok);"></div>
       </div></div>`:''}
     </div>
     <div style="flex:2;min-width:260px;">
       <div class="sbox"><div class="stitle">Permission Settings</div><div class="sbody">
         <div style="font-size:11px;color:var(--c-text2);margin-bottom:6px;">Minimum level required for each action. Administrator tab is always Super Admin only.</div>
-        ${permKeys.map(key=>`
-          <div style="display:flex;align-items:center;margin-bottom:4px;font-size:11px;gap:6px;">
+        ${permKeys.map(key=>{
+          const isNone=PERMS[key]==='- NONE -';
+          const locked=isNone&&!isSoftwareManager();
+          return `<div style="display:flex;align-items:center;margin-bottom:4px;font-size:11px;gap:6px;">
             <label style="width:170px;flex-shrink:0;color:var(--c-text);">${formatPermKey(key)}</label>
-            <select id="perm-${key}" style="width:165px;">
-              <option value="- NONE -" ${PERMS[key]==='- NONE -'?'selected':''}>- NONE - (Software Manager only)</option>
+            <select id="perm-${key}" style="width:165px;${locked?'opacity:0.6;':''}" ${locked?'disabled':''}>
+              <option value="- NONE -" ${isNone?'selected':''}>- NONE - (SM only)</option>
               ${levelOptions.map(l=>`<option value="${l}" ${PERMS[key]===l?'selected':''}>${l}</option>`).join('')}
             </select>
-          </div>`).join('')}
+            ${locked?'<span style="font-size:9px;color:var(--c-sus);">🔒</span>':''}
+          </div>`;
+        }).join('')}
         <button class="btn" id="btn-saveperms" style="margin-top:6px;">Save Permissions</button>
-        <div id="permMsg" style="font-size:11px;margin-top:3px;color:#006600;"></div>
+        <div id="permMsg" style="font-size:11px;margin-top:3px;color:var(--c-ok);"></div>
       </div></div>
     </div>
   </div>`;
@@ -3602,7 +3981,13 @@ function formatPermKey(k){ return k.replace(/([A-Z])/g,' $1').replace(/^can /i,'
 
 async function savePerms(){
   const newPerms={};
-  Object.keys(DEFAULT_PERMS).forEach(key=>{ const el=document.getElementById('perm-'+key); if(el) newPerms[key]=el.value; });
+  Object.keys(DEFAULT_PERMS).forEach(key=>{
+    const el=document.getElementById('perm-'+key);
+    if(!el) return;
+    // Never allow non-SM to change a NONE permission
+    if(el.disabled && PERMS[key]==='- NONE -') { newPerms[key]='- NONE -'; return; }
+    newPerms[key]=el.value;
+  });
   await set(ref(db,'meta/permissions'),newPerms);
   PERMS={...newPerms};
   auditLog('Permissions Updated','Permission settings changed');
@@ -4449,7 +4834,7 @@ function renderSuggestions(c){
         <option>Feature Request</option><option>Bug Report</option><option>Process Improvement</option><option>Staff Tools</option><option>Other</option>
       </select></div>
     <button class="btn" id="btn-submitsugg">Submit Suggestion</button>
-    <div id="suggMsg" style="font-size:11px;margin-top:3px;color:#006600;"></div>
+    <div id="suggMsg" style="font-size:11px;margin-top:3px;color:var(--c-ok);"></div>
   </div></div>`:''}
   <div class="sbox"><div class="stitle">All Suggestions</div><div class="sbody">
     ${entries.length===0?'<i style="color:var(--c-text2);">No suggestions submitted yet.</i>':`
@@ -5404,8 +5789,8 @@ window.toggleSbGroup = function(groupId){
 };
 
 // ── THEME SYSTEM (GitHub Light / GitHub Dark) ──
-let darkMode = false;
-try { darkMode = localStorage.getItem('ghTheme') === 'dark'; } catch(e){}
+let darkMode = true;
+try { const _s=localStorage.getItem('ghTheme'); if(_s!==null) darkMode=(_s==='dark'); } catch(e){}
 function applyTheme(){
   document.body.classList.toggle('gh-dark', darkMode);
   const btn = document.getElementById('nightModeBtn');
@@ -5433,7 +5818,7 @@ function openNotifSettings(){
   document.getElementById('notifSettingsOverlay').classList.add('show');
 }
 
-['useradmin','moderate','accounts','reputation','appeals','altdetect','staff','activity','modlog','revokelog','suspendlog','terminatelog','loginlog','auditlog','alerts','adminlog','home','messaging','requests','userconfig','siteconfig','suggestions','staffconfig','msganalyze','statuslog','badgemgmt','wipelog'].forEach(p=>{
+['useradmin','moderate','accounts','reputation','appeals','altdetect','staff','activity','modlog','revokelog','suspendlog','terminatelog','loginlog','auditlog','alerts','adminlog','home','messaging','requests','userconfig','siteconfig','suggestions','staffconfig','msganalyze','statuslog','badgemgmt','wipelog','information','leakid'].forEach(p=>{
   const el=document.getElementById('nav-'+p);
   if(el) el.onclick=()=>nav(p);
 });
