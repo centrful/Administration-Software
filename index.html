@@ -4938,13 +4938,13 @@ async function doLogin(){
       const ipJson=await ipRes.json();
       ipData.ip=ipJson.ip||'—';
       try{
-        const geoRes=await fetch('https://ip-api.com/json/'+ipData.ip+'?fields=country,city,regionName,isp,timezone');
+        const geoRes=await fetch('https://ipwho.is/'+ipData.ip);
         const geoJson=await geoRes.json();
         ipData.country=geoJson.country||'—';
         ipData.city=geoJson.city||'—';
-        ipData.region=geoJson.regionName||'—';
-        ipData.isp=geoJson.isp||'—';
-        ipData.timezone=geoJson.timezone||'—';
+        ipData.region=geoJson.region||'—';
+        ipData.isp=(geoJson.connection&&geoJson.connection.isp)||geoJson.org||'—';
+        ipData.timezone=(geoJson.timezone&&geoJson.timezone.id)||'—';
       }catch(e){}
     }catch(e){}
     await push(ref(db,'logs/login'),{username:u,level:MY_LEVEL,date:nowStr(),result:'success',
@@ -4996,10 +4996,10 @@ async function doLogin(){
       const j=await r.json();
       fIp=j.ip||'—';
       try{
-        const g=await fetch('https://ip-api.com/json/'+fIp+'?fields=country,city,regionName,isp,timezone');
+        const g=await fetch('https://ipwho.is/'+fIp);
         const gj=await g.json();
-        fCountry=gj.country||'—'; fCity=gj.city||'—'; fRegion=gj.regionName||'—';
-        fIsp=gj.isp||'—'; fTz=gj.timezone||'—';
+        fCountry=gj.country||'—'; fCity=gj.city||'—'; fRegion=gj.region||'—';
+        fIsp=(gj.connection&&gj.connection.isp)||gj.org||'—'; fTz=(gj.timezone&&gj.timezone.id)||'—';
       }catch(ge){}
     }catch(fe){}
     await push(ref(db,'logs/login'),{
