@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 680">
+  <circle cx="340" cy="320" r="245" fill="none" stroke="#58a6ff" stroke-width="1.5" opacity="0.3"/>
+  <line x1="340" y1="58" x2="340" y2="38" stroke="#58a6ff" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
+  <line x1="340" y1="602" x2="340" y2="622" stroke="#58a6ff" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
+  <line x1="78" y1="320" x2="58" y2="320" stroke="#58a6ff" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
+  <line x1="602" y1="320" x2="622" y2="320" stroke="#58a6ff" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
+  <circle cx="340" cy="168" r="64" fill="#58a6ff"/>
+  <polygon points="340,630 224,288 456,288" fill="#58a6ff"/>
+  <polyline points="247,316 247,296 267,296" fill="none" stroke="#1158a8" stroke-width="3" stroke-linecap="square"/>
+  <polyline points="413,296 433,296 433,316" fill="none" stroke="#1158a8" stroke-width="3" stroke-linecap="square"/>
+  <circle cx="340" cy="338" r="5.5" fill="#1158a8"/>
+  <circle cx="340" cy="372" r="5" fill="#1158a8"/>
+  <circle cx="340" cy="406" r="4.5" fill="#1158a8"/>
+  <circle cx="340" cy="438" r="4" fill="#1158a8"/>
+  <circle cx="340" cy="468" r="3.5" fill="#1158a8"/>
+  <circle cx="340" cy="496" r="3" fill="#1158a8"/>
+</svg>
