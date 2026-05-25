@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Administration Panel</title>
+<title>Samaritan Systems</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <style>
 /* ── THEME VARIABLES ── */
 :root {
@@ -3258,17 +3258,43 @@ function renderLoginLog(c){
       +'</div>'
     :activeThreats.map(threatRow).join('');
 
-  var tbl=entries.length===0
+  // Group consecutive failed attempts by the same user
+  var groupedEntries=[];
+  var i=0;
+  while(i<entries.length){
+    var cur=entries[i];
+    var r=cur[1];
+    if(r.result!=='success'){
+      var group=[cur];
+      var j=i+1;
+      while(j<entries.length && entries[j][1].result!=='success' && entries[j][1].username===r.username){
+        group.push(entries[j]);
+        j++;
+      }
+      if(group.length>1){
+        // Merged entry — use latest data, show count
+        var latest=group[0][1];
+        groupedEntries.push([cur[0],Object.assign({},latest,{_count:group.length,_groupLids:group.map(function(g){return g[0];})})]);
+        i=j;
+        continue;
+      }
+    }
+    groupedEntries.push(cur);
+    i++;
+  }
+
+  var tbl=groupedEntries.length===0
     ?'<div style="text-align:center;padding:20px;color:var(--c-text2);">No logins recorded yet.</div>'
     :'<div class="tbl-wrap"><table class="tbl" id="login-tbl">'
     +'<tr><th>Username</th><th>Level</th><th>Date/Time</th><th>Result</th><th>Country</th><th>Info</th>'+(isSuperAdmin()?'<th>Admin</th>':'')+'</tr>'
-    +entries.map(function(e){
+    +groupedEntries.map(function(e){
       var lid=e[0],r=e[1];
+      var countBadge=r._count?'<span style="background:var(--c-ban);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:10px;margin-left:4px;">x'+r._count+'</span>':'';
       return '<tr data-search="'+[(r.username||''),(r.level||''),(r.result||''),(r.country||''),(r.ip||''),(r.browser||''),(r.os||'')].join(' ').toLowerCase()+'">'
         +'<td>'+tinyAvatar(r.username,avatarUrlFor(r.username))+'</td>'
         +'<td>'+(r.level||'—')+'</td>'
         +'<td style="font-size:10px;">'+(r.date||'—')+'</td>'
-        +'<td>'+(r.result==='success'?'<span class="ok">Success</span>':'<span class="ban">'+(r.result||'fail')+'</span>')+'</td>'
+        +'<td>'+(r.result==='success'?'<span class="ok">Success</span>':'<span class="ban">'+(r.result||'fail')+'</span>')+countBadge+'</td>'
         +'<td style="font-size:10px;">'+(r.country||'—')+'</td>'
         +'<td><button class="btn small login-info-btn" data-lid="'+lid+'">View</button></td>'
         +(isSuperAdmin()?'<td>'+deleteLogBtn('logs/login',lid)+'</td>':'')
@@ -4932,22 +4958,38 @@ async function doLogin(){
     CUSTOM_FIELDS=cfSnap.exists()?cfSnap.val():[];
     // Collect browser session data
     const sessionData=collectSessionData();
-    // Fetch IP + geo data from ipify + ip-api
+    // Fetch IP + geo data — tries multiple APIs for reliability
     let ipData={ip:'—',country:'—',city:'—',region:'—',isp:'—',timezone:'—'};
     try{
-      const ipRes=await fetch('https://api.ipify.org?format=json');
-      const ipJson=await ipRes.json();
-      ipData.ip=ipJson.ip||'—';
+      // Primary: ipinfo.io (free, CORS-enabled, no key needed for basic fields)
+      const geoRes=await fetch('https://ipinfo.io/json?token=');
+      const geoJson=await geoRes.json();
+      ipData.ip=geoJson.ip||'—';
+      ipData.country=geoJson.country||'—';
+      ipData.city=geoJson.city||'—';
+      ipData.region=geoJson.region||'—';
+      ipData.isp=geoJson.org||'—';
+      ipData.timezone=geoJson.timezone||'—';
+    }catch(e){
       try{
-        const geoRes=await fetch('https://ipwho.is/'+ipData.ip);
-        const geoJson=await geoRes.json();
-        ipData.country=geoJson.country||'—';
-        ipData.city=geoJson.city||'—';
-        ipData.region=geoJson.region||'—';
-        ipData.isp=(geoJson.connection&&geoJson.connection.isp)||geoJson.org||'—';
-        ipData.timezone=(geoJson.timezone&&geoJson.timezone.id)||'—';
-      }catch(e){}
-    }catch(e){}
+        // Fallback: ipapi.co
+        const r2=await fetch('https://ipapi.co/json/');
+        const j2=await r2.json();
+        ipData.ip=j2.ip||'—';
+        ipData.country=j2.country_name||'—';
+        ipData.city=j2.city||'—';
+        ipData.region=j2.region||'—';
+        ipData.isp=j2.org||'—';
+        ipData.timezone=j2.timezone||'—';
+      }catch(e2){
+        try{
+          // Last resort: just get IP
+          const r3=await fetch('https://api.ipify.org?format=json');
+          const j3=await r3.json();
+          ipData.ip=j3.ip||'—';
+        }catch(e3){}
+      }
+    }
     await push(ref(db,'logs/login'),{username:u,level:MY_LEVEL,date:nowStr(),result:'success',
       ip:ipData.ip,country:ipData.country,city:ipData.city,region:ipData.region,
       isp:ipData.isp,timezone:ipData.timezone,
@@ -4993,15 +5035,13 @@ async function doLogin(){
     const sd=collectSessionData();
     let fIp='—', fCountry='—', fCity='—', fRegion='—', fIsp='—', fTz='—';
     try{
-      const r=await fetch('https://api.ipify.org?format=json');
-      const j=await r.json();
-      fIp=j.ip||'—';
       try{
-        const g=await fetch('https://ipwho.is/'+fIp);
+        // ipinfo.io returns IP + geo in one call
+        const g=await fetch('https://ipinfo.io/json?token=');
         const gj=await g.json();
-        fCountry=gj.country||'—'; fCity=gj.city||'—'; fRegion=gj.region||'—';
-        fIsp=(gj.connection&&gj.connection.isp)||gj.org||'—'; fTz=(gj.timezone&&gj.timezone.id)||'—';
-      }catch(ge){}
+        fIp=gj.ip||fIp; fCountry=gj.country||'—'; fCity=gj.city||'—';
+        fRegion=gj.region||'—'; fIsp=gj.org||'—'; fTz=gj.timezone||'—';
+      }catch(ge){ try{ const rb=await fetch('https://api.ipify.org?format=json'); fIp=(await rb.json()).ip||'—'; }catch(re){} }
     }catch(fe){}
     await push(ref(db,'logs/login'),{
       username:u,level:'—',date:nowStr(),result:'failed',
