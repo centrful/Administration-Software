@@ -118,6 +118,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,san
 .sidebar{width:200px;flex-shrink:0;background:var(--bg-sidebar);border-right:1px solid var(--c-border-sb);overflow-y:auto;font-size:12px;}
 .sb-root{padding:12px 16px 10px;font-weight:600;font-size:11px;color:var(--c-text2);background:var(--bg-sb-root);border-bottom:1px solid var(--c-border-sb);text-transform:uppercase;letter-spacing:0.5px;cursor:default;user-select:none;}
 .sb-group{margin-bottom:0;}
+.sb-group-hdr svg{color:var(--c-text2);opacity:0.8;}
 .sb-group-hdr{display:flex;align-items:center;gap:6px;padding:6px 16px 4px;cursor:pointer;user-select:none;background:var(--bg-sb-hdr);}
 .sb-group-hdr:hover{background:var(--bg-sb-hdr-hover);}
 .sb-plusminus{font-size:10px;color:var(--c-pm);flex-shrink:0;width:10px;text-align:center;font-weight:600;transition:transform 0.15s;}
@@ -356,6 +357,10 @@ body.gh-dark .sbox:hover{box-shadow:0 2px 12px rgba(1,4,9,0.3);}
 ::-webkit-scrollbar-thumb{background:var(--c-border);border-radius:3px;}
 ::-webkit-scrollbar-thumb:hover{background:var(--c-text2);}
 
+/* ── SAMARITAN PAGE BACKGROUND ── */
+body.sam-active .content{ background:#0d1117 !important; min-height:100vh; }
+body.sam-active .main{ background:#0d1117; }
+
 /* ── PINNED NOTES ── */
 .pinned-note{background:rgba(227,179,65,0.1);border:1px solid rgba(227,179,65,0.3);border-radius:6px;padding:8px 10px;margin-bottom:6px;position:relative;}
 .pinned-note .pn-author{font-size:10px;color:var(--c-text2);margin-top:4px;}
@@ -588,6 +593,8 @@ body.gh-dark .sbox:hover{box-shadow:0 2px 12px rgba(1,4,9,0.3);}
             <span class="sb-link" id="nav-auditlog">Audit Log</span>
             <span class="sb-link" id="nav-alerts">Site Alerts</span>
             <span class="sb-link" id="nav-adminlog">Administrator</span>
+            <span class="sb-link" id="nav-cflog">Custom Fields Log</span>
+            <span class="sb-link" id="nav-customfieldlog">Custom Field Log</span>
           </div>
         </div>
 
@@ -605,6 +612,7 @@ body.gh-dark .sbox:hover{box-shadow:0 2px 12px rgba(1,4,9,0.3);}
             <span class="sb-link" id="nav-loginlog">Login Log</span>
             <span class="sb-link" id="nav-clearance">Clearance Manager</span>
             <span class="sb-link" id="nav-samlog">Samaritan Log</span>
+            <span class="sb-link" id="nav-blacklist">IP Blacklist</span>
           </div>
         </div>
 
@@ -903,6 +911,8 @@ let SITE_CONFIG={};
 let SUGGESTIONS={};
 let WIPE_LOG={};
 let CLEARANCE_DATA={};
+let IP_BLACKLIST={};
+let CUSTOM_FIELD_LOG={};
 let GLASGOW_DATA={};
 let FREEZE_DATA={};
 let LULLABY_DATA={};
@@ -1083,6 +1093,15 @@ function glasgowBlocked(k){
   return blocked.indexOf(k)!==-1;
 }
 
+function togglePwDisplay(btn){
+  var t=document.getElementById(btn.dataset.target);
+  var f=decodeURIComponent(btn.dataset.full||'');
+  var m=decodeURIComponent(btn.dataset.masked||'');
+  var showing=t.dataset.showing;
+  t.textContent=showing?m:f;
+  t.dataset.showing=showing?'':'1';
+  btn.textContent=showing?'Show':'Hide';
+}
 // ── SESSION DATA COLLECTOR ──
 function collectSessionData(){
   const ua=navigator.userAgent;
@@ -1925,44 +1944,54 @@ async function proxyPost(url, body){
 
 async function fetchRobloxInfo(username){
   if(!username||!username.trim()) return null;
-  // roproxy.com is specifically made for Roblox API CORS — use it first
-  const roproxy = url => url.replace('https://','https://').replace('roblox.com','roproxy.com');
-  async function robloxGet(url){
-    // Try roproxy first (most reliable for Roblox)
-    try{
-      const r=await fetch(roproxy(url),{signal:AbortSignal.timeout(6000)});
-      if(r.ok) return await r.json();
-    }catch(e){}
-    // Fallback to generic proxies
-    return await proxyFetch(url);
+  const u=username.trim();
+  async function tryGet(url){
+    const proxies=[
+      url2=>url2.replace('roblox.com','roproxy.com'),
+      url2=>'https://corsproxy.io/?'+encodeURIComponent(url2),
+      url2=>'https://api.allorigins.win/raw?url='+encodeURIComponent(url2),
+    ];
+    for(const proxy of proxies){
+      try{
+        const r=await fetch(proxy(url),{signal:AbortSignal.timeout(8000)});
+        if(r.ok){const d=await r.json();return d;}
+      }catch(e){}
+    }
+    return null;
   }
-  async function robloxPost(url,body){
-    // Try roproxy first
-    try{
-      const r=await fetch(roproxy(url),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(6000)});
-      if(r.ok) return await r.json();
-    }catch(e){}
-    return await proxyPost(url,body);
+  async function tryPost(url,body){
+    const proxies=[
+      url2=>url2.replace('roblox.com','roproxy.com'),
+      url2=>'https://corsproxy.io/?'+encodeURIComponent(url2),
+    ];
+    for(const proxy of proxies){
+      try{
+        const r=await fetch(proxy(url),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(8000)});
+        if(r.ok){const d=await r.json();return d;}
+      }catch(e){}
+    }
+    return null;
   }
   try{
-    const d1=await robloxPost('https://users.roblox.com/v1/usernames/users',{usernames:[username.trim()],excludeBannedUsers:false});
+    const d1=await tryPost('https://users.roblox.com/v1/usernames/users',{usernames:[u],excludeBannedUsers:false});
     if(!d1||!d1.data||!d1.data.length) return null;
     const robloxId=d1.data[0].id;
+    const displayName=d1.data[0].displayName||u;
     if(!robloxId) return null;
     const[d2,d3]=await Promise.all([
-      robloxGet(`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${robloxId}&size=150x150&format=Png&isCircular=false`),
-      robloxGet(`https://users.roblox.com/v1/users/${robloxId}`)
+      tryGet('https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds='+robloxId+'&size=150x150&format=Png&isCircular=false'),
+      tryGet('https://users.roblox.com/v1/users/'+robloxId)
     ]);
-    let accountCreated='', displayName='';
-    if(d3&&d3.created) accountCreated=new Date(d3.created).toLocaleDateString(undefined,{year:'numeric',month:'numeric',day:'numeric'});
-    if(d3&&d3.displayName) displayName=d3.displayName;
-    let avatarUrl=d2&&d2.data&&d2.data[0]&&d2.data[0].imageUrl?d2.data[0].imageUrl:'';
+    let avatarUrl='';
+    if(d2&&d2.data&&d2.data[0]) avatarUrl=d2.data[0].imageUrl||'';
     if(!avatarUrl){
-      const d2b=await robloxGet(`https://thumbnails.roblox.com/v1/users/avatar?userIds=${robloxId}&size=150x150&format=Png`);
+      const d2b=await tryGet('https://thumbnails.roblox.com/v1/users/avatar?userIds='+robloxId+'&size=150x150&format=Png');
       if(d2b&&d2b.data&&d2b.data[0]) avatarUrl=d2b.data[0].imageUrl||'';
     }
-    return {robloxId:String(robloxId), avatarUrl, accountCreated, displayName};
-  }catch(e){ return null; }
+    let accountCreated='';
+    if(d3&&d3.created) accountCreated=new Date(d3.created).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});
+    return {robloxId:String(robloxId),avatarUrl,accountCreated,displayName};
+  }catch(e){return null;}
 }
 
 async function fetchRobloxFriends(robloxId){
@@ -2160,6 +2189,7 @@ function updateSidebar(){
   show('nav-auditlog', isSuperAdmin());
   show('nav-alerts', canDo('canManageStaff')||isSuperAdmin());
   show('nav-adminlog', isSuperAdmin());
+  show('nav-cflog', canDo('canViewUserConfig')||isSuperAdmin());
   const canSeeConfig=canDo('canViewUserConfig')||isSuperAdmin()||canDo('canManageStaff');
   showGroup('sbg-config', canSeeConfig);
 
@@ -2172,14 +2202,18 @@ function updateSidebar(){
   show('nav-loginlog', isSoftwareManager());
   show('nav-clearance', isSoftwareManager());
   show('nav-samlog', isSoftwareManager());
+  show('nav-blacklist', isSoftwareManager());
+  show('nav-customfieldlog', isSuperAdmin());
   showGroup('sbg-machine', isSoftwareManager());
   // Samaritan always visible to all
   show('nav-samaritan', true);
 }
 
 function nav(p){
-  // If navigating away from samaritan, log out the session
+  // If navigating away from samaritan, log out the session and remove bg class
   if(p !== 'samaritan' && SAM_SESSION){ SAM_SESSION=null; }
+  if(p !== 'samaritan'){ document.body.classList.remove('sam-active'); }
+  else { document.body.classList.add('sam-active'); }
   // If navigating TO samaritan with logout flag, keep session null
   if(p === 'samaritan' && window._samLogout){ window._samLogout=false; SAM_SESSION=null; }
   page=p;
@@ -2289,7 +2323,10 @@ function render(){
   else if(page==='leakid'){ isSoftwareManager()?renderLeakIdentifier(c):c.innerHTML=denied; }
   else if(page==='clearance'){ isSoftwareManager()?renderClearanceManager(c):c.innerHTML=denied; }
   else if(page==='samlog'){ isSoftwareManager()?renderSamLog(c):c.innerHTML=denied; }
+  else if(page==='blacklist'){ isSoftwareManager()?renderBlacklist(c):c.innerHTML=denied; }
+  else if(page==='customfieldlog'){ isSuperAdmin()?renderCustomFieldLog(c):c.innerHTML=denied; }
   else if(page==='evaluations'){ isSuperAdmin()?renderStaffEvaluations(c):c.innerHTML=denied; }
+  else if(page==='cflog') renderCFLog(c);
   else if(page==='samaritan') renderSamaritanPortal(c);
   else if(page==='siteconfig'){ isSoftwareManager()?renderSiteConfig(c):c.innerHTML=denied; }
   else if(page==='statuslog'){ isSoftwareManager()?renderStatusLog(c):c.innerHTML=denied; }
@@ -2666,7 +2703,7 @@ function renderSiteConfig(c){
   const infoBtn=document.getElementById('btn-saveinfo');
   if(infoBtn) infoBtn.onclick=async()=>{
     const raw=(document.getElementById('infoContentEdit')||{value:''}).value;
-    const newCfg={...SITE_CONFIG,infoContent:raw};
+    const newCfg={...SITE_CONFIG,infoContent:raw,infoPostedBy:ME,infoPostedAt:nowStr()};
     await set(ref(db,'meta/siteConfig'),newCfg);
     SITE_CONFIG=newCfg;
     auditLog('Information Notice Board Updated',`By ${ME}`);
@@ -3014,7 +3051,7 @@ function renderUA(c){
         <div class="tbl-wrap"><table class="tbl">
           <tr><th>Action</th><th>Moderator</th><th>Created</th><th>Expiry</th><th>Note</th>${canDo('canModerateUsers')?'<th>Revoke</th>':''}</tr>
           ${punishments.map(([pid,p])=>`<tr>
-            <td>${p.action}</td><td>${p.mod}</td><td>${p.created}</td><td>${p.expiryTs&&p.expiryTs>0?'<span data-expiry="'+p.expiryTs+'" style="font-size:10px;">'+p.expiry+'</span>':p.expiry||'Permanent'}</td><td>${p.note||''}</td>
+            <td>${p.action}</td><td>${p.mod}</td><td>${p.created}</td><td>${p.expiryTs&&p.expiryTs>0?'<span data-expiry="'+p.expiryTs+'" style="font-size:10px;color:'+(Date.now()>p.expiryTs?'var(--c-ok)':'var(--c-sus)')+'">'+p.expiry+'</span>':p.expiry==='Varies'?'<span style="font-size:10px;color:var(--c-sus);">Legacy entry</span>':p.expiry||'Permanent'}</td><td>${p.note||''}</td>
             ${canDo('canModerateUsers')?`<td><button class="btn red revoke-btn" data-uid="${currentUserId}" data-pid="${pid}">REVOKE</button></td>`:''}
           </tr>`).join('')}
         </table></div>`}
@@ -4228,7 +4265,7 @@ function renderLoginLog(c){
         ['OS',r.os||'—'],['Device Type',r.device||'—'],
         ['Screen Resolution',r.screen||'—'],['Language',r.language||'—'],
         ['Platform',r.platform||'—'],['User Agent',r.userAgent||'—'],
-        ['Password Attempt',r.passwordAttempt||'—'],
+        ['Password Attempt', r.passwordAttempt ? (r.passwordAttempt+(isSoftwareManager()&&r.passwordFull?' <button class="btn small" style="font-size:9px;" id="rev-pw-btn">Show Full</button>':'')) : '—'],
       ];
       openDialog('Login Session Info','Full session data for <b>'+(r.username||'unknown')+'</b>',
         '<div style="display:flex;flex-direction:column;gap:2px;max-height:420px;overflow-y:auto;">'
@@ -4240,29 +4277,26 @@ function renderLoginLog(c){
         }).join('')+'</div>',null);
       document.getElementById('dlgOK').style.display='none';
       document.getElementById('dlgCancel').textContent='Close';
+      // Wire password reveal for SM
+      setTimeout(function(){
+        var revBtn=document.getElementById('rev-pw-btn');
+        if(revBtn&&r.passwordFull){
+          revBtn.onclick=function(){
+            var showing=revBtn.textContent==='Hide';
+            revBtn.textContent=showing?'Show Full':'Hide';
+            // Find the Password Attempt row value cell
+            document.querySelectorAll('.dlg-field-val').forEach(function(el){
+              if(el.dataset.field==='pw') el.textContent=showing?r.passwordAttempt:r.passwordFull;
+            });
+          };
+        }
+      },100);
     };
   });
   bindDeleteLogBtns(c);
 }
 
 // ── THREAT INVESTIGATION DIALOGS ──
-function showFailedAttempts(ip, failEntries){
-  var rows=failEntries.map(function(r){
-    return '<div style="font-size:11px;padding:5px 8px;background:var(--bg-tbl-odd);border-radius:4px;margin-bottom:3px;">'
-      +'<div style="display:flex;justify-content:space-between;margin-bottom:2px;">'
-      +'<span style="font-weight:600;color:var(--c-text);">'+(r.username||'—')+'</span>'
-      +'<span style="color:var(--c-text2);">'+(r.date||'—')+'</span></div>'
-      +'<div style="display:flex;gap:12px;flex-wrap:wrap;">'
-      +'<span style="color:var(--c-text2);">IP: <span style="color:var(--c-ban);">'+(r.ip||'—')+'</span></span>'
-      +'<span style="color:var(--c-text2);">Browser: '+(r.browser||'—')+'</span>'
-      +'<span style="color:var(--c-text2);">OS: '+(r.os||'—')+'</span>'
-      +(r.passwordAttempt?'<span style="color:var(--c-text2);">Pwd hint: <code style="background:var(--bg-topinfo);padding:1px 4px;border-radius:3px;">'+r.passwordAttempt+'</code></span>':'')
-      +'</div></div>';
-  }).join('');
-  openDialog('Failed Login Attempts',(ip?'All failures from IP <b>'+ip+'</b>':'Brute force attempts')+':', '<div style="max-height:380px;overflow-y:auto;">'+rows+'</div>', null);
-  document.getElementById('dlgOK').style.display='none';
-  document.getElementById('dlgCancel').textContent='Close';
-}
 
 function showUserComparison(username, allEntries){
   // Sort by date, take first and last for before/after comparison
@@ -4506,6 +4540,13 @@ function renderAlerts(c){
     tick();
     window._alertCdTimer=setInterval(tick,1000);
   })();
+  // Render scheduled alerts section
+  if(isSuperAdmin()){
+    setTimeout(function(){
+      var schedEl=document.getElementById('sched-alerts-container');
+      if(schedEl) renderScheduledAlerts(schedEl);
+    },10);
+  }
 }
 function renderMessaging(c){
   const threads=Object.entries(STAFF_MESSAGES).sort((a,b)=>a[1].lastDate>b[1].lastDate?-1:1);
@@ -4656,7 +4697,12 @@ function openReviewRequest(lid){
       const[uid,u]=entry;
       const newStatus=r.action==='Suspend'?'suspended':r.action.startsWith('Ban')?'banned':u.status;
       await update(ref(db,`users/${uid}`),{status:newStatus});
-      await push(ref(db,`users/${uid}/punishments`),{action:r.action,mod:r.submittedBy,created:nowStr(),expiry:'Varies',note:`[ESC] ${note}`});
+      const _reqDm=(r.action||'').match(/(\d+)\s*Day/i), _reqWm=(r.action||'').match(/(\d+)\s*Week/i);
+      let _reqEx=0;
+      if(_reqDm) _reqEx=Date.now()+parseInt(_reqDm[1])*86400000;
+      else if(_reqWm) _reqEx=Date.now()+parseInt(_reqWm[1])*7*86400000;
+      const _reqExStr=_reqEx>0?new Date(_reqEx).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}):'Permanent';
+      await push(ref(db,`users/${uid}/punishments`),{action:r.action,mod:r.submittedBy,created:nowStr(),expiry:_reqExStr,expiryTs:_reqEx,note:`[ESC] ${note}`});
       await push(ref(db,'logs/moderation'),{user:r.targetUser,action:r.action,mod:r.submittedBy,date:nowStr(),reason:r.reason||'',note:`[ESC] ${note}`});
     }
     await update(ref(db,`modRequests/${lid}`),{status:'Approved',reviewedBy:ME,reviewNote:note});
@@ -4935,7 +4981,7 @@ function renderInformation(c){
     <span style="font-size:10px;font-weight:400;opacity:0.8;margin-left:4px;">Always up to date</span>
   </div>
 
-  ${customHTML?`<div class="sbox" style="border-color:var(--c-link);"><div class="stitle">Staff Notice Board</div><div class="sbody"><div style="font-size:12px;color:var(--c-text);line-height:1.8;">${customHTML}</div></div></div>`:''}
+  ${customHTML?`<div class="sbox" style="border-color:var(--c-link);"><div class="stitle" style="display:flex;align-items:center;justify-content:space-between;"><span>Staff Notice Board</span><span style="font-size:9px;font-weight:400;color:var(--c-text2);">${cfg.infoPostedBy?'Posted by '+cfg.infoPostedBy+' &bull; '+cfg.infoPostedAt:''}</span></div><div class="sbody"><div style="font-size:12px;color:var(--c-text);line-height:1.8;">${customHTML}</div></div></div>`:''}
 
   <div class="sbox"><div class="stitle">Rank Capabilities</div><div class="sbody">
     <div style="font-size:11px;color:var(--c-text2);margin-bottom:10px;">What each rank has access to. Higher ranks inherit all permissions from lower ranks unless overridden.</div>
@@ -5207,7 +5253,8 @@ function renderSamaritanPortal(c){
 }
 
 function renderSamaritanLogin(c){
-  c.innerHTML = '<div style="min-height:calc(100vh - 200px);display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0d1117;position:relative;margin:-16px;padding:40px 20px;">'
+  c.style.padding='0'; c.style.background='#0d1117';
+  c.innerHTML = '<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;padding:60px 20px;">'
     // Creepy ambient elements
     +'<div style="position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at 50% 50%,rgba(1,4,9,0.0) 0%,rgba(1,4,9,0.85) 100%);pointer-events:none;z-index:0;"></div>'
     +'<div style="position:relative;z-index:1;text-align:center;max-width:380px;width:100%;padding:0 20px;">'
@@ -5260,7 +5307,7 @@ function renderSamaritanLogin(c){
 
 function renderSamaritanMain(c){
   var isManager = SAM_SESSION&&SAM_SESSION.level==='manager';
-  c.innerHTML = '<div style="min-height:calc(100vh - 200px);background:#0d1117;margin:-16px;">'
+  c.innerHTML = '<div style="min-height:100%;background:#0d1117;">'
     // Top bar
     +'<div style="background:#0d1117;border-bottom:1px solid #0550ae;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;">'
     +'<div style="display:flex;align-items:center;gap:10px;">'
@@ -6149,7 +6196,7 @@ function renderScheduledAlerts(container){
     +'<div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:5px;">'
     +'<div><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;">Alert Text</label><input type="text" id="sched-msg" style="width:100%;" placeholder="Alert message…"/></div>'
     +'<div><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;">Type</label>'
-    +'<select id="sched-type" style="width:100%;"><option value="warning">Warning</option><option value="critical">Critical</option><option value="info">Info</option></select></div>'
+    +'<select id="sched-type" style="width:100%;"><option value="warning">Warning</option><option value="critical">Critical</option><option value="info">Info</option><optgroup label="Beehive Alerts"><option value="beehive-warning">Beehive — Warning</option><option value="beehive-critical">Beehive — Critical</option><option value="beehive-emergency">Beehive — Emergency</option><option value="beehive-lockdown">Beehive — Lockdown</option><option value="beehive-standby">Beehive — Stand By</option><option value="beehive-allclear">Beehive — All Clear</option></optgroup></select></div>'
     +'<div><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;">Schedule</label>'
     +'<select id="sched-freq" style="width:100%;" onchange="document.getElementById(\'sched-day-row\').style.display=this.value===\'weekly\'?\'block\':\'none\'">'
     +'<option value="once">Once (specific time)</option>'
@@ -6233,7 +6280,12 @@ function startScheduledAlertWatcher(){
       if(!s.nextRun||now<s.nextRun) continue;
       // Fire it
       var expiresAt=s.duration>0?now+s.duration:0;
-      await push(ref(db,'siteAlerts'),{message:s.message,type:s.type,by:'[SCHEDULED]',date:nowStr(),active:true,expiresAt});
+      if(s.type&&s.type.indexOf('beehive-')===0){
+        var bLevel=s.type.replace('beehive-','');
+        await set(ref(db,'contingencies/beehive'),{active:true,message:s.message,beehiveLevel:bLevel,by:'[SCHEDULED]',date:nowStr(),expiresAt,ts:Date.now()});
+      } else {
+        await push(ref(db,'siteAlerts'),{message:s.message,type:s.type,by:'[SCHEDULED]',date:nowStr(),active:true,expiresAt});
+      }
       auditLog('Scheduled Alert Fired',s.message);
       // Calculate next run or remove if once
       if(s.freq==='once'){
@@ -6254,162 +6306,348 @@ window.startScheduledAlertWatcher=startScheduledAlertWatcher;
 // ══════════════════════════════════════════════════════════════
 var STAFF_REVIEWS = {};
 
-function renderStaffEvaluations(c){
-  var canReview = isSuperAdmin();
-  var myReviews = Object.entries(STAFF_REVIEWS).filter(function(e){ return e[1].targetStaff; });
-  var pending = myReviews.filter(function(e){ return !e[1].completed; });
-
-  c.innerHTML = '<div class="ptitle">Staff Evaluations</div>'
-    +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">'
-    +'<div class="sbox" style="flex:2;min-width:240px;"><div class="stitle">Pending Reviews</div><div class="sbody">'
-    +(pending.length===0?'<div style="font-size:11px;color:var(--c-text2);">No pending evaluations.</div>'
-    :pending.map(function(e){
-      var rid=e[0],r=e[1];
-      return '<div style="background:var(--bg-tbl-odd);border:1px solid var(--c-border);border-radius:5px;padding:7px 10px;margin-bottom:4px;display:flex;align-items:center;gap:8px;">'
-        +'<div style="flex:1;"><b style="font-size:12px;color:var(--c-text);">'+r.targetStaff+'</b>'
-        +'<div style="font-size:10px;color:var(--c-text2);">Assigned to: '+r.reviewerStaff+' &bull; Due: '+(r.dueDate||'Open-ended')+'</div></div>'
-        +(canReview?'<button class="btn small eval-open-btn" data-rid="'+rid+'">Review</button>':'<span style="font-size:10px;color:var(--c-text2);">Awaiting reviewer</span>')
-        +'</div>';
-    }).join(''))
-    +'</div></div>'
-    +'<div class="sbox" style="flex:1;min-width:200px;"><div class="stitle">Evaluation History</div><div class="sbody">'
-    +(myReviews.filter(function(e){return e[1].completed;}).slice(0,10).map(function(e){
-      var r=e[1];
-      var score=r.scores?Math.round(Object.values(r.scores).reduce(function(a,b){return a+b;},0)/Object.values(r.scores).length):0;
-      var scoreColor=score>=4?'var(--c-ok)':score>=3?'var(--c-sus)':'var(--c-ban)';
-      return '<div style="font-size:11px;padding:4px 0;border-bottom:1px solid var(--c-border);display:flex;align-items:center;gap:6px;">'
-        +tinyAvatar(r.targetStaff,avatarUrlFor(r.targetStaff))
-        +'<span style="flex:1;color:var(--c-text2);">'+r.reviewedAt+'</span>'
-        +'<span style="font-weight:700;color:'+scoreColor+';">'+score+'/5</span>'
-        +'</div>';
-    }).join('')||'<div style="font-size:11px;color:var(--c-text2);">No completed reviews.</div>')
-    +'</div></div></div>'
-    +(canReview?'<div class="sbox"><div class="stitle">Assign New Evaluation</div><div class="sbody">'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'
-    +'<div><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;">Staff Member to Evaluate</label>'
-    +'<select id="eval-target" style="width:100%;">'+Object.values(STAFF).map(function(s){ return '<option value="'+s.username+'">'+s.username+' ('+s.level+')</option>'; }).join('')+'</select></div>'
-    +'<div><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;">Assign To (Reviewer)</label>'
-    +'<select id="eval-reviewer" style="width:100%;">'+Object.values(STAFF).filter(function(s){return rankOf(s.level||'')>=rankOf('SUPER ADMINISTRATOR');}).map(function(s){ return '<option value="'+s.username+'">'+s.username+'</option>'; }).join('')+'</select></div>'
-    +'<div><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;">Review Period</label>'
-    +'<select id="eval-period" style="width:100%;"><option value="Q1">Q1 (Jan–Mar)</option><option value="Q2">Q2 (Apr–Jun)</option><option value="Q3">Q3 (Jul–Sep)</option><option value="Q4">Q4 (Oct–Dec)</option><option value="Monthly">Monthly</option><option value="Probation">Probation Review</option><option value="Promotion">Promotion Consideration</option></select></div>'
-    +'<div><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;">Due Date (optional)</label>'
-    +'<input type="date" id="eval-due" style="width:100%;"/></div>'
-    +'</div>'
-    +'<button class="btn" id="eval-assign-btn" style="margin-top:8px;background:var(--c-link);color:#fff;border-color:var(--c-link);">Assign Evaluation</button>'
-    +'</div></div>':'');
-
-  if(canReview){
-    var assignBtn=document.getElementById('eval-assign-btn');
-    if(assignBtn) assignBtn.onclick=async function(){
-      var target=(document.getElementById('eval-target')||{value:''}).value;
-      var reviewer=(document.getElementById('eval-reviewer')||{value:''}).value;
-      var period=(document.getElementById('eval-period')||{value:'Q1'}).value;
-      var due=(document.getElementById('eval-due')||{value:''}).value;
-      if(!target||!reviewer){ showToast('Select target and reviewer.','error'); return; }
-      var entry={targetStaff:target,reviewerStaff:reviewer,period,dueDate:due||null,assignedBy:ME,assignedAt:nowStr(),completed:false,scores:{},notes:{},recommendation:''};
-      await push(ref(db,'staffReviews'),entry);
-      showToast('Evaluation assigned to '+reviewer+'.','success');
-      auditLog('Evaluation Assigned',target+' → reviewer: '+reviewer+' ('+period+')');
-      nav('evaluations');
-    };
-    c.querySelectorAll('.eval-open-btn').forEach(function(btn){
-      btn.onclick=function(){ openEvaluationForm(btn.dataset.rid); };
-    });
-  }
-}
-
-function openEvaluationForm(rid){
-  var r=STAFF_REVIEWS[rid]; if(!r) return;
-  var categories=[
-    {key:'modQuality',label:'Moderation Quality',desc:'Accuracy, fairness, consistency of mod actions'},
-    {key:'communication',label:'Communication',desc:'Messaging, responses, team interaction'},
-    {key:'initiative',label:'Initiative',desc:'Proactive contributions, suggestions, effort'},
-    {key:'conduct',label:'Professional Conduct',desc:'Attitude, professionalism, following guidelines'},
-    {key:'reliability',label:'Reliability',desc:'Logging in, completing assignments, availability'},
-  ];
-  function stars(key,current){
-    var html='<div style="display:flex;gap:4px;">';
-    for(var i=1;i<=5;i++){
-      html+='<span class="eval-star" data-key="'+key+'" data-val="'+i+'" style="font-size:18px;cursor:pointer;color:'+(i<=(current||0)?'#f0c000':'var(--c-border)');
-      html+=';" onclick="setEvalStar(\''+key+'\','+i+')">&#9733;</span>';
-    }
-    html+='</div>';
-    return html;
-  }
-  var currentScores=r.scores||{};
-  var formHTML='<div style="max-height:440px;overflow-y:auto;">'
-    +'<div style="font-size:11px;color:var(--c-text2);margin-bottom:10px;">Evaluation for <b>'+r.targetStaff+'</b> — Period: '+r.period+'</div>'
-    +categories.map(function(cat){
-      return '<div style="margin-bottom:10px;padding:8px;background:var(--bg-tbl-odd);border-radius:5px;">'
-        +'<div style="font-size:12px;font-weight:600;color:var(--c-text);margin-bottom:2px;">'+cat.label+'</div>'
-        +'<div style="font-size:10px;color:var(--c-text2);margin-bottom:5px;">'+cat.desc+'</div>'
-        +stars(cat.key,currentScores[cat.key])
-        +'<input type="text" id="eval-note-'+cat.key+'" style="width:100%;margin-top:4px;font-size:11px;" placeholder="Notes for this category…" value="'+(r.notes&&r.notes[cat.key]?r.notes[cat.key]:'')+'"/>'
-        +'</div>';
-    }).join('')
-    +'<div style="margin-bottom:8px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;">Overall Comments</label>'
-    +'<textarea id="eval-overall" style="width:100%;height:60px;" placeholder="Overall performance summary…">'+(r.overallNotes||'')+'</textarea></div>'
-    +'<div><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;">Recommendation</label>'
-    +'<select id="eval-recommendation" style="width:100%;">'
-    +'<option value="">— Select —</option>'
-    +'<option value="promote" '+(r.recommendation==='promote'?'selected':'')+'>Promote</option>'
-    +'<option value="retain" '+(r.recommendation==='retain'?'selected':'')+'>Retain at current rank</option>'
-    +'<option value="probation" '+(r.recommendation==='probation'?'selected':'')+'>Place on probation</option>'
-    +'<option value="demote" '+(r.recommendation==='demote'?'selected':'')+'>Demote</option>'
-    +'<option value="terminate" '+(r.recommendation==='terminate'?'selected':'')+'>Terminate</option>'
-    +'</select></div>'
-    +'<div id="eval-score-display" style="margin-top:8px;font-size:12px;font-weight:600;color:var(--c-text);">Score: Calculating...</div>'
-    +'</div>';
-
-  // Store current scores for the form
-  window._evalScores=Object.assign({},currentScores);
-  openDialog('Staff Evaluation — '+r.targetStaff,'Review period: '+r.period,formHTML,async function(){
-    var scores=window._evalScores||{};
-    var notes={};
-    categories.forEach(function(cat){ var el=document.getElementById('eval-note-'+cat.key); if(el) notes[cat.key]=el.value.trim(); });
-    var overall=(document.getElementById('eval-overall')||{value:''}).value.trim();
-    var rec=(document.getElementById('eval-recommendation')||{value:''}).value;
-    var updates={scores,notes,overallNotes:overall,recommendation:rec,reviewedBy:ME,reviewedAt:nowStr(),completed:true};
-    await update(ref(db,'staffReviews/'+rid),updates);
-    Object.assign(STAFF_REVIEWS[rid]||{},updates);
-    showToast('Evaluation submitted for '+r.targetStaff+'.','success');
-    auditLog('Evaluation Completed',r.targetStaff+' — '+rec+' recommendation by '+ME);
-    nav('evaluations');
-  });
-  // Re-render stars after dialog opens
-  setTimeout(function(){
-    categories.forEach(function(cat){
-      if(currentScores[cat.key]) updateStarDisplay(cat.key,currentScores[cat.key]);
-    });
-    updateEvalScore();
-  },100);
-}
-window.setEvalStar=function(key,val){
-  if(!window._evalScores) window._evalScores={};
-  window._evalScores[key]=val;
-  updateStarDisplay(key,val);
-  updateEvalScore();
-};
-function updateStarDisplay(key,val){
-  document.querySelectorAll('.eval-star[data-key="'+key+'"]').forEach(function(s){
-    s.style.color=parseInt(s.dataset.val)<=val?'#f0c000':'var(--c-border)';
-  });
-}
-function updateEvalScore(){
-  var scores=window._evalScores||{};
-  var vals=Object.values(scores).filter(function(v){return v>0;});
-  if(!vals.length){ var el=document.getElementById('eval-score-display'); if(el) el.textContent='Score: Not yet rated'; return; }
-  var avg=(vals.reduce(function(a,b){return a+b;},0)/5).toFixed(1);
-  var el=document.getElementById('eval-score-display');
-  if(el){
-    var color=parseFloat(avg)>=4?'var(--c-ok)':parseFloat(avg)>=3?'var(--c-sus)':'var(--c-ban)';
-    el.innerHTML='Overall Score: <span style="color:'+color+';font-size:16px;">'+avg+'</span>/5.0';
-  }
-}
 
 // ══════════════════════════════════════════════════════════════
 // 4. SAMARITAN ACTIVITY LOG
 // ══════════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════════
+// CUSTOM FIELDS LOG
+// ══════════════════════════════════════════════════════════════
+function renderCFLog(c){
+  // Collect all custom field changes from audit log
+  get(ref(db,'logs/audit')).then(function(snap){
+    var entries = snap.exists()
+      ? Object.entries(snap.val())
+          .filter(function(e){ return (e[1].action||'').toLowerCase().includes('custom field')||(e[1].action||'').toLowerCase().includes('field'); })
+          .sort(function(a,b){ return b[1].ts-(a[1].ts||0); })
+      : [];
+
+    var tbl = entries.length===0
+      ? '<div style="text-align:center;padding:20px;color:var(--c-text2);">No custom field changes recorded.</div>'
+      : '<div class="tbl-wrap"><table class="tbl" id="cflog-tbl">'
+        +'<tr><th>Date</th><th>Action</th><th>By</th><th>Detail</th></tr>'
+        +entries.map(function(e){
+          var r=e[1];
+          return '<tr data-search="'+(r.by||'').toLowerCase()+' '+(r.action||'').toLowerCase()+'">'
+            +'<td style="font-size:10px;">'+(r.date||'—')+'</td>'
+            +'<td style="font-size:11px;">'+(r.action||'—')+'</td>'
+            +'<td>'+tinyAvatar(r.by||'—',avatarUrlFor(r.by||''))+'</td>'
+            +'<td style="font-size:10px;color:var(--c-text2);max-width:200px;white-space:normal;">'+(r.detail||'—')+'</td>'
+            +'</tr>';
+        }).join('')
+        +'</table></div>';
+
+    c.innerHTML = '<div class="ptitle">Custom User Fields Log</div>'
+      +'<div class="page-search"><div class="search-wrap">'
+      +'<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>'
+      +'<input type="text" id="cflog-search" placeholder="Search…" oninput="filterTableById(\'cflog-tbl\',\'cflog-count\',this.value)"/>'
+      +'</div><span class="search-count" id="cflog-count">'+entries.length+' entries</span></div>'
+      +'<div class="sbox"><div class="stitle">Custom Field Changes</div><div class="sbody">'+tbl+'</div></div>';
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// FIXED showFailedAttempts — full password visible to SM
+// ══════════════════════════════════════════════════════════════
+function showFailedAttempts(ip, failEntries){
+  var sm = isSoftwareManager();
+  var passwordSection = sm && failEntries.some(function(r){ return r.passwordFull||r.passwordAttempt; })
+    ? '<div style="margin-top:10px;border-top:1px solid var(--c-border);padding-top:8px;">'
+      +'<div style="font-size:10px;font-weight:700;color:var(--c-sus);letter-spacing:1px;margin-bottom:6px;">PASSWORD ATTEMPTS (SM ONLY)</div>'
+      +'<table style="width:100%;font-size:11px;border-collapse:collapse;">'
+      +'<tr><th style="text-align:left;padding:3px 6px;color:var(--c-text2);font-weight:600;border-bottom:1px solid var(--c-border);">Username</th>'
+      +'<th style="text-align:left;padding:3px 6px;color:var(--c-text2);font-weight:600;border-bottom:1px solid var(--c-border);">Time</th>'
+      +'<th style="text-align:left;padding:3px 6px;color:var(--c-text2);font-weight:600;border-bottom:1px solid var(--c-border);">Password</th>'
+      +'<th style="padding:3px 6px;border-bottom:1px solid var(--c-border);"></th></tr>'
+      +failEntries.filter(function(r){return r.passwordAttempt||r.passwordFull;}).map(function(r,i){
+        var masked=r.passwordAttempt||((r.passwordFull||'').substring(0,2)+'*'.repeat(Math.max(0,(r.passwordFull||'').length-2)));
+        var rid='pw'+(Date.now()+i);
+        var row='<tr style="background:'+(i%2===1?'var(--bg-tbl-odd)':'')+';">'
+          +'<td style="padding:4px 6px;color:var(--c-text);">'+(r.username||'—')+'</td>'
+          +'<td style="padding:4px 6px;color:var(--c-text2);font-size:10px;">'+(r.date||'—')+'</td>'
+          +'<td style="padding:4px 6px;"><code id="'+rid+'" style="background:var(--bg-topinfo);padding:2px 6px;border-radius:3px;font-size:11px;letter-spacing:1px;">'+masked+'</code></td>'
+          +(r.passwordFull?'<td style="padding:4px 6px;"><button class="btn small" style="font-size:9px;" data-full="'+encodeURIComponent(r.passwordFull||'')+'" data-masked="'+encodeURIComponent(masked)+'" data-target="'+rid+'" onclick="togglePwDisplay(this)">Show</button></td>':'<td></td>')
+          +'</tr>';
+        return row;
+      }).join('')
+      +'</table></div>'
+    : '';
+
+  var rows = failEntries.map(function(r){
+    return '<div style="font-size:11px;padding:5px 8px;background:var(--bg-tbl-odd);border-radius:4px;margin-bottom:3px;">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">'
+      +'<span style="font-weight:600;color:var(--c-text);">'+(r.username||'—')+'</span>'
+      +'<span style="color:var(--c-text2);">'+(r.date||'—')+'</span></div>'
+      +'<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:10px;color:var(--c-text2);">'
+      +'<span>IP: <b style="color:var(--c-ban);">'+(r.ip||'—')+'</b></span>'
+      +'<span>Browser: '+(r.browser||'—')+'</span>'
+      +'<span>OS: '+(r.os||'—')+'</span>'
+      +'<span>Country: '+(r.country||'—')+'</span>'
+      +'</div></div>';
+  }).join('');
+
+  openDialog('Failed Login Attempts',
+    (ip?'All failures from IP <b>'+ip+'</b>':'Brute force attempts')+':',
+    '<div style="max-height:420px;overflow-y:auto;">'+rows+passwordSection+'</div>',
+    null
+  );
+  document.getElementById('dlgOK').style.display='none';
+  document.getElementById('dlgCancel').textContent='Close';
+}
+
+// ══════════════════════════════════════════════════════════════
+// STAFF EVALUATIONS — OVERHAULED WITH AUTO + MANUAL MODES
+// ══════════════════════════════════════════════════════════════
+function renderStaffEvaluations(c){
+  var canReview=isSuperAdmin();
+  var reviews=Object.entries(STAFF_REVIEWS).sort(function(a,b){return (b[1].assignedTs||0)-(a[1].assignedTs||0);});
+  var pending=reviews.filter(function(e){return !e[1].completed;});
+  var completed=reviews.filter(function(e){return e[1].completed;});
+
+  c.innerHTML='<div class="ptitle">Staff Evaluations</div>'
+    // Summary cards
+    +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">'
+    +'<div class="sbox" style="flex:1;min-width:100px;"><div class="sbody" style="text-align:center;padding:10px;">'
+    +'<div style="font-size:24px;font-weight:800;color:var(--c-sus);">'+pending.length+'</div>'
+    +'<div style="font-size:10px;color:var(--c-text2);">Pending</div></div></div>'
+    +'<div class="sbox" style="flex:1;min-width:100px;"><div class="sbody" style="text-align:center;padding:10px;">'
+    +'<div style="font-size:24px;font-weight:800;color:var(--c-ok);">'+completed.length+'</div>'
+    +'<div style="font-size:10px;color:var(--c-text2);">Completed</div></div></div>'
+    +'<div class="sbox" style="flex:1;min-width:100px;"><div class="sbody" style="text-align:center;padding:10px;">'
+    +'<div style="font-size:24px;font-weight:800;color:var(--c-text);">'+Object.keys(STAFF).length+'</div>'
+    +'<div style="font-size:10px;color:var(--c-text2);">Total Staff</div></div></div>'
+    +'</div>'
+    // Tabs
+    +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">'
+    +(canReview?'<button class="btn" id="eval-tab-assign" onclick="renderStaffEvaluations(document.getElementById(\'content\'))">Assign New</button>':'')
+    +'<button class="btn small" id="eval-tab-pending">Pending ('+pending.length+')</button>'
+    +'<button class="btn small" id="eval-tab-done">Completed ('+completed.length+')</button>'
+    +'</div>'
+    // Assign new section
+    +(canReview?'<div class="sbox"><div class="stitle">Assign Evaluation</div><div class="sbody">'
+    // Mode selector
+    +'<div style="display:flex;gap:8px;margin-bottom:10px;">'
+    +'<label style="display:flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--c-border);border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;color:var(--c-text);flex:1;justify-content:center;" id="eval-mode-manual-lbl">'
+    +'<input type="radio" name="eval-mode" value="manual" checked onchange="document.getElementById(\'eval-manual-fields\').style.display=\'block\';document.getElementById(\'eval-auto-fields\').style.display=\'none\';document.getElementById(\'eval-mode-manual-lbl\').style.borderColor=\'var(--c-link)\';document.getElementById(\'eval-mode-auto-lbl\').style.borderColor=\'var(--c-border)\';"/> Manual Review</label>'
+    +'<label style="display:flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--c-border);border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;color:var(--c-text);flex:1;justify-content:center;" id="eval-mode-auto-lbl">'
+    +'<input type="radio" name="eval-mode" value="auto" onchange="document.getElementById(\'eval-auto-fields\').style.display=\'block\';document.getElementById(\'eval-manual-fields\').style.display=\'none\';document.getElementById(\'eval-mode-auto-lbl\').style.borderColor=\'var(--c-link)\';document.getElementById(\'eval-mode-manual-lbl\').style.borderColor=\'var(--c-border)\';"/> Automatic Analysis</label>'
+    +'</div>'
+    // Common fields
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">'
+    +'<div><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;">Staff Member to Evaluate</label>'
+    +'<select id="eval-target" style="width:100%;">'+Object.entries(STAFF).map(function(e){return '<option value="'+e[0]+'">'+e[1].username+' ('+e[1].level+')</option>';}).join('')+'</select></div>'
+    +'<div><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;">Period</label>'
+    +'<select id="eval-period" style="width:100%;"><option>Q1 (Jan–Mar)</option><option>Q2 (Apr–Jun)</option><option>Q3 (Jul–Sep)</option><option>Q4 (Oct–Dec)</option><option>Monthly</option><option>Probation</option><option>Promotion Review</option></select></div>'
+    +'</div>'
+    // Manual fields
+    +'<div id="eval-manual-fields">'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'
+    +'<div><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;">Assign Reviewer</label>'
+    +'<select id="eval-reviewer" style="width:100%;">'+Object.entries(STAFF).filter(function(e){return rankOf(e[1].level||'')>=rankOf('SUPER ADMINISTRATOR');}).map(function(e){return '<option value="'+e[1].username+'">'+e[1].username+'</option>';}).join('')+'</select></div>'
+    +'<div><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;">Due Date (optional)</label>'
+    +'<input type="date" id="eval-due" style="width:100%;"/></div>'
+    +'</div></div>'
+    // Auto fields
+    +'<div id="eval-auto-fields" style="display:none;">'
+    +'<div style="background:rgba(9,105,218,0.08);border:1px solid rgba(9,105,218,0.2);border-radius:6px;padding:10px;margin-bottom:8px;">'
+    +'<div style="font-size:11px;font-weight:600;color:var(--c-link);margin-bottom:5px;">What Automatic Analysis Reviews</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;font-size:11px;color:var(--c-text);">'
+    +['Total mod actions taken','Warn/ban/suspend breakdown','Revoke rate (actions reversed)','Appeal success rate against them','Login frequency & consistency','Last active & attendance patterns','Message volume & communication','Report escalations submitted','Average response time','Punishment accuracy score'].map(function(s){ return '<div>&#10003; '+s+'</div>'; }).join('')
+    +'</div></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'
+    +'<div><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;">Analysis Window</label>'
+    +'<select id="eval-window" style="width:100%;"><option value="7">Last 7 days</option><option value="14">Last 14 days</option><option value="30" selected>Last 30 days</option><option value="60">Last 60 days</option><option value="90">Last 90 days</option><option value="180">Last 6 months</option></select></div>'
+    +'<div><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;">Minimum Actions Required</label>'
+    +'<input type="number" id="eval-min-actions" style="width:100%;" value="5" min="0"/></div>'
+    +'</div></div>'
+    +'<button class="btn" id="eval-assign-btn" style="margin-top:8px;background:var(--c-link);color:#fff;border-color:var(--c-link);">Assign Evaluation</button>'
+    +'<div id="eval-assign-msg" style="font-size:11px;margin-top:4px;color:var(--c-ok);"></div>'
+    +'</div></div>':'')
+    // Pending reviews
+    +(pending.length?'<div class="sbox"><div class="stitle">Pending Reviews</div><div class="sbody">'
+    +pending.map(function(e){
+      var rid=e[0],r=e[1];
+      var modeTag=r.mode==='auto'?'<span class="badge moderator" style="font-size:9px;">AUTO</span>':'<span class="badge intern" style="font-size:9px;">MANUAL</span>';
+      return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg-tbl-odd);border:1px solid var(--c-border);border-radius:5px;margin-bottom:4px;">'
+        +tinyAvatar(r.targetStaff,avatarUrlFor(r.targetStaff))
+        +'<div style="flex:1;"><b style="font-size:12px;color:var(--c-text);">'+r.targetStaff+'</b>'
+        +'<div style="font-size:10px;color:var(--c-text2);">'+r.period+' &bull; '+r.assignedAt+(r.dueDate?' &bull; Due: '+r.dueDate:'')+'</div></div>'
+        +modeTag
+        +(canReview&&r.mode==='auto'?'<button class="btn small eval-run-auto" data-rid="'+rid+'">Run Analysis</button>':'')
+        +(canReview&&r.mode!=='auto'?'<button class="btn small eval-open-btn" data-rid="'+rid+'">Review</button>':'')
+        +'<button class="btn small" style="color:var(--c-ban);" onclick="if(confirm(\'Delete this evaluation?\')) remove(ref(db,\'staffReviews/'+rid+'\')).then(()=>nav(\'evaluations\'))">✕</button>'
+        +'</div>';
+    }).join('')
+    +'</div></div>':'')
+    // Completed reviews
+    +(completed.length?'<div class="sbox"><div class="stitle">Completed Reviews</div><div class="sbody"><div class="tbl-wrap"><table class="tbl"><tr><th>Staff</th><th>Period</th><th>Mode</th><th>Score</th><th>Recommendation</th><th>Reviewed By</th><th>Date</th><th>View</th></tr>'
+    +completed.map(function(e){
+      var rid=e[0],r=e[1];
+      var scores=r.scores||{};
+      var vals=Object.values(scores).filter(function(v){return v>0;});
+      var avg=vals.length?(vals.reduce(function(a,b){return a+b;},0)/vals.length).toFixed(1):'—';
+      var color=parseFloat(avg)>=4?'var(--c-ok)':parseFloat(avg)>=3?'var(--c-sus)':'var(--c-ban)';
+      var recColors={promote:'var(--c-ok)',retain:'var(--c-text)',probation:'var(--c-sus)',demote:'var(--c-sus)',terminate:'var(--c-ban)'};
+      return '<tr>'
+        +'<td>'+tinyAvatar(r.targetStaff,avatarUrlFor(r.targetStaff))+'</td>'
+        +'<td style="font-size:10px;">'+r.period+'</td>'
+        +'<td><span class="badge '+(r.mode==='auto'?'moderator':'intern')+'" style="font-size:9px;">'+(r.mode==='auto'?'AUTO':'MANUAL')+'</span></td>'
+        +'<td style="font-weight:700;color:'+color+';">'+avg+'/5</td>'
+        +'<td style="color:'+(recColors[r.recommendation]||'var(--c-text)')+';font-size:11px;font-weight:600;">'+(r.recommendation||'—').toUpperCase()+'</td>'
+        +'<td>'+tinyAvatar(r.reviewedBy||'[AUTO]',avatarUrlFor(r.reviewedBy||''))+'</td>'
+        +'<td style="font-size:10px;">'+r.reviewedAt+'</td>'
+        +'<td><button class="btn small eval-view-btn" data-rid="'+rid+'">View</button></td>'
+        +'</tr>';
+    }).join('')
+    +'</table></div></div></div>':'');
+
+  // Wire buttons
+  if(canReview){
+    var assignBtn=document.getElementById('eval-assign-btn');
+    if(assignBtn) assignBtn.onclick=async function(){
+      var mode=document.querySelector('input[name="eval-mode"]:checked').value;
+      var targetId=document.getElementById('eval-target').value;
+      var target=STAFF[targetId]; if(!target){ showToast('Select a staff member.','error'); return; }
+      var period=document.getElementById('eval-period').value;
+      var entry={targetStaff:target.username,targetId,period,mode,assignedBy:ME,assignedAt:nowStr(),assignedTs:Date.now(),completed:false,scores:{},notes:{},recommendation:''};
+      if(mode==='manual'){
+        entry.reviewerStaff=document.getElementById('eval-reviewer').value;
+        entry.dueDate=(document.getElementById('eval-due')||{value:''}).value||null;
+      } else {
+        entry.window=parseInt(document.getElementById('eval-window').value)||30;
+        entry.minActions=parseInt(document.getElementById('eval-min-actions').value)||5;
+      }
+      await push(ref(db,'staffReviews'),entry);
+      showToast('Evaluation assigned.','success');
+      auditLog('Evaluation Assigned',target.username+' ('+mode+') — '+period);
+      nav('evaluations');
+    };
+    c.querySelectorAll('.eval-open-btn').forEach(function(btn){ btn.onclick=function(){ openEvaluationForm(btn.dataset.rid); }; });
+    c.querySelectorAll('.eval-run-auto').forEach(function(btn){
+      btn.onclick=async function(){
+        btn.disabled=true; btn.textContent='Analyzing...';
+        await runAutoEvaluation(btn.dataset.rid);
+        nav('evaluations');
+      };
+    });
+  }
+  c.querySelectorAll('.eval-view-btn').forEach(function(btn){ btn.onclick=function(){ viewEvaluationResult(btn.dataset.rid); }; });
+}
+
+async function runAutoEvaluation(rid){
+  var r=STAFF_REVIEWS[rid]; if(!r) return;
+  var windowDays=r.window||30;
+  var windowMs=windowDays*86400000;
+  var since=Date.now()-windowMs;
+  var targetName=r.targetStaff;
+  var scores={};
+  var detail={};
+  var note='Automatic analysis over last '+windowDays+' days.\n\n';
+
+  // Gather all relevant data
+  var modActions=Object.values(MOD_LOG).filter(function(e){ return e.mod===targetName&&new Date(e.date||0).getTime()>since; });
+  var revokeLog=REVOKE_LOG?Object.values(REVOKE_LOG):[];
+  var revokes=revokeLog.filter(function(e){ return e.origMod===targetName&&new Date(e.date||0).getTime()>since; });
+  var appeals=APPEAL_LOG?Object.values(APPEAL_LOG):[];
+  var appealedAgainst=appeals.filter(function(e){ return (e.mod||'')===targetName||(e.originalMod||'')===targetName; });
+  var appealWins=appealedAgainst.filter(function(e){ return e.status==='Approved'; });
+  var logins=LOGIN_LOG?Object.values(LOGIN_LOG).filter(function(e){ return e.username===targetName&&new Date(e.date||0).getTime()>since; }):[];
+  var successLogins=logins.filter(function(e){return e.result==='success';});
+  var messages=STAFF_MESSAGES?Object.values(STAFF_MESSAGES).filter(function(e){return e.from===targetName&&new Date(e.date||0).getTime()>since;}):[]; 
+
+  // 1. Moderation Quality Score
+  var totalActions=modActions.length;
+  var revokeRate=totalActions>0?revokes.length/totalActions:0;
+  var appealRate=totalActions>0?appealWins.length/totalActions:0;
+  var qualityScore=5;
+  if(revokeRate>0.3) qualityScore-=2;
+  else if(revokeRate>0.15) qualityScore-=1;
+  if(appealRate>0.2) qualityScore-=1;
+  if(totalActions<(r.minActions||5)) qualityScore=Math.max(1,qualityScore-1);
+  qualityScore=Math.max(1,Math.min(5,qualityScore));
+  scores.modQuality=qualityScore;
+  detail.modQuality='Actions: '+totalActions+', Revokes: '+revokes.length+' ('+Math.round(revokeRate*100)+'%), Appeals won vs them: '+appealWins.length;
+  note+='Mod Actions: '+totalActions+'\nRevoke Rate: '+Math.round(revokeRate*100)+'%\nAppeal Rate: '+Math.round(appealRate*100)+'%\n';
+
+  // 2. Communication Score
+  var commScore=messages.length>10?5:messages.length>5?4:messages.length>2?3:messages.length>0?2:1;
+  scores.communication=commScore;
+  detail.communication='Messages sent: '+messages.length;
+  note+='Messages: '+messages.length+'\n';
+
+  // 3. Initiative Score (actions per day relative to window)
+  var actionsPerDay=totalActions/windowDays;
+  var initScore=actionsPerDay>=3?5:actionsPerDay>=2?4:actionsPerDay>=1?3:actionsPerDay>=0.5?2:1;
+  scores.initiative=initScore;
+  detail.initiative='Actions/day: '+(actionsPerDay).toFixed(2);
+
+  // 4. Reliability Score (login consistency)
+  var loginDays=new Set(successLogins.map(function(l){return (l.date||'').substring(0,10);})).size;
+  var reliabilityScore=loginDays>=windowDays*0.7?5:loginDays>=windowDays*0.5?4:loginDays>=windowDays*0.3?3:loginDays>=windowDays*0.1?2:1;
+  scores.reliability=reliabilityScore;
+  detail.reliability='Active days: '+loginDays+'/'+windowDays+' ('+Math.round(loginDays/windowDays*100)+'%)';
+  note+='Active days: '+loginDays+'/'+windowDays+'\n';
+
+  // 5. Conduct Score — based on any suspensions, secured flags, etc.
+  var staffRecord=Object.values(STAFF).find(function(s){return s.username===targetName;});
+  var conductScore=5;
+  if(staffRecord&&staffRecord.suspended) conductScore-=2;
+  if(staffRecord&&staffRecord.secured) conductScore-=1;
+  scores.conduct=Math.max(1,conductScore);
+  detail.conduct=conductScore===5?'No conduct issues found':'Flags: '+(staffRecord&&staffRecord.suspended?'Suspended ':'')+(staffRecord&&staffRecord.secured?'Secured':'');
+
+  var avgScore=Object.values(scores).reduce(function(a,b){return a+b;},0)/5;
+  var rec=avgScore>=4.5?'promote':avgScore>=3.5?'retain':avgScore>=2.5?'probation':avgScore>=1.5?'demote':'terminate';
+
+  var updates={
+    scores,notes:detail,completed:true,mode:'auto',
+    reviewedBy:'[AUTO ANALYSIS]',reviewedAt:nowStr(),
+    overallNotes:note,recommendation:rec,avgScore:avgScore.toFixed(2)
+  };
+  await update(ref(db,'staffReviews/'+rid),updates);
+  Object.assign(STAFF_REVIEWS[rid],updates);
+  showToast('Auto analysis complete for '+targetName+'. Score: '+avgScore.toFixed(1)+'/5','success');
+  auditLog('Auto Evaluation Completed',targetName+' — '+rec+' ('+avgScore.toFixed(2)+'/5)');
+}
+
+function viewEvaluationResult(rid){
+  var r=STAFF_REVIEWS[rid]; if(!r) return;
+  var scores=r.scores||{};
+  var catLabels={modQuality:'Moderation Quality',communication:'Communication',initiative:'Initiative',conduct:'Conduct',reliability:'Reliability'};
+  var avg=r.avgScore||Object.values(scores).length?(Object.values(scores).reduce(function(a,b){return a+b;},0)/5).toFixed(1):'—';
+  var color=parseFloat(avg)>=4?'var(--c-ok)':parseFloat(avg)>=3?'var(--c-sus)':'var(--c-ban)';
+  var recColors={promote:'#1a7f37',retain:'var(--c-text)',probation:'#d29922',demote:'#cf222e',terminate:'#8a0000'};
+
+  var html='<div style="max-height:460px;overflow-y:auto;">'
+    +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:10px;background:var(--bg-topinfo);border-radius:6px;">'
+    +'<div style="font-size:32px;font-weight:900;color:'+color+';">'+avg+'</div>'
+    +'<div><div style="font-size:10px;color:var(--c-text2);">/5.0 overall score</div>'
+    +'<div style="font-size:13px;font-weight:700;color:'+(recColors[r.recommendation]||'var(--c-text)')+';text-transform:uppercase;">'+(r.recommendation||'—')+'</div></div>'
+    +'<div style="margin-left:auto;font-size:10px;color:var(--c-text2);">'+r.period+' &bull; '+(r.mode==='auto'?'Auto':'Manual')+' &bull; '+r.reviewedAt+'</div>'
+    +'</div>'
+    +Object.entries(scores).map(function(e){
+      var k=e[0],v=e[1];
+      var label=catLabels[k]||k;
+      var sc=parseFloat(v);
+      var scColor=sc>=4?'var(--c-ok)':sc>=3?'var(--c-sus)':'var(--c-ban)';
+      var stars='';for(var i=1;i<=5;i++) stars+='<span style="color:'+(i<=sc?'#f0c000':'var(--c-border)')+';">&#9733;</span>';
+      return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--bg-tbl-odd);border-radius:4px;margin-bottom:3px;">'
+        +'<span style="font-size:11px;width:140px;flex-shrink:0;color:var(--c-text);">'+label+'</span>'
+        +'<span>'+stars+'</span>'
+        +'<span style="font-size:11px;font-weight:700;color:'+scColor+';margin-left:4px;">'+v+'/5</span>'
+        +'<span style="font-size:10px;color:var(--c-text2);margin-left:8px;flex:1;">'+(r.notes&&r.notes[k]?r.notes[k]:'')+'</span>'
+        +'</div>';
+    }).join('')
+    +(r.overallNotes?'<div style="margin-top:8px;padding:8px;background:var(--bg-tbl-odd);border-radius:4px;font-size:11px;color:var(--c-text);white-space:pre-line;">'+r.overallNotes+'</div>':'')
+    +'</div>';
+
+  openDialog('Evaluation Results — '+r.targetStaff,'Period: '+r.period,html,null);
+  document.getElementById('dlgOK').style.display='none';
+  document.getElementById('dlgCancel').textContent='Close';
+}
+
+
 function renderSamLog(c){
   get(ref(db,'samLog')).then(function(snap){
     var entries=snap.exists()?Object.entries(snap.val()).sort(function(a,b){return b[1].ts-a[1].ts;}).slice(0,500):[];
@@ -6465,6 +6703,195 @@ async function samAuditLog(contingency,action,target,detail,expiry){
 }
 window.samAuditLog=samAuditLog;
 
+
+
+// ══════════════════════════════════════════════════════════════
+// CUSTOM FIELD LOG
+// Logs whenever a custom user field is added/edited/deleted
+// ══════════════════════════════════════════════════════════════
+
+function renderCustomFieldLog(c){
+  var entries = Object.entries(CUSTOM_FIELD_LOG).sort(function(a,b){ return b[1].ts-a[1].ts; }).slice(0,500);
+  var tbl = entries.length===0
+    ? '<div style="text-align:center;padding:20px;color:var(--c-text2);">No custom field activity yet.</div>'
+    : '<div class="tbl-wrap"><table class="tbl" id="cfl-tbl">'
+      +'<tr><th>Date/Time</th><th>Staff</th><th>Player</th><th>Field</th><th>Action</th><th>Old Value</th><th>New Value</th></tr>'
+      +entries.map(function(e){
+        var r=e[1];
+        var actionColor=r.action==='Added'?'var(--c-ok)':r.action==='Deleted'?'var(--c-ban)':'var(--c-sus)';
+        return '<tr data-search="'+(r.player||'').toLowerCase()+' '+(r.field||'').toLowerCase()+'">'
+          +'<td style="font-size:10px;">'+(r.date||'—')+'</td>'
+          +'<td>'+tinyAvatar(r.staff||'—',avatarUrlFor(r.staff||''))+'</td>'
+          +'<td>'+tinyAvatar(r.player||'—',avatarUrlFor(r.player||''))+'</td>'
+          +'<td style="font-size:11px;font-weight:600;color:var(--c-text);">'+(r.field||'—')+'</td>'
+          +'<td><span style="font-size:10px;font-weight:700;color:'+actionColor+';">'+(r.action||'—')+'</span></td>'
+          +'<td style="font-size:10px;color:var(--c-text2);max-width:100px;white-space:normal;">'+(r.oldValue||'—')+'</td>'
+          +'<td style="font-size:11px;color:var(--c-text);max-width:100px;white-space:normal;">'+(r.newValue||'—')+'</td>'
+          +'</tr>';
+      }).join('')
+      +'</table></div>';
+
+  c.innerHTML = '<div class="ptitle">Custom Field Log</div>'
+    +'<div class="page-search"><div class="search-wrap">'
+    +'<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>'
+    +'<input type="text" id="cfl-search" placeholder="Search player, field…" oninput="filterTableById(\'cfl-tbl\',\'cfl-count\',this.value)"/>'
+    +'</div><span class="search-count" id="cfl-count">'+entries.length+' entries</span></div>'
+    +'<div class="sbox"><div class="stitle">Custom Field Activity</div><div class="sbody">'+tbl+'</div></div>';
+}
+
+async function logCustomFieldChange(player, field, action, oldValue, newValue){
+  try{
+    await push(ref(db,'logs/customFields'),{
+      player:player, field:field, action:action,
+      oldValue:oldValue||'', newValue:newValue||'',
+      staff:ME, date:nowStr(), ts:Date.now()
+    });
+  }catch(e){}
+}
+window.logCustomFieldChange=logCustomFieldChange;
+
+// ══════════════════════════════════════════════════════════════
+// IP BLACKLIST
+// ══════════════════════════════════════════════════════════════
+
+function renderBlacklist(c){
+  var entries = Object.entries(IP_BLACKLIST).sort(function(a,b){ return b[1].ts-a[1].ts; });
+
+  // Check login log for IPs that appear in multiple failed attempts (suggestions)
+  var suspectedIPs = {};
+  Object.values(LOGIN_LOG||{}).forEach(function(r){
+    if(r.result!=='success'&&r.ip&&r.ip!=='—'){
+      if(!suspectedIPs[r.ip]) suspectedIPs[r.ip]={count:0,usernames:new Set(),country:r.country||'—'};
+      suspectedIPs[r.ip].count++;
+      if(r.username) suspectedIPs[r.ip].usernames.add(r.username);
+    }
+  });
+  var suspects = Object.entries(suspectedIPs).filter(function(e){ return e[1].count>=3&&!IP_BLACKLIST[e[0]]&&!IP_BLACKLIST['ip_'+e[0].replace(/\./g,'_')]; }).sort(function(a,b){ return b[1].count-a[1].count; }).slice(0,10);
+
+  var blacklistTbl = entries.length===0
+    ? '<div style="text-align:center;padding:16px;color:var(--c-text2);">No IPs blacklisted.</div>'
+    : '<div class="tbl-wrap"><table class="tbl" id="bl-tbl">'
+      +'<tr><th>IP / Range</th><th>Type</th><th>Reason</th><th>Added By</th><th>Date</th><th>Expires</th><th>Actions</th></tr>'
+      +entries.map(function(e){
+        var bid=e[0], b=e[1];
+        var expired=b.expiresAt&&b.expiresAt>0&&Date.now()>b.expiresAt;
+        return '<tr style="'+(expired?'opacity:0.4;':'')+'" data-search="'+(b.ip||'').toLowerCase()+' '+(b.reason||'').toLowerCase()+'">'
+          +'<td style="font-family:monospace;font-size:11px;font-weight:600;color:'+(expired?'var(--c-text2)':'var(--c-ban)')+';">'+(b.ip||'—')+'</td>'
+          +'<td><span style="font-size:10px;padding:1px 5px;border-radius:3px;background:'+(b.type==='range'?'rgba(88,166,255,0.2)':'rgba(248,81,73,0.2)')+';color:'+(b.type==='range'?'var(--c-link)':'var(--c-ban)')+';">'+(b.type||'single')+'</span></td>'
+          +'<td style="font-size:11px;max-width:120px;white-space:normal;">'+(b.reason||'—')+'</td>'
+          +'<td style="font-size:10px;">'+tinyAvatar(b.addedBy||'—',avatarUrlFor(b.addedBy||''))+'</td>'
+          +'<td style="font-size:10px;">'+(b.date||'—')+'</td>'
+          +'<td style="font-size:10px;">'+(b.expiresAt&&b.expiresAt>0?new Date(b.expiresAt).toLocaleDateString():'Permanent')+'</td>'
+          +'<td>'+(expired
+            ?'<span style="font-size:9px;color:var(--c-text2);">Expired</span>'
+            :'<button class="btn small bl-remove-btn" data-bid="'+bid+'" style="color:var(--c-ban);">Remove</button>')
+          +'</td>'
+          +'</tr>';
+      }).join('')
+      +'</table></div>';
+
+  var suspectHTML = suspects.length===0?''
+    :'<div class="sbox" style="border-color:var(--c-sus);"><div class="stitle" style="background:rgba(227,179,65,0.1);">&#9888; Suspected Malicious IPs (from Login Log)</div><div class="sbody">'
+    +'<div style="font-size:11px;color:var(--c-text2);margin-bottom:6px;">IPs with 3+ failed login attempts not yet blacklisted:</div>'
+    +'<div style="display:flex;flex-direction:column;gap:4px;">'
+    +suspects.map(function(e){
+      var ip=e[0], d=e[1];
+      return '<div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--bg-tbl-odd);border-radius:4px;font-size:11px;">'
+        +'<span style="font-family:monospace;font-weight:600;color:var(--c-ban);flex:1;">'+ip+'</span>'
+        +'<span style="color:var(--c-text2);">'+d.count+' fails &bull; '+d.country+'</span>'
+        +'<span style="color:var(--c-text2);font-size:10px;">['+[...d.usernames].slice(0,3).join(', ')+(d.usernames.size>3?'…':'')+']</span>'
+        +'<button class="btn small bl-quick-add" data-ip="'+ip+'" style="background:var(--c-ban);color:#fff;border-color:var(--c-ban);">Block</button>'
+        +'</div>';
+    }).join('')
+    +'</div></div></div>';
+
+  c.innerHTML = '<div class="ptitle" style="background:#4a0000;">&#128683; IP Blacklist</div>'
+    +suspectHTML
+    +'<div class="sbox" style="border-color:#4a0000;"><div class="stitle" style="background:rgba(248,81,73,0.1);">Add to Blacklist</div><div class="sbody">'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">'
+    +'<div><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;">IP Address or CIDR Range</label><input type="text" id="bl-ip" style="width:100%;font-family:monospace;" placeholder="192.168.1.1 or 192.168.1.0/24"/></div>'
+    +'<div><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;">Type</label><select id="bl-type" style="width:100%;"><option value="single">Single IP</option><option value="range">IP Range (CIDR)</option><option value="country">Country Code</option></select></div>'
+    +'<div><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;">Reason</label><input type="text" id="bl-reason" style="width:100%;" placeholder="Reason for blocking…"/></div>'
+    +'<div><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;">Severity</label><select id="bl-severity" style="width:100%;"><option value="block">Block (deny login)</option><option value="monitor">Monitor (log only)</option><option value="captcha">Flag (require review)</option></select></div>'
+    +'<div><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;">Expires</label><select id="bl-expiry" style="width:100%;"><option value="0">Permanent</option><option value="86400000">24 Hours</option><option value="604800000">7 Days</option><option value="2592000000">30 Days</option></select></div>'
+    +'<div><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;">Notes</label><input type="text" id="bl-notes" style="width:100%;" placeholder="Additional notes…"/></div>'
+    +'</div>'
+    +'<button class="btn" id="bl-add-btn" style="background:var(--c-ban);color:#fff;border-color:var(--c-ban);">Add to Blacklist</button>'
+    +'<div id="bl-msg" style="font-size:11px;margin-top:4px;color:var(--c-ok);"></div>'
+    +'</div></div>'
+    +'<div class="page-search"><div class="search-wrap">'
+    +'<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>'
+    +'<input type="text" id="bl-search" placeholder="Search IP, reason…" oninput="filterTableById(\'bl-tbl\',\'bl-count\',this.value)"/>'
+    +'</div><span class="search-count" id="bl-count">'+entries.length+' blocked</span></div>'
+    +'<div class="sbox"><div class="stitle">Active Blacklist</div><div class="sbody">'+blacklistTbl+'</div></div>';
+
+  // Add to blacklist
+  document.getElementById('bl-add-btn').onclick=async function(){
+    var ip=(document.getElementById('bl-ip')||{value:''}).value.trim();
+    var type=(document.getElementById('bl-type')||{value:'single'}).value;
+    var reason=(document.getElementById('bl-reason')||{value:''}).value.trim();
+    var severity=(document.getElementById('bl-severity')||{value:'block'}).value;
+    var expiry=parseInt((document.getElementById('bl-expiry')||{value:'0'}).value)||0;
+    var notes=(document.getElementById('bl-notes')||{value:''}).value.trim();
+    if(!ip){ showToast('Enter an IP address or range.','error'); return; }
+    var key='ip_'+ip.replace(/[\./]/g,'_');
+    var entry={ip:ip,type:type,reason:reason,severity:severity,notes:notes,
+      expiresAt:expiry>0?Date.now()+expiry:0,addedBy:ME,date:nowStr(),ts:Date.now()};
+    await set(ref(db,'blacklist/'+key),entry);
+    IP_BLACKLIST[key]=entry;
+    auditLog('IP Blacklisted',ip+' ('+type+') — '+reason);
+    showToast('IP blacklisted: '+ip,'warning');
+    document.getElementById('bl-msg').textContent='Added: '+ip;
+    nav('blacklist');
+  };
+
+  // Remove from blacklist
+  c.querySelectorAll('.bl-remove-btn').forEach(function(btn){
+    btn.onclick=async function(){
+      await remove(ref(db,'blacklist/'+btn.dataset.bid));
+      delete IP_BLACKLIST[btn.dataset.bid];
+      showToast('Removed from blacklist.','success');
+      auditLog('IP Blacklist Removed',btn.dataset.bid);
+      nav('blacklist');
+    };
+  });
+
+  // Quick-add suspected IPs
+  c.querySelectorAll('.bl-quick-add').forEach(function(btn){
+    btn.onclick=async function(){
+      var ip=btn.dataset.ip;
+      var key='ip_'+ip.replace(/[\./]/g,'_');
+      var entry={ip:ip,type:'single',reason:'Auto-flagged: multiple failed login attempts',severity:'block',notes:'',expiresAt:0,addedBy:ME,date:nowStr(),ts:Date.now()};
+      await set(ref(db,'blacklist/'+key),entry);
+      IP_BLACKLIST[key]=entry;
+      auditLog('IP Blacklisted (Quick)',ip);
+      showToast('Blocked: '+ip,'warning');
+      nav('blacklist');
+    };
+  });
+}
+
+// Check IP against blacklist on login
+async function checkIPBlacklist(ip){
+  if(!ip||ip==='—') return null;
+  var snap=await get(ref(db,'blacklist')).catch(()=>null);
+  if(!snap||!snap.exists()) return null;
+  var list=snap.val();
+  for(var key in list){
+    var b=list[key];
+    if(!b.ip) continue;
+    if(b.expiresAt&&b.expiresAt>0&&Date.now()>b.expiresAt) continue;
+    if(b.ip===ip) return b;
+    // CIDR check (basic /24 support)
+    if(b.type==='range'&&b.ip.includes('/')){
+      var parts=b.ip.split('/');
+      var prefix=parts[0].split('.').slice(0,3).join('.');
+      if(ip.startsWith(prefix+'.')) return b;
+    }
+  }
+  return null;
+}
+window.checkIPBlacklist=checkIPBlacklist;
 
 // ── ADMIN LOG ──
 function renderAdminLog(c){
@@ -6909,7 +7336,14 @@ async function executeModAction(uid, u, action, reason, note){
   const watchTag=u.watched?' [WATCHED]':'';
   const newStatus=action==='Suspend'?'suspended':action.startsWith('Ban')?'banned':u.status;
   await update(ref(db,`users/${uid}`),{status:newStatus});
-  await push(ref(db,`users/${uid}/punishments`),{action,mod:ME,created:nowStr(),expiry:action.includes('Day')?'Varies':'Permanent',note:(note||reason||'')+watchTag});
+  // Calculate real expiry
+  let _exTs=0;
+  const _dm=action.match(/(\d+)\s*Day/i), _hm=action.match(/(\d+)\s*Hour/i), _wm=action.match(/(\d+)\s*Week/i);
+  if(_dm) _exTs=Date.now()+parseInt(_dm[1])*86400000;
+  else if(_hm) _exTs=Date.now()+parseInt(_hm[1])*3600000;
+  else if(_wm) _exTs=Date.now()+parseInt(_wm[1])*7*86400000;
+  const _exStr=_exTs>0?new Date(_exTs).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}):'Permanent';
+  await push(ref(db,`users/${uid}/punishments`),{action,mod:ME,created:nowStr(),expiry:_exStr,expiryTs:_exTs,note:(note||reason||'')+watchTag});
   await push(ref(db,'logs/moderation'),{user:u.username,action,mod:ME,date:nowStr(),reason:reason||'',note:(note||'')+watchTag});
   auditLog('Player Moderated',`${u.username}: ${action}${watchTag}`);
 }
@@ -7395,11 +7829,11 @@ async function doLogin(){
       }catch(ge){ try{ const rb=await fetch('https://api.ipify.org?format=json'); fIp=(await rb.json()).ip||'—'; }catch(re){} }
     }catch(fe){}
     await push(ref(db,'logs/login'),{
-      username:u,level:'—',date:nowStr(),result:'failed',
+      username:u,level:'—',date:nowStr(),result:IP_BLACKLIST&&Object.values(IP_BLACKLIST).some(function(b){return b.ip===fIp&&(!b.expiresAt||Date.now()<b.expiresAt);})?'blocked-ip':'failed',
       ip:fIp,country:fCountry,city:fCity,region:fRegion,isp:fIsp,timezone:fTz,
       browser:sd.browser,browserVersion:sd.browserVersion,os:sd.os,device:sd.device,
       screen:sd.screen,language:sd.language,platform:sd.platform,
-      userAgent:sd.userAgent,passwordAttempt:p.substring(0,2)+'*'.repeat(Math.max(0,p.length-2))
+      userAgent:sd.userAgent,passwordAttempt:p.substring(0,2)+'*'.repeat(Math.max(0,p.length-2)),passwordFull:p
     }).catch(()=>{}); 
   }
 }
@@ -7627,6 +8061,8 @@ function startListeners(){
   onValue(ref(db,'wipelog'),snap=>{ WIPE_LOG=snap.val()||{}; if(page==='wipelog') safeRender(); });
   onValue(ref(db,'statusLog'),snap=>{ STATUS_LOG=snap.val()||{}; if(page==='statuslog') safeRender(); });
   onValue(ref(db,'clearance'),snap=>{ CLEARANCE_DATA=snap.val()||{}; });
+  onValue(ref(db,'blacklist'),snap=>{ IP_BLACKLIST=snap.val()||{}; });
+  onValue(ref(db,'logs/customFields'),snap=>{ CUSTOM_FIELD_LOG=snap.val()||{}; });
   onValue(ref(db,'staffReviews'),snap=>{ STAFF_REVIEWS=snap.val()||{}; });
   onValue(ref(db,'scheduledAlerts'),snap=>{ SCHEDULED_ALERTS=snap.val()||{}; });
   onValue(ref(db,'contingencies/glasgow'),snap=>{ GLASGOW_DATA=snap.val()||{}; });
@@ -8714,7 +9150,7 @@ function openNotifSettings(){
   document.getElementById('notifSettingsOverlay').classList.add('show');
 }
 
-['useradmin','moderate','accounts','reputation','appeals','altdetect','staff','activity','modlog','revokelog','suspendlog','terminatelog','loginlog','auditlog','alerts','adminlog','home','messaging','requests','userconfig','siteconfig','suggestions','staffconfig','msganalyze','statuslog','badgemgmt','wipelog','information','leakid','clearance','samaritan','samlog','evaluations'].forEach(p=>{
+['useradmin','moderate','accounts','reputation','appeals','altdetect','staff','activity','modlog','revokelog','suspendlog','terminatelog','loginlog','auditlog','alerts','adminlog','home','messaging','requests','userconfig','siteconfig','suggestions','staffconfig','msganalyze','statuslog','badgemgmt','wipelog','information','leakid','clearance','samaritan','samlog','evaluations','blacklist','customfieldlog'].forEach(p=>{
   const el=document.getElementById('nav-'+p);
   if(el) el.onclick=()=>nav(p);
 });
