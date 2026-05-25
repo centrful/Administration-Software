@@ -1004,17 +1004,31 @@ function isSuperAdmin(){ return MY_LEVEL==='SUPER ADMINISTRATOR'||isSoftwareMana
 // SOFTWARE MANAGER bypasses all permission checks; '- NONE -' means no one can access
 function canDo(k){
   if(isSoftwareManager()) return true;
-  // Check Glasgow Block — if this feature is blocked for current user, deny
-  if(ME && GLASGOW_DATA[ME] && GLASGOW_DATA[ME].active){
-    var blocked = GLASGOW_DATA[ME].blocked||[];
-    if(blocked.indexOf(k)!==-1){
-      showToast('ERROR — GLASGOW ENABLED: Action blocked.','error');
-      return false;
-    }
-  }
+  if(overtimeGranted(k)) return true; // Overtime override
   const req=PERMS[k]||'SUPER ADMINISTRATOR';
   if(req==='- NONE -') return false;
   return rankOf(MY_LEVEL)>=rankOf(req);
+}
+// Check if Overtime grants this permission to current user
+function overtimeGranted(k){
+  if(!ME) return false;
+  var myOvertime = null;
+  // OVERTIME_DATA is loaded from Firebase
+  if(typeof OVERTIME_DATA !== 'undefined' && OVERTIME_DATA[ME] && OVERTIME_DATA[ME].active){
+    var expiry = OVERTIME_DATA[ME].expiry||0;
+    if(expiry===0||Date.now()<expiry){
+      var granted = OVERTIME_DATA[ME].grantedPerms||[];
+      return granted.indexOf(k)!==-1;
+    }
+  }
+  return false;
+}
+function glasgowBlocked(k){
+  // Returns true if Glasgow Block is active for current user and this key is blocked
+  if(isSoftwareManager()) return false;
+  if(!ME || !GLASGOW_DATA[ME] || !GLASGOW_DATA[ME].active) return false;
+  var blocked = GLASGOW_DATA[ME].blocked||[];
+  return blocked.indexOf(k)!==-1;
 }
 
 // ── SESSION DATA COLLECTOR ──
@@ -1908,6 +1922,8 @@ function updateSidebar(){
 }
 
 function nav(p){
+  // If navigating away from samaritan, log out the session
+  if(p !== 'samaritan' && SAM_SESSION){ SAM_SESSION=null; }
   page=p;
   document.querySelectorAll('.sb-link').forEach(l=>l.classList.remove('active'));
   const el=document.getElementById('nav-'+p);
@@ -1957,6 +1973,18 @@ function render(){
   updateTopInfo(); updateSidebar(); updateAnnouncements();
   const c=document.getElementById('content');
   const denied='<div class="ptitle">Access Denied</div><i style="padding:8px;display:block;color:var(--c-ban);">You do not have permission to view this page.</i>';
+
+  // Check Glasgow channel block
+  const glasgowPageMap={modlog:'canViewModLog',revokelog:'canViewRevokeLogs',suspendlog:'canViewSuspendLogs',terminatelog:'canViewTerminateLogs',loginlog:'canViewLoginLog',staff:'canViewStaff',activity:'canViewStaffActivity',staffconfig:'canViewStaffConfig',userconfig:'canViewUserConfig',accounts:'accounts',reputation:'reputation',messaging:'messaging'};
+  if(glasgowPageMap[page] && glasgowBlocked(glasgowPageMap[page])){
+    c.innerHTML='<div style="position:relative;min-height:400px;display:flex;align-items:center;justify-content:center;overflow:hidden;">'
+      +'<div style="position:absolute;inset:0;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);background:rgba(1,4,9,0.85);z-index:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;" onwheel="event.preventDefault()" onscroll="event.preventDefault()">'
+      +'<div style="font-size:36px;font-weight:900;color:#f85149;letter-spacing:6px;text-shadow:0 0 30px rgba(248,81,73,0.5);">ERROR</div>'
+      +'<div style="font-size:16px;font-weight:700;color:#f85149;letter-spacing:3px;">GLASGOW BLOCK</div>'
+      +'<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:6px;letter-spacing:1px;">ACCESS RESTRICTED</div>'
+      +'</div></div>';
+    return;
+  }
 
   // PAUSED enforcement — non-SW managers can only see a locked screen
   if(SITE_STATUS&&SITE_STATUS.status==='PAUSED'&&!isSoftwareManager()){
@@ -4235,6 +4263,9 @@ function renderMessaging(c){
     const body=document.getElementById('msgBody').value.trim();
     const res=document.getElementById('msgSendResult');
     if(!body){ res.style.color='var(--c-ban)'; res.textContent='Message body required.'; return; }
+    // Lullaby check
+    const myLullaby=LULLABY_DATA[ME];
+    if(myLullaby&&myLullaby.active&&(!myLullaby.expiry||myLullaby.expiry===0||Date.now()<myLullaby.expiry)){ showToast('ERROR — LULLABY ACTIVE: Messaging is restricted.','error'); return; }
     await push(ref(db,'staffMessages'),{from:ME,to,subject,body,date:nowStr(),read:false});
     auditLog('Staff Message Sent',`To: ${to==='__all__'?'All Staff':to} — ${subject}`);
     document.getElementById('msgSubject').value='';
@@ -4691,56 +4722,157 @@ function renderInformation(c){
 var CLEARANCE_LEVELS = ['Special Projects Access', 'Special Projects Manager'];
 
 function renderClearanceManager(c){
-  var staffArr = Object.entries(STAFF).sort(function(a,b){ return (a[1].username||'').localeCompare(b[1].username||''); });
+  var clrArr = Object.entries(CLEARANCE_DATA).sort(function(a,b){ return (a[1].username||'').localeCompare(b[1].username||''); });
+  var currentClr = clrArr.find(function(e){ return e[1].viewingProfile; });
+  if(currentClr){ renderClearanceProfile(c, currentClr[0]); return; }
 
   c.innerHTML = '<div class="ptitle" style="background:#0550ae;">🔐 Clearance Manager</div>'
-    +'<div class="sbox" style="border-color:#0550ae;">'
-    +'<div class="stitle" style="background:#0550ae;">What is Clearance?</div>'
+    +'<div style="display:flex;gap:6px;margin-bottom:10px;">'
+    +'<div class="sbox" style="flex:1;min-width:180px;border-color:#0550ae;">'
+    +'<div class="stitle" style="background:#0550ae;">About Clearance</div>'
     +'<div class="sbody" style="font-size:11px;color:var(--c-text);line-height:1.8;">'
-    +'Clearance levels control access to the <b>Samaritan Special Projects</b> system. '
-    +'<b>Special Projects Access</b> — required to log into the Samaritan portal. '
-    +'<b>Special Projects Manager</b> — grants full control over all contingencies. Auto-assigned to Software Managers.'
-    +'</div></div>'
+    +'Clearance controls access to the <b>Samaritan Special Projects</b> system. '
+    +'Manage clearance levels and authentication codes here.'
+    +'</div></div></div>'
     +'<div class="page-search"><div class="search-wrap">'
     +'<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>'
-    +'<input type="text" id="clr-search" placeholder="Search staff…" oninput="filterTableById(\'clr-tbl\',\'clr-count\',this.value)"/>'
-    +'</div><span class="search-count" id="clr-count">'+staffArr.length+' staff</span></div>'
-    +'<div class="sbox"><div class="stitle">Staff Clearance Registry</div><div class="sbody">'
-    +'<div class="tbl-wrap"><table class="tbl" id="clr-tbl">'
-    +'<tr><th>Username</th><th>Level</th><th>Special Projects Access</th><th>Special Projects Manager</th><th>Save</th></tr>'
-    +staffArr.map(function(e){
-      var sid=e[0], s=e[1];
-      var clr = (CLEARANCE_DATA[sid]||{});
-      var isSM = s.level==='SOFTWARE MANAGER';
-      var hasAccess = clr.access||isSM;
-      var isManager = clr.manager||isSM;
-      return '<tr data-search="'+s.username.toLowerCase()+'">'
-        +'<td>'+tinyAvatar(s.username,s.avatarUrl)+'</td>'
-        +'<td>'+levelBadge(s.level)+'</td>'
-        +'<td><input type="checkbox" class="clr-access" data-sid="'+sid+'" '+(hasAccess?'checked ':'')+(isSM?'disabled ':'')+'/>'
-          +(isSM?'<span style="font-size:9px;color:var(--c-text2);margin-left:4px;">Auto (SM)</span>':'')+'</td>'
-        +'<td><input type="checkbox" class="clr-manager" data-sid="'+sid+'" '+(isManager?'checked ':'')+(isSM?'disabled ':'')+'/>'
-          +(isSM?'<span style="font-size:9px;color:var(--c-text2);margin-left:4px;">Auto (SM)</span>':'')+'</td>'
-        +'<td>'+(isSM?'—':'<button class="btn small clr-save-btn" data-sid="'+sid+'">Save</button>')+'</td>'
-        +'</tr>';
-    }).join('')
-    +'</table></div></div></div>';
+    +'<input type="text" id="clr-search" placeholder="Search clearance members…" oninput="filterTableById(\'clr-tbl\',\'clr-count\',this.value)"/>'
+    +'</div><span class="search-count" id="clr-count">'+(clrArr.length)+' members</span>'
+    +'<button class="btn small" id="clr-add-btn" style="margin-left:auto;">+ Add Clearance Member</button>'
+    +'</div>'
+    +'<div class="sbox"><div class="stitle">Clearance Registry</div><div class="sbody">'
+    +(clrArr.length===0?'<div style="text-align:center;padding:20px;color:var(--c-text2);">No clearance members yet. Add one above.</div>'
+      :'<div class="tbl-wrap"><table class="tbl" id="clr-tbl">'
+      +'<tr><th>Member</th><th>Clearance Level</th><th>Added By</th><th>Added At</th><th>View</th></tr>'
+      +clrArr.map(function(e){
+        var cid=e[0], cl=e[1];
+        var levelLabel = cl.manager?'<span class="badge softwaremanager" style="font-size:10px;">Special Projects Manager</span>':'<span class="badge moderator" style="font-size:10px;">Special Projects Access</span>';
+        var avatarUrl = cl.avatarUrl||'';
+        return '<tr data-search="'+(cl.username||'').toLowerCase()+'">'
+          +'<td>'+tinyAvatar(cl.username||cid, avatarUrl)+'</td>'
+          +'<td>'+levelLabel+'</td>'
+          +'<td style="font-size:10px;color:var(--c-text2);">'+(cl.addedBy||'—')+'</td>'
+          +'<td style="font-size:10px;color:var(--c-text2);">'+(cl.addedAt||'—')+'</td>'
+          +'<td><button class="btn small clr-view-btn" data-cid="'+cid+'">View Profile</button></td>'
+          +'</tr>';
+      }).join('')
+      +'</table></div>')
+    +'</div></div>';
 
-  c.querySelectorAll('.clr-save-btn').forEach(function(btn){
-    btn.onclick = async function(){
-      var sid = btn.dataset.sid;
-      var row = btn.closest('tr');
-      var access = row.querySelector('.clr-access').checked;
-      var manager = row.querySelector('.clr-manager').checked;
-      await update(ref(db,'clearance/'+sid),{access:access, manager:manager, updatedBy:ME, updatedAt:nowStr()});
-      if(!CLEARANCE_DATA[sid]) CLEARANCE_DATA[sid]={};
-      CLEARANCE_DATA[sid].access=access;
-      CLEARANCE_DATA[sid].manager=manager;
-      showToast((STAFF[sid]&&STAFF[sid].username||sid)+' clearance updated.','success');
-      auditLog('Clearance Updated',sid+' access='+access+' manager='+manager);
-    };
+  // Add clearance member button
+  document.getElementById('clr-add-btn').onclick=function(){
+    openDialog('Add Clearance Member','Add a staff member to the Samaritan Clearance Registry:',
+      '<div style="margin-bottom:8px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:3px;">Staff Username (must exist in Staff Registry)</label>'
+      +'<input type="text" id="clr-new-username" style="width:100%;" placeholder="Username"/></div>'
+      +'<div style="margin-bottom:8px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:3px;">Clearance Level</label>'
+      +'<select id="clr-new-level" style="width:100%;">'
+      +'<option value="access">Special Projects Access</option>'
+      +'<option value="manager">Special Projects Manager</option>'
+      +'</select></div>'
+      +'<div style="margin-bottom:8px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:3px;">Authentication Code</label>'
+      +'<input type="password" id="clr-new-code" style="width:100%;" placeholder="Set their Samaritan login code"/></div>',
+      async function(){
+        var username=(document.getElementById('clr-new-username')||{value:''}).value.trim();
+        var level=(document.getElementById('clr-new-level')||{value:'access'}).value;
+        var code=(document.getElementById('clr-new-code')||{value:''}).value;
+        if(!username){ showToast('Enter a username.','error'); return; }
+        var staffEntry=Object.entries(STAFF).find(function(e){ return (e[1].username||'').toLowerCase()===username.toLowerCase(); });
+        if(!staffEntry){ showToast('Staff member "'+username+'" not found.','error'); return; }
+        var sid=staffEntry[0], s=staffEntry[1];
+        var newEntry={
+          username:s.username, avatarUrl:s.avatarUrl||'',
+          access:true, manager:level==='manager',
+          authCode:code||'', addedBy:ME, addedAt:nowStr()
+        };
+        await set(ref(db,'clearance/'+sid),newEntry);
+        CLEARANCE_DATA[sid]=newEntry;
+        showToast(s.username+' added to Clearance Registry.','success');
+        auditLog('Clearance Member Added',s.username+' level:'+level);
+        renderClearanceManager(c);
+      }
+    );
+  };
+
+  c.querySelectorAll('.clr-view-btn').forEach(function(btn){
+    btn.onclick=function(){ renderClearanceProfile(c, btn.dataset.cid); };
   });
 }
+
+function renderClearanceProfile(c, cid){
+  var cl = CLEARANCE_DATA[cid]||{};
+  var isSM = STAFF[cid]&&STAFF[cid].level==='SOFTWARE MANAGER';
+
+  c.innerHTML = '<div class="ptitle" style="background:#0550ae;">🔐 Clearance Manager</div>'
+    +'<button class="btn small" onclick="renderClearanceManager(document.getElementById(\'content\'))" style="margin-bottom:10px;">← Back to Registry</button>'
+    +'<div style="display:flex;gap:10px;flex-wrap:wrap;">'
+    // Profile card
+    +'<div style="width:180px;flex-shrink:0;">'
+    +'<div class="sbox" style="border-color:#0550ae;text-align:center;">'
+    +'<div class="sbody" style="padding:16px 12px;">'
+    +'<div style="margin:0 auto 10px;width:64px;height:64px;">'+tinyAvatar(cl.username||cid, cl.avatarUrl||'',64)+'</div>'
+    +'<div style="font-size:14px;font-weight:800;color:var(--c-text);">'+(cl.username||cid)+'</div>'
+    +'<div style="margin-top:6px;">'+(cl.manager?'<span class="badge softwaremanager" style="font-size:10px;">Special Projects Manager</span>':'<span class="badge moderator" style="font-size:10px;">Special Projects Access</span>')+'</div>'
+    +(isSM?'<div style="font-size:9px;color:var(--c-text2);margin-top:4px;">Auto-clearance (SM)</div>':'')
+    +'<div style="font-size:10px;color:var(--c-text2);margin-top:8px;">Added by: '+(cl.addedBy||'—')+'</div>'
+    +'<div style="font-size:10px;color:var(--c-text2);">Added: '+(cl.addedAt||'—')+'</div>'
+    +'</div></div>'
+    +'</div>'
+    // Details
+    +'<div style="flex:1;min-width:200px;">'
+    +'<div class="sbox"><div class="stitle">Clearance Details</div><div class="sbody">'
+    +'<div class="row"><label>Username</label><span>'+(cl.username||cid)+'</span></div>'
+    +'<div class="row"><label>Clearance Level</label><span>'+(cl.manager?'Special Projects Manager':'Special Projects Access')+'</span></div>'
+    +'<div class="row"><label>Special Projects Access</label><span class="ok">'+(cl.access||isSM?'✓ Granted':'✗ Denied')+'</span></div>'
+    +'<div class="row"><label>Manager Clearance</label><span class="'+(cl.manager||isSM?'ok':'ban')+'">'+(cl.manager||isSM?'✓ Granted':'✗ Not granted')+'</span></div>'
+    +'<div class="row"><label>Added By</label><span>'+(cl.addedBy||'—')+'</span></div>'
+    +'<div class="row"><label>Added At</label><span>'+(cl.addedAt||'—')+'</span></div>'
+    +'</div></div>'
+    +'<div class="sbox"><div class="stitle">Manage Clearance</div><div class="sbody">'
+    // Edit level
+    +(isSM?'<div style="font-size:11px;color:var(--c-text2);">Auto-clearance cannot be modified for Software Managers.</div>'
+    :'<div style="margin-bottom:8px;">'
+    +'<label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:3px;">Clearance Level</label>'
+    +'<select id="clr-edit-level" style="width:100%;">'
+    +'<option value="access" '+((!cl.manager)?'selected':'')+'>Special Projects Access</option>'
+    +'<option value="manager" '+(cl.manager?'selected':'')+'>Special Projects Manager</option>'
+    +'</select></div>'
+    +'<div style="margin-bottom:8px;">'
+    +'<label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:3px;">Update Authentication Code</label>'
+    +'<input type="password" id="clr-edit-code" style="width:100%;" placeholder="Leave blank to keep current"/></div>'
+    +'<div style="display:flex;gap:6px;flex-wrap:wrap;">'
+    +'<button class="btn" id="clr-save-profile" style="background:#0550ae;color:#fff;border-color:#0550ae;">Save Changes</button>'
+    +'<button class="btn red" id="clr-revoke-btn">Revoke Clearance</button>'
+    +'</div><div id="clr-profile-msg" style="font-size:11px;margin-top:5px;color:var(--c-ok);"></div>')
+    +'</div></div>'
+    +'</div>'
+    +'</div>';
+
+  if(!isSM){
+    document.getElementById('clr-save-profile').onclick=async function(){
+      var level=(document.getElementById('clr-edit-level')||{value:'access'}).value;
+      var code=(document.getElementById('clr-edit-code')||{value:''}).value;
+      var updates={access:true,manager:level==='manager'};
+      if(code) updates.authCode=code;
+      await update(ref(db,'clearance/'+cid),updates);
+      Object.assign(CLEARANCE_DATA[cid]||{},updates);
+      if(CLEARANCE_DATA[cid]) Object.assign(CLEARANCE_DATA[cid],updates);
+      document.getElementById('clr-profile-msg').textContent='Clearance updated.';
+      showToast('Clearance updated for '+(cl.username||cid)+'.','success');
+      auditLog('Clearance Updated',cid+' level:'+level);
+      setTimeout(function(){ renderClearanceProfile(c,cid); },800);
+    };
+    document.getElementById('clr-revoke-btn').onclick=function(){
+      openDialog('Revoke Clearance','Revoke all Samaritan clearance for <b>'+(cl.username||cid)+'</b>? They will lose access to the portal.','',async function(){
+        await remove(ref(db,'clearance/'+cid));
+        delete CLEARANCE_DATA[cid];
+        showToast((cl.username||cid)+'\'s clearance revoked.','warning');
+        auditLog('Clearance Revoked',cid);
+        renderClearanceManager(c);
+      });
+    };
+  }
+}
+
 
 // ══════════════════════════════════════════════════════════════
 // SAMARITAN PORTAL
@@ -4774,13 +4906,13 @@ function renderSamaritanPortal(c){
 }
 
 function renderSamaritanLogin(c){
-  c.innerHTML = '<div style="min-height:80vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg-content);position:relative;">'
+  c.innerHTML = '<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0d1117;position:relative;">'
     // Creepy ambient elements
-    +'<div style="position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at 50% 50%,rgba(1,4,9,0.0) 0%,rgba(1,4,9,0.6) 100%);pointer-events:none;z-index:0;"></div>'
+    +'<div style="position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at 50% 50%,rgba(1,4,9,0.0) 0%,rgba(1,4,9,0.85) 100%);pointer-events:none;z-index:0;"></div>'
     +'<div style="position:relative;z-index:1;text-align:center;max-width:380px;width:100%;padding:0 20px;">'
     +'<div style="font-size:9px;font-weight:600;color:var(--c-text2);letter-spacing:4px;text-transform:uppercase;margin-bottom:24px;opacity:0.6;">RESTRICTED ACCESS</div>'
     +'<div style="font-size:42px;font-weight:900;letter-spacing:-2px;background:linear-gradient(135deg,#58a6ff,#0550ae);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px;">SAMARITAN</div>'
-    +'<div style="font-size:11px;color:var(--c-text2);letter-spacing:2px;margin-bottom:32px;opacity:0.7;">SPECIAL PROJECTS DIVISION</div>'
+    +'<div style="font-size:11px;color:var(--c-text2);letter-spacing:2px;margin-bottom:32px;opacity:0.7;">SPECIAL PROJECTS</div>'
     +'<div style="background:rgba(22,27,34,0.9);border:1px solid rgba(88,166,255,0.2);border-radius:12px;padding:24px;backdrop-filter:blur(10px);">'
     +'<div style="font-size:11px;color:var(--c-text2);margin-bottom:16px;line-height:1.6;">This system is for authorized personnel only.<br>Unauthorized access is monitored and logged.</div>'
     +'<div style="margin-bottom:12px;text-align:left;">'
@@ -4793,7 +4925,7 @@ function renderSamaritanLogin(c){
     +'<button class="btn" id="sam-return-btn" style="opacity:0.6;" onclick="nav(\'home\')">Return</button>'
     +'</div>'
     +'</div>'
-    +'<div style="margin-top:16px;font-size:9px;color:var(--c-text2);opacity:0.4;letter-spacing:2px;">SAMARITAN SYSTEMS — CONTINGENCY DIVISION</div>'
+    +'<div style="margin-top:16px;font-size:9px;color:var(--c-text2);opacity:0.4;letter-spacing:2px;">Samaritan Systems</div>'
     +'</div>'
     +'</div>';
 
@@ -4807,8 +4939,10 @@ function renderSamaritanLogin(c){
     }
     // The Samaritan password is stored in Firebase under meta/samPass
     // For now use a default, SM can change it in machine mgmt
-    var samPass = (SITE_CONFIG&&SITE_CONFIG.samPass)||'samaritan2024';
-    if(pass === samPass){
+    // Check per-user auth code from clearance data, fall back to global samPass
+    var myClr = CLEARANCE_DATA[ME]||{};
+    var userCode = myClr.authCode||(SITE_CONFIG&&SITE_CONFIG.samPass)||'samaritan2024';
+    if(pass === userCode){
       SAM_SESSION = {username: ME, level: hasClearance('manager')?'manager':'access'};
       auditLog('Samaritan Portal Access',ME+' authenticated');
       renderSamaritanMain(c);
@@ -4844,7 +4978,7 @@ function renderSamaritanMain(c){
     +'</div>'
     // Main content
     +'<div style="padding:16px;">'
-    +'<div class="ptitle" style="background:linear-gradient(90deg,#0550ae,#1158a8);font-size:12px;letter-spacing:1px;text-transform:uppercase;">Special Projects — Contingencies</div>'
+    +'<div class="ptitle" style="background:linear-gradient(90deg,#0550ae,#1158a8);font-size:12px;letter-spacing:1px;text-transform:uppercase;">Special Projects</div>'
     +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:12px;">'
     +renderContingencyButtons(isManager)
     +'</div>'
@@ -4874,9 +5008,9 @@ function renderContingencyButtons(isManager){
     {id:'openhouse',  name:'Open House',       icon:'🏠', desc:'Unlock restricted areas', color:'#0969da'},
   ];
   return contingencies.map(function(ct){
-    return '<button id="cont-'+ct.id+'" style="background:var(--bg-sbox);border:1px solid var(--c-border);border-top:3px solid '+ct.color+';border-radius:8px;padding:12px 10px;cursor:pointer;text-align:left;transition:border-color 0.15s,transform 0.1s;display:flex;flex-direction:column;gap:4px;" '
-      +'onmouseover="this.style.transform=\'translateY(-1px)\';this.style.borderColor=\''+ct.color+'\'" '
-      +'onmouseout="this.style.transform=\'\';this.style.borderColor=\'\';">'
+    return '<button id="cont-'+ct.id+'" style="background:var(--bg-sbox);border:1px solid var(--c-border);border-top:3px solid '+ct.color+';border-radius:8px;padding:12px 10px;cursor:pointer;text-align:left;transition:transform 0.15s,box-shadow 0.15s;display:flex;flex-direction:column;gap:4px;" '
+      +'onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 20px rgba(0,0,0,0.3)\';" '
+      +'onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\';">' 
       +'<span style="font-size:20px;">'+ct.icon+'</span>'
       +'<span style="font-size:12px;font-weight:700;color:var(--c-text);">'+ct.name+'</span>'
       +'<span style="font-size:10px;color:var(--c-text2);">'+ct.desc+'</span>'
@@ -4924,12 +5058,17 @@ function staffSelect(id, label){
 
 function expiryInput(prefix){
   return '<div style="margin-bottom:8px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:3px;">Expiry</label>'
-    +'<select id="'+prefix+'ExpiryType" style="width:100%;margin-bottom:4px;" onchange="document.getElementById(\''+prefix+'CustomExpiry\').style.display=this.value===\'custom\'?\'block\':\'none\'">'
+    +'<select id="'+prefix+'ExpiryType" style="width:100%;margin-bottom:4px;" onchange="document.getElementById(\''+prefix+'CustomExpiry\').style.display=this.value===\'custom\'?\'flex\':\'none\'">'
     +'<option value="manual">Manual (disable by button)</option>'
     +'<option value="1h">1 Hour</option><option value="4h">4 Hours</option>'
-    +'<option value="24h">24 Hours</option><option value="7d">7 Days</option>'
-    +'<option value="custom">Custom</option></select>'
-    +'<input type="datetime-local" id="'+prefix+'CustomExpiry" style="width:100%;display:none;"/></div>';
+    +'<option value="12h">12 Hours</option><option value="24h">24 Hours</option>'
+    +'<option value="3d">3 Days</option><option value="7d">7 Days</option>'
+    +'<option value="custom">Custom (d / h / m)</option></select>'
+    +'<div id="'+prefix+'CustomExpiry" style="display:none;align-items:center;gap:5px;flex-wrap:wrap;">'
+    +'<input type="number" id="'+prefix+'CustomD" style="width:55px;" placeholder="0" min="0"/> <span style="font-size:11px;color:var(--c-text);">d</span>'
+    +'<input type="number" id="'+prefix+'CustomH" style="width:55px;" placeholder="0" min="0" max="23"/> <span style="font-size:11px;color:var(--c-text);">h</span>'
+    +'<input type="number" id="'+prefix+'CustomM" style="width:55px;" placeholder="0" min="0" max="59"/> <span style="font-size:11px;color:var(--c-text);">m</span>'
+    +'</div></div>';
 }
 
 function getExpiryTs(prefix){
@@ -4937,46 +5076,125 @@ function getExpiryTs(prefix){
   if(type==='manual') return 0;
   if(type==='1h') return Date.now()+3600000;
   if(type==='4h') return Date.now()+14400000;
+  if(type==='12h') return Date.now()+43200000;
   if(type==='24h') return Date.now()+86400000;
+  if(type==='3d') return Date.now()+259200000;
   if(type==='7d') return Date.now()+604800000;
-  var custom = document.getElementById(prefix+'CustomExpiry');
-  if(custom && custom.value) return new Date(custom.value).getTime();
+  if(type==='custom'){
+    var d=parseInt((document.getElementById(prefix+'CustomD')||{value:'0'}).value)||0;
+    var h=parseInt((document.getElementById(prefix+'CustomH')||{value:'0'}).value)||0;
+    var m=parseInt((document.getElementById(prefix+'CustomM')||{value:'0'}).value)||0;
+    var ms=(d*86400+h*3600+m*60)*1000;
+    return ms>0?Date.now()+ms:0;
+  }
   return 0;
 }
 
 function renderGlasgow(panel){
-  var featureLabels = {
-    canModerateUsers:'Moderate Users',canViewUserAdmin:'View User Admin',
-    canViewModLog:'View Mod Log',canManageStaff:'Manage Staff',
-    canViewStaff:'View Staff Registry',canSendStaffMessage:'Send Messages',
-    canViewAppealLog:'View Appeals',canViewRequests:'View Requests',
-    canViewContentModeration:'Content Moderation',canViewSuggestions:'View Suggestions'
-  };
+  // Get features available to current user's rank for blocking
+  var allFeatures = [
+    {key:'canModerateUsers',label:'Moderate Users',cat:'Features'},
+    {key:'canViewUserAdmin',label:'View User Admin',cat:'Features'},
+    {key:'canManageStaff',label:'Manage Staff',cat:'Features'},
+    {key:'canViewAppealLog',label:'Review Appeals',cat:'Features'},
+    {key:'canViewRequests',label:'Mod Requests',cat:'Features'},
+    {key:'canSendStaffMessage',label:'Send Messages',cat:'Features'},
+    {key:'canViewContentModeration',label:'Content Moderation',cat:'Features'},
+    {key:'canViewSuggestions',label:'Suggestions',cat:'Features'},
+    {key:'canViewModLog',label:'Moderation Log',cat:'Channels'},
+    {key:'canViewRevokeLogs',label:'Revoke Log',cat:'Channels'},
+    {key:'canViewSuspendLogs',label:'Suspension Log',cat:'Channels'},
+    {key:'canViewTerminateLogs',label:'Termination Log',cat:'Channels'},
+    {key:'canViewLoginLog',label:'Login Log',cat:'Channels'},
+    {key:'canViewStaff',label:'Staff Registry',cat:'Channels'},
+    {key:'canViewStaffActivity',label:'Staff Activity',cat:'Channels'},
+    {key:'canViewStaffConfig',label:'Staff Config',cat:'Channels'},
+    {key:'canViewUserConfig',label:'User Config',cat:'Channels'},
+    {key:'accounts',label:'All Accounts',cat:'Channels'},
+    {key:'reputation',label:'Reputation',cat:'Channels'},
+    {key:'messaging',label:'Messaging',cat:'Channels'},
+  ];
+
+  var cats = {Features:'⚙ Features (Actions)',Channels:'📺 Channels (View Access)'};
+
+  var catHTML = Object.entries(cats).map(function(e){
+    var catKey=e[0], catLabel=e[1];
+    var items=allFeatures.filter(function(f){return f.cat===catKey;});
+    return '<div style="margin-bottom:10px;">'
+      +'<div style="font-size:10px;font-weight:700;color:var(--c-text2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;padding-bottom:3px;border-bottom:1px solid var(--c-border);">'+catLabel+'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;">'
+      +items.map(function(f){
+        return '<label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--c-text);cursor:pointer;padding:2px;">'
+          +'<input type="checkbox" class="glasgow-feat" data-feat="'+f.key+'"/> '+f.label+'</label>';
+      }).join('')
+      +'</div></div>';
+  }).join('');
+
+  // Staff search input instead of dropdown
+  var staffList = Object.entries(STAFF).map(function(e){
+    return '<div class="glasgow-staff-option" data-sid="'+e[0]+'" data-name="'+e[1].username.toLowerCase()+'" style="padding:5px 8px;cursor:pointer;font-size:12px;color:var(--c-text);display:flex;align-items:center;gap:6px;" onmouseover="this.style.background=\'var(--bg-tbl-hover)\'" onmouseout="this.style.background=\'\'">'
+      +tinyAvatar(e[1].username,e[1].avatarUrl)+'</div>';
+  }).join('');
+
   panel.innerHTML = contPanel('Glasgow Block','🚫','#cf222e',
-    staffSelect('glasgow-staff','Target Staff Member')
-    +'<div style="font-size:11px;color:var(--c-text2);margin-bottom:6px;">Select features to block for this staff member:</div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:10px;">'
-    +SAM_FEATURES.map(function(f){
-      return '<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--c-text);cursor:pointer;">'
-        +'<input type="checkbox" class="glasgow-feat" data-feat="'+f+'"/> '+(featureLabels[f]||f)+'</label>';
-    }).join('')
-    +'</div>'
-    +'<div style="display:flex;gap:8px;">'
+    '<div style="margin-bottom:8px;">'
+    +'<label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:3px;">Target Staff Member</label>'
+    +'<div style="position:relative;">'
+    +'<input type="text" id="glasgow-staff-search" style="width:100%;" placeholder="Type to search staff…" autocomplete="off"/>'
+    +'<input type="hidden" id="glasgow-staff-id"/>'
+    +'<div id="glasgow-staff-results" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg-dialog);border:1px solid var(--c-border);border-radius:0 0 6px 6px;z-index:100;max-height:140px;overflow-y:auto;">'
+    +staffList
+    +'</div></div></div>'
+    +'<div style="font-size:11px;color:var(--c-text2);margin-bottom:8px;">Block specific features or entire channels. Blocked channels show a blur overlay instead of content.</div>'
+    +catHTML
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap;">'
     +'<button class="btn" id="glasgow-enable" style="background:#cf222e;color:#fff;border-color:#cf222e;">Enable Glasgow</button>'
     +'<button class="btn" id="glasgow-disable">Disable Glasgow</button>'
+    +'<button class="btn small" id="glasgow-select-all">Select All</button>'
+    +'<button class="btn small" id="glasgow-clear-all">Clear All</button>'
     +'</div><div id="glasgow-msg" style="font-size:11px;margin-top:5px;color:var(--c-ok);"></div>'
   );
+
+  // Staff search autocomplete
+  var searchInp = document.getElementById('glasgow-staff-search');
+  var hiddenId = document.getElementById('glasgow-staff-id');
+  var results = document.getElementById('glasgow-staff-results');
+  searchInp.oninput = function(){
+    var q=this.value.toLowerCase();
+    var opts=results.querySelectorAll('.glasgow-staff-option');
+    var any=false;
+    opts.forEach(function(opt){ var show=!q||opt.dataset.name.includes(q); opt.style.display=show?'':'none'; if(show) any=true; });
+    results.style.display=any&&q?'block':'none';
+  };
+  results.querySelectorAll('.glasgow-staff-option').forEach(function(opt){
+    opt.onclick=function(){
+      hiddenId.value=opt.dataset.sid;
+      var s=STAFF[opt.dataset.sid];
+      searchInp.value=s?s.username:'';
+      results.style.display='none';
+      // Load current blocked features for this staff
+      var current=(GLASGOW_DATA[opt.dataset.sid]&&GLASGOW_DATA[opt.dataset.sid].blocked)||[];
+      document.querySelectorAll('.glasgow-feat').forEach(function(cb){ cb.checked=current.indexOf(cb.dataset.feat)!==-1; });
+    };
+  });
+  document.addEventListener('click',function closeGlasgow(e){ if(!e.target.closest('#glasgow-staff-search')&&!e.target.closest('#glasgow-staff-results')){ results.style.display='none'; } });
+
+  document.getElementById('glasgow-select-all').onclick=function(){ document.querySelectorAll('.glasgow-feat').forEach(function(cb){ cb.checked=true; }); };
+  document.getElementById('glasgow-clear-all').onclick=function(){ document.querySelectorAll('.glasgow-feat').forEach(function(cb){ cb.checked=false; }); };
+
   document.getElementById('glasgow-enable').onclick = async function(){
-    var sid = document.getElementById('glasgow-staff').value;
+    var sid = hiddenId.value;
+    if(!sid){ showToast('Select a staff member first.','error'); return; }
     var feats = [...document.querySelectorAll('.glasgow-feat:checked')].map(function(el){ return el.dataset.feat; });
     await update(ref(db,'contingencies/glasgow/'+sid),{active:true,blocked:feats,by:ME,ts:Date.now()});
     GLASGOW_DATA[sid]={active:true,blocked:feats};
-    document.getElementById('glasgow-msg').textContent='Glasgow Block enabled for '+(STAFF[sid]&&STAFF[sid].username||sid);
+    document.getElementById('glasgow-msg').textContent='Glasgow Block enabled for '+(STAFF[sid]&&STAFF[sid].username||sid)+' ('+feats.length+' items blocked)';
     auditLog('Glasgow Block Enabled',sid+': '+feats.join(','));
-    showToast('Glasgow Block activated.','warning');
+    showToast('Glasgow Block activated for '+(STAFF[sid]&&STAFF[sid].username||sid)+'.','warning');
   };
   document.getElementById('glasgow-disable').onclick = async function(){
-    var sid = document.getElementById('glasgow-staff').value;
+    var sid = hiddenId.value;
+    if(!sid){ showToast('Select a staff member first.','error'); return; }
     await update(ref(db,'contingencies/glasgow/'+sid),{active:false,blocked:[]});
     GLASGOW_DATA[sid]={active:false,blocked:[]};
     document.getElementById('glasgow-msg').textContent='Glasgow Block disabled.';
@@ -5070,18 +5288,15 @@ function renderCleanSlate(panel){
   document.getElementById('cleanslate-confirm-yes').onclick = async function(){
     var uname = document.getElementById('cleanslate-user').value.trim();
     var reason = document.getElementById('cleanslate-reason').value.trim()||'No reason';
-    // Find user
-    var uid = Object.keys(USERS).find(function(id){ return (USERS[id].username||'').toLowerCase()===uname.toLowerCase(); });
     var deletions = 0;
-    // Delete from all log paths
+    // Delete ALL log entries mentioning this username — account stays intact
     var logPaths = ['logs/moderation','logs/revoke','logs/suspend','logs/terminate','logs/login','logs/audit','logs/appeals'];
     for(var i=0;i<logPaths.length;i++){
       var snap = await get(ref(db,logPaths[i]));
       if(snap.exists()){
         var entries = snap.val();
         for(var lid in entries){
-          var entry = entries[lid];
-          var entryStr = JSON.stringify(entry).toLowerCase();
+          var entryStr = JSON.stringify(entries[lid]).toLowerCase();
           if(entryStr.indexOf(uname.toLowerCase())!==-1){
             await remove(ref(db,logPaths[i]+'/'+lid));
             deletions++;
@@ -5089,12 +5304,16 @@ function renderCleanSlate(panel){
         }
       }
     }
-    // Delete user account entirely
-    if(uid){ await remove(ref(db,'users/'+uid)); deletions++; }
+    // Also wipe punishment history from user account but keep the account
+    var uid = Object.keys(USERS).find(function(id){ return (USERS[id].username||'').toLowerCase()===uname.toLowerCase(); });
+    if(uid){
+      await remove(ref(db,'users/'+uid+'/punishments'));
+      deletions++;
+    }
     auditLog('CLEAN SLATE EXECUTED',uname+' — '+reason+' — '+deletions+' records deleted by '+ME);
-    document.getElementById('cleanslate-msg').textContent='Clean Slate complete. '+deletions+' records erased.';
+    document.getElementById('cleanslate-msg').textContent='Clean Slate complete. '+deletions+' records erased. Account preserved.';
     document.getElementById('cleanslate-confirm').style.display='none';
-    showToast('Clean Slate executed. '+deletions+' records removed.','success');
+    showToast('Clean Slate: '+deletions+' records removed. Account intact.','success');
   };
 }
 
@@ -5143,114 +5362,196 @@ function renderElephant(panel){
 
 function renderGoldfish(panel){
   panel.innerHTML = contPanel('Goldfish','🐟','#0550ae',
-    '<div style="font-size:11px;color:var(--c-text2);margin-bottom:10px;">Goldfish makes selected logs temporary — they auto-delete after the set period. Can also target a specific staff member\'s actions.</div>'
-    +'<div style="margin-bottom:8px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:3px;">Affected Logs</label>'
-    +'<div style="display:flex;flex-wrap:wrap;gap:6px;">'
-    +['modlog','revoke','suspend','terminate','messages'].map(function(l){
-      return '<label style="font-size:11px;color:var(--c-text);display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" class="goldfish-log" value="'+l+'"/> '+l+'</label>';
+    '<div style="font-size:11px;color:var(--c-text2);margin-bottom:10px;">Goldfish makes logs temporary. Selected channels will have entries deleted after the set period. Optionally target a specific staff member\'s actions.</div>'
+    +'<div style="margin-bottom:8px;"><label style="font-size:11px;font-weight:600;color:var(--c-text);display:block;margin-bottom:4px;">Affected Log Channels</label>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;">'
+    +['logs/moderation:Mod Log','logs/revoke:Revoke Log','logs/suspend:Suspend Log','logs/terminate:Terminate Log','staffMessages:Staff Messages','logs/appeals:Appeals'].map(function(s){
+      var p=s.split(':');
+      return '<label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--c-text);cursor:pointer;padding:2px;"><input type="checkbox" class="goldfish-log-chk" value="'+p[0]+'"/> '+p[1]+'</label>';
     }).join('')
     +'</div></div>'
     +'<div style="margin-bottom:8px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:3px;">Target Staff (optional — leave blank for all)</label>'
-    +'<input type="text" id="goldfish-staff" style="width:100%;" placeholder="Username (optional)"/></div>'
+    +'<input type="text" id="goldfish-staff-filter" style="width:100%;" placeholder="Username — leave blank to affect all staff"/></div>'
     +expiryInput('goldfish')
     +'<div style="display:flex;gap:8px;margin-top:6px;">'
-    +'<button class="btn" id="goldfish-enable" style="background:#0550ae;color:#fff;border-color:#0550ae;">Enable</button>'
-    +'<button class="btn" id="goldfish-disable">Disable</button>'
+    +'<button class="btn" id="goldfish-enable" style="background:#0550ae;color:#fff;border-color:#0550ae;">Enable Goldfish</button>'
+    +'<button class="btn" id="goldfish-disable">Disable Goldfish</button>'
     +'</div><div id="goldfish-msg" style="font-size:11px;margin-top:5px;color:var(--c-ok);"></div>'
   );
+
   document.getElementById('goldfish-enable').onclick = async function(){
-    var logs=[...document.querySelectorAll('.goldfish-log:checked')].map(function(el){return el.value;});
-    var staff=document.getElementById('goldfish-staff').value.trim();
+    var logs=[...document.querySelectorAll('.goldfish-log-chk:checked')].map(function(el){return el.value;});
+    if(!logs.length){ showToast('Select at least one log channel.','error'); return; }
+    var staff=document.getElementById('goldfish-staff-filter').value.trim();
     var expTs=getExpiryTs('goldfish');
-    await set(ref(db,'contingencies/goldfish'),{active:true,logs,staff:staff||null,expiry:expTs,by:ME,ts:Date.now()});
-    document.getElementById('goldfish-msg').textContent='Goldfish enabled.';
-    auditLog('Goldfish Enabled',logs.join(',')+' staff:'+staff);
-    showToast('Goldfish active — logs are now temporary.','warning');
+    if(!expTs){ showToast('Set an expiry time for Goldfish.','error'); return; }
+    await set(ref(db,'contingencies/goldfish'),{active:true,logs:logs,staff:staff||null,expiry:expTs,by:ME,ts:Date.now()});
+    // Schedule deletion job — store deletion timestamp
+    await set(ref(db,'contingencies/goldfish/deleteAt'),expTs);
+    document.getElementById('goldfish-msg').textContent='Goldfish enabled. Logs will be purged at expiry.';
+    auditLog('Goldfish Enabled',logs.join(',')+' staff:'+(staff||'all')+' expiry:'+new Date(expTs).toLocaleString());
+    showToast('Goldfish active — log purge scheduled.','warning');
   };
   document.getElementById('goldfish-disable').onclick = async function(){
     await update(ref(db,'contingencies/goldfish'),{active:false});
-    document.getElementById('goldfish-msg').textContent='Goldfish disabled.';
+    document.getElementById('goldfish-msg').textContent='Goldfish disabled. Scheduled purge cancelled.';
     showToast('Goldfish deactivated.','success');
   };
+
+  // Show current status
+  get(ref(db,'contingencies/goldfish')).then(function(snap){
+    if(snap.exists()&&snap.val().active){
+      var d=snap.val();
+      document.getElementById('goldfish-msg').textContent='Currently active. Purge at: '+new Date(d.expiry||0).toLocaleString();
+      document.getElementById('goldfish-msg').style.color='var(--c-sus)';
+    }
+  });
 }
+
 
 function renderBeehive(panel){
   var alertTypes=[
-    {val:'info',label:'Info'},
-    {val:'warning',label:'Warning'},
-    {val:'critical',label:'Critical'},
-    {val:'emergency',label:'Emergency'},
-    {val:'lockdown',label:'Lockdown'},
-    {val:'standby',label:'Stand By'},
+    {val:'info',    label:'Info',      color:'#0969da', icon:'ℹ'},
+    {val:'warning', label:'Warning',   color:'#d29922', icon:'⚠'},
+    {val:'critical',label:'Critical',  color:'#cf222e', icon:'🚨'},
+    {val:'emergency',label:'Emergency',color:'#ff4444', icon:'🆘'},
+    {val:'lockdown',label:'Lockdown',  color:'#8250df', icon:'🔒'},
+    {val:'standby', label:'Stand By',  color:'#1a7f37', icon:'🟡'},
+    {val:'allclear',label:'All Clear', color:'#1a7f37', icon:'✅'},
   ];
   panel.innerHTML = contPanel('Beehive','🐝','#d29922',
-    '<div style="font-size:11px;color:var(--c-text2);margin-bottom:8px;">Broadcast a high-priority alert to all active staff sessions.</div>'
-    +'<div style="margin-bottom:8px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:3px;">Alert Level</label>'
-    +'<select id="beehive-type" style="width:100%;">'+alertTypes.map(function(t){ return '<option value="'+t.val+'">'+t.label+'</option>'; }).join('')+'</select></div>'
+    '<div style="font-size:11px;color:var(--c-text2);margin-bottom:10px;">Broadcast a high-priority alert to all active staff. Beehive alerts appear as a prominent banner with escalated styling.</div>'
+    +'<div style="margin-bottom:8px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:4px;">Alert Level</label>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;">'
+    +alertTypes.map(function(t){
+      return '<label style="display:flex;align-items:center;gap:5px;padding:4px 8px;border:1px solid var(--c-border);border-radius:5px;cursor:pointer;font-size:11px;color:var(--c-text);">'
+        +'<input type="radio" name="beehive-type-radio" value="'+t.val+'"/> '+t.icon+' '+t.label+'</label>';
+    }).join('')
+    +'</div></div>'
     +'<div style="margin-bottom:8px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:3px;">Message</label>'
-    +'<textarea id="beehive-msg-txt" style="width:100%;height:60px;" placeholder="Alert message…"></textarea></div>'
+    +'<textarea id="beehive-msg-txt" style="width:100%;height:60px;" placeholder="Alert message displayed to all staff…"></textarea></div>'
     +expiryInput('beehive')
     +'<div style="display:flex;gap:8px;margin-top:6px;">'
-    +'<button class="btn" id="beehive-enable" style="background:#d29922;color:#fff;border-color:#d29922;">Broadcast</button>'
-    +'<button class="btn" id="beehive-disable">Cancel Alert</button>'
+    +'<button class="btn" id="beehive-enable" style="background:#d29922;color:#fff;border-color:#d29922;">Broadcast Beehive</button>'
+    +'<button class="btn" id="beehive-disable">Cancel All Beehive Alerts</button>'
     +'</div><div id="beehive-output" style="font-size:11px;margin-top:5px;color:var(--c-ok);"></div>'
   );
+
   document.getElementById('beehive-enable').onclick = async function(){
-    var type=document.getElementById('beehive-type').value;
-    var msg=document.getElementById('beehive-msg-txt').value.trim();
-    if(!msg){showToast('Enter a message.','error');return;}
-    var expTs=getExpiryTs('beehive');
-    // Post as a site alert with extended type
-    await push(ref(db,'siteAlerts'),{message:'[BEEHIVE — '+type.toUpperCase()+'] '+msg,type:type==='emergency'||type==='lockdown'?'critical':type==='standby'?'info':'warning',by:ME,date:nowStr(),active:true,expiresAt:expTs,beehive:true});
-    document.getElementById('beehive-output').textContent='Beehive alert broadcast.';
+    var selectedRadio = document.querySelector('input[name="beehive-type-radio"]:checked');
+    if(!selectedRadio){ showToast('Select an alert level.','error'); return; }
+    var type = selectedRadio.value;
+    var msg = document.getElementById('beehive-msg-txt').value.trim();
+    if(!msg){ showToast('Enter a message.','error'); return; }
+    var expTs = getExpiryTs('beehive');
+    var typeInfo = alertTypes.find(function(t){return t.val===type;})||alertTypes[0];
+    // Post as special beehive alert — will render with special styling
+    await push(ref(db,'siteAlerts'),{
+      message: msg,
+      type: type==='emergency'||type==='lockdown'?'critical':type==='allclear'?'info':'warning',
+      beehiveLevel: type,
+      beehiveIcon: typeInfo.icon,
+      by: ME, date: nowStr(), active: true, expiresAt: expTs, beehive: true
+    });
+    document.getElementById('beehive-output').textContent='Beehive ['+type.toUpperCase()+'] broadcast sent.';
     auditLog('Beehive Alert',type+': '+msg);
-    showToast('Beehive broadcast sent.','warning');
+    showToast('Beehive broadcast: '+typeInfo.icon+' '+type.toUpperCase(),'warning');
   };
   document.getElementById('beehive-disable').onclick = async function(){
-    // Deactivate all beehive alerts
     var snap = await get(ref(db,'siteAlerts'));
     if(snap.exists()){
       var updates={};
       Object.entries(snap.val()).forEach(function(e){ if(e[1].beehive) updates['siteAlerts/'+e[0]+'/active']=false; });
       if(Object.keys(updates).length) await update(ref(db,'/'),updates);
     }
-    document.getElementById('beehive-output').textContent='Beehive alerts cancelled.';
-    showToast('Beehive deactivated.','success');
+    document.getElementById('beehive-output').textContent='All Beehive alerts cancelled.';
+    showToast('Beehive alerts cancelled.','success');
   };
 }
 
+
 function renderOvertime(panel){
+  var featureLabels=[
+    {key:'canModerateUsers',label:'Moderate Users',cat:'Features'},
+    {key:'canViewUserAdmin',label:'View User Admin',cat:'Features'},
+    {key:'canManageStaff',label:'Manage Staff',cat:'Features'},
+    {key:'canViewAppealLog',label:'Review Appeals',cat:'Features'},
+    {key:'canViewRequests',label:'View Requests',cat:'Features'},
+    {key:'canSendStaffMessage',label:'Send Messages',cat:'Features'},
+    {key:'canViewContentModeration',label:'Content Moderation',cat:'Features'},
+    {key:'canViewModLog',label:'Moderation Log',cat:'Channels'},
+    {key:'canViewRevokeLogs',label:'Revoke Log',cat:'Channels'},
+    {key:'canViewSuspendLogs',label:'Suspension Log',cat:'Channels'},
+    {key:'canViewTerminateLogs',label:'Termination Log',cat:'Channels'},
+    {key:'canViewStaff',label:'Staff Registry',cat:'Channels'},
+    {key:'canViewStaffActivity',label:'Staff Activity',cat:'Channels'},
+    {key:'canViewStaffConfig',label:'Staff Config',cat:'Channels'},
+    {key:'canViewUserConfig',label:'User Config',cat:'Channels'},
+  ];
+  var catHTML = ['Features','Channels'].map(function(cat){
+    var items=featureLabels.filter(function(f){return f.cat===cat;});
+    return '<div style="margin-bottom:8px;">'
+      +'<div style="font-size:10px;font-weight:700;color:var(--c-text2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;border-bottom:1px solid var(--c-border);padding-bottom:3px;">'+(cat==='Features'?'⚙ Features':'📺 Channels')+'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;">'
+      +items.map(function(f){
+        return '<label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--c-text);cursor:pointer;padding:2px;">'
+          +'<input type="checkbox" class="overtime-perm" data-perm="'+f.key+'"/> '+f.label+'</label>';
+      }).join('')+'</div></div>';
+  }).join('');
+
   panel.innerHTML = contPanel('Overtime','⚡','#8250df',
-    '<div style="font-size:11px;color:var(--c-text2);margin-bottom:8px;">Temporarily elevate a staff member\'s permissions beyond their rank.</div>'
-    +staffSelect('overtime-staff','Target Staff Member')
-    +'<div style="margin-bottom:8px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:3px;">Override Level</label>'
-    +'<select id="overtime-level" style="width:100%;">'
-    +'<option value="ADMINISTRATOR">Administrator</option>'
-    +'<option value="SUPER ADMINISTRATOR">Super Administrator</option>'
-    +'<option value="SOFTWARE MANAGER">Software Manager</option>'
-    +'</select></div>'
+    '<div style="font-size:11px;color:var(--c-text2);margin-bottom:8px;">Grant a staff member temporary elevated access to specific features and channels beyond their rank.</div>'
+    +'<div style="margin-bottom:8px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:3px;">Target Staff Member</label>'
+    +'<div style="position:relative;">'
+    +'<input type="text" id="overtime-search" style="width:100%;" placeholder="Type to search staff…" autocomplete="off"/>'
+    +'<input type="hidden" id="overtime-staff-id"/>'
+    +'<div id="overtime-results" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg-dialog);border:1px solid var(--c-border);border-radius:0 0 6px 6px;z-index:100;max-height:120px;overflow-y:auto;">'
+    +Object.entries(STAFF).map(function(e){
+      return '<div class="ot-opt" data-sid="'+e[0]+'" data-name="'+e[1].username.toLowerCase()+'" style="padding:5px 8px;cursor:pointer;font-size:12px;color:var(--c-text);" onmouseover="this.style.background=\'var(--bg-tbl-hover)\'" onmouseout="this.style.background=\'\'">'
+        +tinyAvatar(e[1].username,e[1].avatarUrl)+'</div>';
+    }).join('')
+    +'</div></div></div>'
+    +catHTML
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;">'
+    +'<button class="btn small" id="ot-select-all">Select All</button>'
+    +'<button class="btn small" id="ot-clear-all">Clear All</button>'
+    +'</div>'
     +expiryInput('overtime')
     +'<div style="display:flex;gap:8px;margin-top:6px;">'
-    +'<button class="btn" id="overtime-enable" style="background:#8250df;color:#fff;border-color:#8250df;">Activate</button>'
+    +'<button class="btn" id="overtime-enable" style="background:#8250df;color:#fff;border-color:#8250df;">Activate Overtime</button>'
     +'<button class="btn" id="overtime-disable">Deactivate</button>'
     +'</div><div id="overtime-msg" style="font-size:11px;margin-top:5px;color:var(--c-ok);"></div>'
   );
+
+  // Search autocomplete
+  var si=document.getElementById('overtime-search');
+  var hi=document.getElementById('overtime-staff-id');
+  var res=document.getElementById('overtime-results');
+  si.oninput=function(){ var q=this.value.toLowerCase(); var opts=res.querySelectorAll('.ot-opt'); var any=false; opts.forEach(function(o){ var show=!q||o.dataset.name.includes(q); o.style.display=show?'':'none'; if(show)any=true; }); res.style.display=any&&q?'block':'none'; };
+  res.querySelectorAll('.ot-opt').forEach(function(opt){ opt.onclick=function(){ hi.value=opt.dataset.sid; si.value=(STAFF[opt.dataset.sid]&&STAFF[opt.dataset.sid].username)||''; res.style.display='none'; }; });
+  document.getElementById('ot-select-all').onclick=function(){ document.querySelectorAll('.overtime-perm').forEach(function(c){c.checked=true;}); };
+  document.getElementById('ot-clear-all').onclick=function(){ document.querySelectorAll('.overtime-perm').forEach(function(c){c.checked=false;}); };
+
   document.getElementById('overtime-enable').onclick = async function(){
-    var sid=document.getElementById('overtime-staff').value;
-    var level=document.getElementById('overtime-level').value;
+    var sid=hi.value;
+    if(!sid){ showToast('Select a staff member first.','error'); return; }
+    var perms=[...document.querySelectorAll('.overtime-perm:checked')].map(function(el){return el.dataset.perm;});
+    if(!perms.length){ showToast('Select at least one permission.','error'); return; }
     var expTs=getExpiryTs('overtime');
-    await update(ref(db,'contingencies/overtime/'+sid),{active:true,overrideLevel:level,expiry:expTs,originalLevel:(STAFF[sid]&&STAFF[sid].level)||'',by:ME,ts:Date.now()});
-    document.getElementById('overtime-msg').textContent='Overtime activated.';
-    auditLog('Overtime Activated',sid+' -> '+level);
-    showToast('Overtime activated for '+(STAFF[sid]&&STAFF[sid].username||sid)+'.','warning');
+    await update(ref(db,'contingencies/overtime/'+sid),{active:true,grantedPerms:perms,expiry:expTs,originalLevel:(STAFF[sid]&&STAFF[sid].level)||'',by:ME,ts:Date.now()});
+    document.getElementById('overtime-msg').textContent='Overtime activated for '+(STAFF[sid]&&STAFF[sid].username||sid)+' ('+perms.length+' perms)';
+    auditLog('Overtime Activated',sid+': '+perms.join(','));
+    showToast('Overtime activated.','warning');
   };
   document.getElementById('overtime-disable').onclick = async function(){
-    var sid=document.getElementById('overtime-staff').value;
-    await update(ref(db,'contingencies/overtime/'+sid),{active:false});
+    var sid=hi.value;
+    if(!sid){ showToast('Select a staff member first.','error'); return; }
+    await update(ref(db,'contingencies/overtime/'+sid),{active:false,grantedPerms:[]});
     document.getElementById('overtime-msg').textContent='Overtime deactivated.';
     showToast('Overtime deactivated.','success');
   };
 }
+
 
 function renderBranchTransfer(panel){
   panel.innerHTML = contPanel('Branch Transfer','📦','#1a7f37',
@@ -5297,17 +5598,20 @@ function renderBranchTransfer(panel){
 }
 
 function renderOpenHouse(panel){
+  var options = [
+    {id:'oh-bypass-login',    label:'Bypass Login (Guest Access)',   desc:'Allow unauthenticated users to view the panel (read-only)'},
+    {id:'oh-open-appeals',    label:'Open Appeals to All Ranks',     desc:'Grant Trial Moderators access to view and submit appeals'},
+    {id:'oh-open-config',     label:'Open Config to All Admins',     desc:'Grant Administrators access to Configuration channels'},
+    {id:'oh-open-logs',       label:'Open All Logs to Moderators',   desc:'Grant Moderators full read access to all log channels'},
+    {id:'oh-open-staffreg',   label:'Open Staff Registry to Mods',   desc:'Allow Moderators to view staff profiles'},
+    {id:'oh-disable-perms',   label:'Disable Permission Checks',     desc:'All staff see everything (does not override SM restrictions)'},
+  ];
   panel.innerHTML = contPanel('Open House','🏠','#0969da',
-    '<div style="font-size:11px;color:var(--c-text2);margin-bottom:10px;">Temporarily unlock or open restricted features/areas. Useful for maintenance windows or onboarding.</div>'
-    +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;">'
-    +[
-      {id:'oh-bypass-login',label:'Bypass Login Check (allow access without login)',desc:'Opens panel to unauthenticated users for a period'},
-      {id:'oh-open-appeals',label:'Open Appeals to All Ranks',desc:'Allow Trial Mods to view and submit appeals'},
-      {id:'oh-open-config',label:'Open Configuration to All Admins',desc:'Grant all administrators access to Machine Mgmt'},
-      {id:'oh-open-logs',label:'Open All Logs to Moderators',desc:'Grant moderators full log access temporarily'},
-    ].map(function(opt){
+    '<div style="font-size:11px;color:var(--c-text2);margin-bottom:10px;">Temporarily unlock restricted features for all staff. Use for maintenance windows, onboarding sessions, or emergency access.</div>'
+    +'<div style="display:flex;flex-direction:column;gap:5px;margin-bottom:10px;">'
+    +options.map(function(opt){
       return '<label style="display:flex;align-items:flex-start;gap:8px;padding:7px 10px;background:var(--bg-tbl-odd);border:1px solid var(--c-border);border-radius:5px;cursor:pointer;">'
-        +'<input type="checkbox" id="'+opt.id+'" style="margin-top:2px;"/>'
+        +'<input type="checkbox" id="'+opt.id+'" style="margin-top:2px;flex-shrink:0;"/>'
         +'<span><span style="font-size:11px;font-weight:600;color:var(--c-text);display:block;">'+opt.label+'</span>'
         +'<span style="font-size:10px;color:var(--c-text2);">'+opt.desc+'</span></span>'
         +'</label>';
@@ -5315,23 +5619,37 @@ function renderOpenHouse(panel){
     +'</div>'
     +expiryInput('openhouse')
     +'<div style="display:flex;gap:8px;margin-top:6px;">'
-    +'<button class="btn" id="oh-enable" style="background:#0969da;color:#fff;border-color:#0969da;">Open House</button>'
-    +'<button class="btn" id="oh-disable">Close</button>'
+    +'<button class="btn" id="oh-enable" style="background:#0969da;color:#fff;border-color:#0969da;">Open House — Enable</button>'
+    +'<button class="btn" id="oh-disable">Disable Open House</button>'
     +'</div><div id="oh-msg" style="font-size:11px;margin-top:5px;color:var(--c-ok);"></div>'
   );
+
+  // Load current state
+  get(ref(db,'contingencies/openhouse')).then(function(snap){
+    if(snap.exists()&&snap.val().active){
+      var d=snap.val();
+      var opts=d.options||[];
+      opts.forEach(function(id){ var el=document.getElementById(id); if(el) el.checked=true; });
+      document.getElementById('oh-msg').textContent='Currently active: '+opts.length+' option(s)';
+      document.getElementById('oh-msg').style.color='var(--c-sus)';
+    }
+  });
+
   document.getElementById('oh-enable').onclick = async function(){
-    var opts=['oh-bypass-login','oh-open-appeals','oh-open-config','oh-open-logs'];
-    var enabled=opts.filter(function(id){var el=document.getElementById(id);return el&&el.checked;});
+    var opts=options.map(function(o){return o.id;}).filter(function(id){var el=document.getElementById(id);return el&&el.checked;});
+    if(!opts.length){ showToast('Select at least one option.','error'); return; }
     var expTs=getExpiryTs('openhouse');
-    await set(ref(db,'contingencies/openhouse'),{active:true,options:enabled,expiry:expTs,by:ME,ts:Date.now()});
-    document.getElementById('oh-msg').textContent='Open House activated: '+enabled.length+' option(s).';
-    auditLog('Open House Activated',enabled.join(','));
-    showToast('Open House activated.','warning');
+    await set(ref(db,'contingencies/openhouse'),{active:true,options:opts,expiry:expTs,by:ME,ts:Date.now()});
+    document.getElementById('oh-msg').textContent='Open House enabled: '+opts.length+' option(s) active.';
+    auditLog('Open House Enabled',opts.join(','));
+    showToast('Open House enabled — '+opts.length+' restriction(s) lifted.','warning');
   };
   document.getElementById('oh-disable').onclick = async function(){
-    await update(ref(db,'contingencies/openhouse'),{active:false,options:[]});
-    document.getElementById('oh-msg').textContent='Open House closed.';
+    await set(ref(db,'contingencies/openhouse'),{active:false,options:[],by:ME,ts:Date.now()});
+    options.forEach(function(opt){ var el=document.getElementById(opt.id); if(el) el.checked=false; });
+    document.getElementById('oh-msg').textContent='Open House disabled. All restrictions restored.';
     showToast('Open House closed.','success');
+    auditLog('Open House Disabled','By '+ME);
   };
 }
 
@@ -5438,7 +5756,7 @@ function renderAdminLog(c){
           ${CUSTOM_FIELDS.length===0?'<i style="color:var(--c-text2);font-size:11px;">No custom fields yet.</i>':
             CUSTOM_FIELDS.map((f,i)=>`
             <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px;font-size:11px;flex-wrap:wrap;">
-              <b style="width:85px;overflow:hidden;flex-shrink:0;">${f.name}</b>
+              <b style="width:85px;overflow:hidden;flex-shrink:0;color:var(--c-text);">${f.name}</b>
               <span style="color:var(--c-text2);width:45px;flex-shrink:0;">${f.type}</span>
               ${f.type==='select'?`<span style="color:var(--c-text2);font-size:10px;flex:1;min-width:0;overflow:hidden;">${(f.options||[]).join(', ')}</span>`:'<span style="flex:1;"></span>'}
               <div style="display:flex;gap:3px;margin-left:auto;flex-shrink:0;">
@@ -5449,8 +5767,8 @@ function renderAdminLog(c){
         </div>
         <hr style="border:none;border-top:1px solid var(--c-border);margin:6px 0;">
         <div style="font-size:11px;font-weight:bold;color:var(--c-text);margin-bottom:4px;">Add New Field</div>
-        <div class="row"><label>Field Name:</label><input type="text" id="cfName" style="width:110px;" placeholder="e.g. Rank"/></div>
-        <div class="row"><label>Type:</label>
+        <div class="row"><label style="color:var(--c-text);">Field Name:</label><input type="text" id="cfName" style="width:110px;" placeholder="e.g. Rank"/></div>
+        <div class="row"><label style="color:var(--c-text);">Type:</label>
           <select id="cfType" style="width:100px;" onchange="toggleCFOptions(this.value)">
             <option value="select">Dropdown (select)</option>
             <option value="text">Text</option>
@@ -5679,7 +5997,8 @@ async function submitMod(){
   // VIP notice
   if(u.vip){
     openDialog('⭐ VIP User',`<b>${u.username}</b> is a VIP user. Moderation actions against VIP users are reviewed more closely.<br><br>Are you sure you want to apply <b>${action}</b>?`,'',async()=>{
-      await executeModAction(uid, u, action, reason, note);
+      if(glasgowBlocked('canModerateUsers')){ showToast('ERROR — GLASGOW BLOCK','error'); return; }
+  await executeModAction(uid, u, action, reason, note);
       currentUserId=uid;
       const el=document.getElementById('mResult');
       if(el){ el.style.color='#006600'; el.textContent=`"${action}" applied to ${u.username}.`; }
@@ -6286,23 +6605,34 @@ function startHeartbeat(){
   // Freeze frame check — if freeze is active for this user, show freeze screen
   function checkFreezeFrame(){
     if(!ME) return;
-    var mySnap = FREEZE_DATA[ME];
-    var frozen = mySnap&&mySnap.active;
-    var existing = document.getElementById('freeze-screen-overlay');
-    if(frozen && !existing){
-      var overlay=document.createElement('div');
-      overlay.id='freeze-screen-overlay';
-      overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,50,0.97);z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column;';
-      overlay.innerHTML='<div style="color:#58a6ff;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;opacity:0.7;margin-bottom:12px;">NOTICE</div>'
-        +'<div style="color:#e6edf3;font-size:22px;font-weight:900;letter-spacing:2px;">Freeze Frame</div>'
-        +'<div style="color:#8b949e;font-size:12px;margin-top:8px;">Activated by administration. All commands inaccessible.</div>';
-      document.body.appendChild(overlay);
-    } else if(!frozen && existing){
-      existing.remove();
-    }
+    // Read directly from Firebase for instant response
+    get(ref(db,'staff/'+ME+'/freezeActive')).then(function(snap){
+      var frozen = snap.val()===true;
+      var existing = document.getElementById('freeze-screen-overlay');
+      if(frozen && !existing){
+        var overlay=document.createElement('div');
+        overlay.id='freeze-screen-overlay';
+        overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,50,0.98);z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column;';
+        overlay.innerHTML='<div style="color:#58a6ff;font-size:9px;font-weight:700;letter-spacing:4px;text-transform:uppercase;opacity:0.5;margin-bottom:16px;">NOTICE</div>'
+          +'<div style="color:#e6edf3;font-size:28px;font-weight:900;letter-spacing:4px;text-shadow:0 0 40px rgba(88,166,255,0.4);">FREEZE FRAME</div>'
+          +'<div style="color:#8b949e;font-size:12px;margin-top:12px;letter-spacing:1px;">Software inaccessible.</div>';
+        document.body.appendChild(overlay);
+        document.body.style.overflow='hidden';
+        overlay.addEventListener('wheel',function(e){ e.preventDefault(); e.stopPropagation(); },{passive:false});
+        overlay.addEventListener('touchmove',function(e){ e.preventDefault(); },{passive:false});
+        overlay.addEventListener('keydown',function(e){ e.preventDefault(); });
+      } else if(!frozen && existing){
+        existing.remove();
+        document.body.style.overflow='';
+      }
+    }).catch(function(){});
   }
-  setInterval(checkFreezeFrame, 5000);
+  setInterval(checkFreezeFrame, 1000);
   checkFreezeFrame();
+  // Also use Firebase real-time listener for instant response
+  onValue(ref(db,'staff/'+ME+'/freezeActive'),function(snap){
+    setTimeout(checkFreezeFrame, 100);
+  });
   heartbeatInterval=setInterval(async()=>{
     if(!ME) return;
     const snap=await get(ref(db,`staff/${ME}`));
@@ -6476,6 +6806,7 @@ function startListeners(){
   onValue(ref(db,'contingencies/glasgow'),snap=>{ GLASGOW_DATA=snap.val()||{}; });
   onValue(ref(db,'contingencies/freeze'),snap=>{ FREEZE_DATA=snap.val()||{}; });
   onValue(ref(db,'contingencies/lullaby'),snap=>{ LULLABY_DATA=snap.val()||{}; });
+  onValue(ref(db,'contingencies/overtime'),snap=>{ OVERTIME_DATA=snap.val()||{}; });
   onValue(ref(db,'pinnedNotes'),snap=>{ PINNED_NOTES=snap.val()||{}; if(page==='home') safeRender(); });
   // Update online strip every 30s
   updateOnlineStrip();
