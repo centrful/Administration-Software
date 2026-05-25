@@ -1455,140 +1455,140 @@ window.saveAcked = function(arr){ try{ localStorage.setItem(window.getAckKey(), 
 
 // ── BEEHIVE OVERLAY ──
 function showBeehiveOverlay(alertData){
-  // Remove any existing beehive overlay
   var existing=document.getElementById('beehive-overlay');
   if(existing) existing.remove();
-  if(window._beehiveSlideTimer){ clearTimeout(window._beehiveSlideTimer); clearInterval(window._beehiveFlashInterval); }
+  var bar=document.getElementById('announceBar');
+  // Reset bar from any previous beehive
+  if(bar){
+    bar.style.boxShadow='';
+    bar.style.animation='';
+    bar.style.transition='';
+    if(window._beehiveBarFlash){ clearInterval(window._beehiveBarFlash); window._beehiveBarFlash=null; }
+  }
+  if(window._beehiveSlideTimer){ clearTimeout(window._beehiveSlideTimer); }
+  if(window._beehiveFlashInterval){ clearInterval(window._beehiveFlashInterval); }
 
   var level=(alertData.beehiveLevel||'warning').toLowerCase();
-  var icon=alertData.beehiveIcon||'🐝';
   var msg=alertData.message||'';
   msg=msg.replace(/^\[BEEHIVE[^\]]*\]\s*/i,'');
 
-  // Dramatic color palette — each level is visually distinct and intense
+  // SVG icons — no emoji dependency, always renders correctly
+  var icons={
+    info:    '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" fill="#1158a8" stroke="#58a6ff" stroke-width="1.5"/><line x1="10" y1="8" x2="10" y2="14" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/><circle cx="10" cy="5.5" r="1.2" fill="#58a6ff"/></svg>',
+    warning: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2L18 16H2L10 2Z" fill="#7a5000" stroke="#f0a000" stroke-width="1.5" stroke-linejoin="round"/><line x1="10" y1="8" x2="10" y2="12" stroke="#f0c040" stroke-width="2" stroke-linecap="round"/><circle cx="10" cy="14.5" r="1.1" fill="#f0c040"/></svg>',
+    critical:'<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" fill="#6a0000" stroke="#ff4444" stroke-width="1.5"/><line x1="6" y1="6" x2="14" y2="14" stroke="#ff5555" stroke-width="2.5" stroke-linecap="round"/><line x1="14" y1="6" x2="6" y2="14" stroke="#ff5555" stroke-width="2.5" stroke-linecap="round"/></svg>',
+    emergency:'<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><polygon points="10,1 19,18 1,18" fill="#550000" stroke="#ff2020" stroke-width="1.5"/><line x1="10" y1="7" x2="10" y2="13" stroke="#ff4040" stroke-width="2.5" stroke-linecap="round"/><circle cx="10" cy="15.5" r="1.3" fill="#ff4040"/></svg>',
+    lockdown:'<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="5" y="9" width="10" height="8" rx="2" fill="#3a0070" stroke="#9933ff" stroke-width="1.5"/><path d="M7 9V6.5a3 3 0 016 0V9" stroke="#9933ff" stroke-width="1.5" stroke-linecap="round"/><circle cx="10" cy="13" r="1.5" fill="#cc88ff"/></svg>',
+    standby: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" fill="#5a4000" stroke="#f0c000" stroke-width="1.5"/><line x1="10" y1="5" x2="10" y2="10" stroke="#f0c000" stroke-width="2.5" stroke-linecap="round"/><path d="M6 14.5A6 6 0 0014 14.5" stroke="#f0c000" stroke-width="1.5" stroke-linecap="round"/></svg>',
+    allclear:'<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" fill="#003d14" stroke="#2ea043" stroke-width="1.5"/><polyline points="5,10 8.5,13.5 15,7" stroke="#3fb950" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  };
+  var svgIcon=icons[level]||icons.warning;
+
+  // Dramatic color palette — Stand By is now yellow
   var palette={
-    info:     {bg:'#0550ae',     glow:'#58a6ff', border:'#1f6feb', text:'#ffffff', label:'INFORMATION',  pulse:false},
-    warning:  {bg:'#9a6700',     glow:'#f0a000', border:'#e3b341', text:'#ffffff', label:'WARNING',       pulse:false},
-    critical: {bg:'#8a0000',     glow:'#ff3030', border:'#ff4444', text:'#ffffff', label:'CRITICAL',      pulse:true},
-    emergency:{bg:'#660000',     glow:'#ff0000', border:'#ff2020', text:'#ffffff', label:'EMERGENCY',     pulse:true},
-    lockdown: {bg:'#3a0070',     glow:'#bb44ff', border:'#9933ff', text:'#ffffff', label:'LOCKDOWN',      pulse:true},
-    standby:  {bg:'#004d1a',     glow:'#00dd44', border:'#3fb950', text:'#ffffff', label:'STAND BY',      pulse:false},
-    allclear: {bg:'#003d14',     glow:'#00ff55', border:'#2ea043', text:'#ffffff', label:'ALL CLEAR',     pulse:false},
+    info:     {bg:'#0d2a5e', glow:'#58a6ff', border:'#1f6feb', text:'#ffffff', label:'INFORMATION',  pulse:false},
+    warning:  {bg:'#4a2e00', glow:'#f0a000', border:'#e3b341', text:'#ffffff', label:'WARNING',       pulse:false},
+    critical: {bg:'#4a0000', glow:'#ff3030', border:'#ff4444', text:'#ffffff', label:'CRITICAL',      pulse:true},
+    emergency:{bg:'#330000', glow:'#ff0000', border:'#ff2020', text:'#ffffff', label:'EMERGENCY',     pulse:true},
+    lockdown: {bg:'#1a0038', glow:'#bb44ff', border:'#9933ff', text:'#ffffff', label:'LOCKDOWN',      pulse:true},
+    standby:  {bg:'#3d2800', glow:'#f0c000', border:'#e3b341', text:'#ffffff', label:'STAND BY',      pulse:false},
+    allclear: {bg:'#003d14', glow:'#00ff55', border:'#2ea043', text:'#ffffff', label:'ALL CLEAR',     pulse:false},
   };
   var p=palette[level]||palette.warning;
-
-  // Inject CSS animations if not already there
-  if(!document.getElementById('beehive-css')){
-    var styleEl=document.createElement('style');
-    styleEl.id='beehive-css';
-    styleEl.textContent=
-      '@keyframes beeScaleIn{0%{transform:translateX(-50%) scaleX(0.1) scaleY(0.3);opacity:0;}60%{transform:translateX(-50%) scaleX(1.02) scaleY(1.05);}100%{transform:translateX(-50%) scaleX(1) scaleY(1);opacity:1;}}'
-      +'@keyframes beePulse{0%,100%{box-shadow:var(--bee-glow);}50%{box-shadow:var(--bee-glow-intense);}}'
-      +'@keyframes beeSirenL{0%,100%{opacity:0.2;}50%{opacity:1;}}'
-      +'@keyframes beeSirenR{0%,100%{opacity:1;}50%{opacity:0.2;}}'
-      +'@keyframes beeMorphDown{0%{top:50%;transform:translateX(-50%) translateY(-50%);}100%{top:0;transform:translateX(-50%) translateY(0);}}'
-      +'@keyframes beeTextFade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}';
-    document.head.appendChild(styleEl);
-  }
-
   var isUrgent=p.pulse;
-  var glowNorm='0 0 20px '+p.glow+',0 0 60px '+p.glow+'88,inset 0 0 20px rgba(0,0,0,0.3)';
-  var glowIntense='0 0 40px '+p.glow+',0 0 120px '+p.glow+',0 0 200px '+p.glow+'44,inset 0 0 20px rgba(0,0,0,0.3)';
+  var glowNorm='0 0 24px '+p.glow+'99,0 0 60px '+p.glow+'44';
+  var glowIntense='0 0 40px '+p.glow+',0 0 100px '+p.glow+'88,0 0 200px '+p.glow+'22';
 
-  // The overlay — starts in center, morphs to announce bar position
+  // Build the overlay element — positioned at center
   var el=document.createElement('div');
   el.id='beehive-overlay';
-  el.style.cssText=[
-    'position:fixed',
-    'top:50%',
-    'left:50%',
-    'transform:translateX(-50%) scaleX(0.1) scaleY(0.3)',
-    'width:min(90vw,700px)',
-    'background:'+p.bg,
-    'border:2px solid '+p.border,
-    'border-radius:8px',
-    'padding:14px 20px',
-    'z-index:99999',
-    'opacity:0',
-    'animation:beeScaleIn 0.5s cubic-bezier(0.34,1.2,0.64,1) 0.05s forwards',
-    '--bee-glow:'+glowNorm,
-    '--bee-glow-intense:'+glowIntense,
-    'box-shadow:'+glowNorm,
-    'overflow:hidden',
-  ].join(';');
 
-  // Siren lights for urgent
+  // Get announce bar rect for the final position
+  var barRect=bar?bar.getBoundingClientRect():{top:80,left:0,width:window.innerWidth,height:36};
+
+  el.style.cssText='position:fixed;left:50%;top:50%;width:min(88vw,640px);'
+    +'transform:translate(-50%,-50%) scale(0.2);opacity:0;'
+    +'background:'+p.bg+';border:2px solid '+p.border+';border-radius:10px;'
+    +'padding:16px 20px;z-index:99999;overflow:hidden;'
+    +'box-shadow:'+glowNorm+';'
+    +'transition:none;';
+
   var sirenHTML='';
   if(isUrgent){
     sirenHTML='<div style="position:absolute;inset:0;pointer-events:none;overflow:hidden;">'
-      +'<div style="position:absolute;top:0;left:0;width:40%;height:100%;background:linear-gradient(90deg,'+p.glow+'33,transparent);animation:beeSirenL 0.6s ease-in-out infinite;"></div>'
-      +'<div style="position:absolute;top:0;right:0;width:40%;height:100%;background:linear-gradient(-90deg,'+p.glow+'33,transparent);animation:beeSirenR 0.6s ease-in-out infinite;"></div>'
+      +'<div style="position:absolute;top:0;left:-20%;width:50%;height:100%;background:linear-gradient(90deg,'+p.glow+'22,transparent);animation:beeSirenL 0.5s ease-in-out infinite;"></div>'
+      +'<div style="position:absolute;top:0;right:-20%;width:50%;height:100%;background:linear-gradient(-90deg,'+p.glow+'22,transparent);animation:beeSirenR 0.5s ease-in-out infinite;"></div>'
       +'</div>';
   }
 
   el.innerHTML=sirenHTML
     +'<div style="display:flex;align-items:center;gap:12px;position:relative;">'
-    +'<span style="font-size:24px;flex-shrink:0;animation:beeTextFade 0.4s 0.3s both;">'+icon+'</span>'
+    +'<div style="flex-shrink:0;width:28px;height:28px;">'+svgIcon+'</div>'
     +'<div style="flex:1;min-width:0;">'
-    +'<div style="font-size:10px;font-weight:800;letter-spacing:3px;color:'+p.text+';opacity:0.7;animation:beeTextFade 0.4s 0.35s both;">BEEHIVE — '+p.label+'</div>'
-    +'<div style="font-size:14px;font-weight:700;color:'+p.text+';margin-top:2px;animation:beeTextFade 0.4s 0.4s both;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+msg+'</div>'
+    +'<div style="font-size:9px;font-weight:800;letter-spacing:4px;color:'+p.text+';opacity:0.6;margin-bottom:2px;">BEEHIVE — '+p.label+'</div>'
+    +'<div style="font-size:15px;font-weight:700;color:'+p.text+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+msg+'</div>'
     +'</div>'
-    +(isUrgent?'<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:'+p.text+';flex-shrink:0;animation:beeSirenL 0.5s ease-in-out infinite;">⚠ URGENT</div>':'')
+    +(isUrgent?'<div style="font-size:9px;font-weight:900;letter-spacing:3px;color:'+p.text+';opacity:0.9;flex-shrink:0;animation:beeSirenL 0.4s ease-in-out infinite;">&#9888; URGENT</div>':'')
     +'</div>';
 
   document.body.appendChild(el);
 
-  // Start pulsing glow if urgent
+  // Phase 1: pop into center
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      el.style.transition='transform 0.45s cubic-bezier(0.34,1.4,0.64,1),opacity 0.3s ease';
+      el.style.transform='translate(-50%,-50%) scale(1)';
+      el.style.opacity='1';
+    });
+  });
+
+  // Glow pulse for urgent
   if(isUrgent){
     window._beehiveFlashInterval=setInterval(function(){
       if(!document.getElementById('beehive-overlay')){ clearInterval(window._beehiveFlashInterval); return; }
       el.style.boxShadow=el.style.boxShadow===glowIntense?glowNorm:glowIntense;
-    },600);
+    },500);
   }
 
-  // After 2.2s: morph/slide to the announce bar (top of content area)
+  // Phase 2: after 2.4s, slide DOWN to announce bar position (not left, not up)
   window._beehiveSlideTimer=setTimeout(function(){
-    var bar=document.getElementById('announceBar');
-    var barRect=bar?bar.getBoundingClientRect():{top:100,left:0,width:window.innerWidth};
+    var finalTop=barRect.top;
+    var finalLeft=0;
+    var finalWidth='100vw';
 
-    el.style.transition='all 0.6s cubic-bezier(0.4,0,0.2,1)';
-    el.style.top=barRect.top+'px';
-    el.style.borderRadius='0';
-    el.style.width='100vw';
-    el.style.left='0';
+    // Animate sliding DOWN to the bar
+    el.style.transition='top 0.55s cubic-bezier(0.4,0,0.2,1),left 0.55s cubic-bezier(0.4,0,0.2,1),width 0.55s cubic-bezier(0.4,0,0.2,1),transform 0.55s cubic-bezier(0.4,0,0.2,1),border-radius 0.3s,padding 0.3s';
+    el.style.top=finalTop+'px';
+    el.style.left=finalLeft+'px';
+    el.style.width=finalWidth;
     el.style.transform='none';
-    el.style.padding='6px 16px';
-    el.style.fontSize='12px';
+    el.style.borderRadius='0';
+    el.style.padding='5px 16px';
 
-    // After it morphs into the bar position, replace the announce bar content
+    // Phase 3: after slide completes, transfer to the real announce bar
     setTimeout(function(){
       if(el.parentNode) el.remove();
-      // Now force-update the announce bar to show this beehive alert as a permanent bar
+      clearInterval(window._beehiveFlashInterval);
       if(bar){
         bar.style.background=p.bg;
         bar.style.borderBottom='2px solid '+p.border;
-        bar.style.boxShadow='0 2px 20px '+p.glow+'66';
+        bar.style.boxShadow=glowNorm;
         bar.style.display='flex';
         bar.style.alignItems='center';
-        bar.style.padding='6px 16px';
-        bar.style.transition='all 0.3s';
-        bar.innerHTML='<span style="font-size:14px;margin-right:8px;">'+icon+'</span>'
-          +'<span style="font-size:10px;font-weight:800;letter-spacing:2px;color:'+p.text+';opacity:0.7;margin-right:8px;">'+p.label+'</span>'
+        bar.style.padding='5px 16px';
+        bar.innerHTML='<div style="flex-shrink:0;width:18px;height:18px;margin-right:8px;">'+svgIcon+'</div>'
+          +'<span style="font-size:9px;font-weight:800;letter-spacing:3px;color:'+p.text+';opacity:0.65;margin-right:8px;">'+p.label+'</span>'
           +'<span style="font-size:12px;font-weight:600;color:'+p.text+';flex:1;">'+msg+'</span>'
-          +(isUrgent?'<span style="font-size:10px;font-weight:800;letter-spacing:2px;color:'+p.text+';margin-left:8px;animation:beeSirenL 0.5s ease-in-out infinite;">⚠ URGENT</span>':'');
+          +(isUrgent?'<span style="font-size:9px;font-weight:900;letter-spacing:2px;color:'+p.text+';animation:beeSirenL 0.4s ease-in-out infinite;">&#9888; URGENT</span>':'');
         if(isUrgent){
-          var barFlash=setInterval(function(){ bar.style.boxShadow=bar.style.boxShadow.includes('200px')?'0 2px 20px '+p.glow+'66':'0 2px 60px '+p.glow+',0 4px 200px '+p.glow+'33'; },700);
-          setTimeout(function(){clearInterval(barFlash); bar.style.boxShadow='';},30000);
+          window._beehiveBarFlash=setInterval(function(){
+            bar.style.boxShadow=bar.style.boxShadow===glowIntense?glowNorm:glowIntense;
+          },600);
+          setTimeout(function(){ if(window._beehiveBarFlash){ clearInterval(window._beehiveBarFlash); window._beehiveBarFlash=null; } bar.style.boxShadow=''; },30000);
         }
       }
-      clearInterval(window._beehiveFlashInterval);
-    },620);
-  },2200);
-}
-if(!document.getElementById('beehive-css')){
-  var _bs=document.createElement('style');
-  _bs.id='beehive-css-init';
-  document.head.appendChild(_bs);
+    },580);
+  },2400);
 }
 
 
@@ -3545,7 +3545,7 @@ function openReviewPanel(lid){
     <div style="margin-bottom:4px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;">Review Note (required):</label>
       <textarea id="reviewNote" style="width:100%;height:45px;" placeholder="Explain your decision..."></textarea></div>
     <div style="display:flex;gap:6px;justify-content:center;margin-top:2px;">
-      <button class="btn" id="btn-approve-appeal" style="background:#c8e0c8;">Approve</button>
+      <button class="btn" id="btn-approve-appeal" style="background:#1a7f37;color:#fff;border-color:#1a7f37;">Approve</button>
       <button class="btn red" id="btn-deny-appeal">Deny</button>
     </div>
     <div id="reviewResult" style="font-size:11px;margin-top:4px;text-align:center;"></div>`,
@@ -4553,7 +4553,7 @@ function renderRequests(c){
 function openReviewRequest(lid){
   const r=MOD_REQUESTS[lid]; if(!r) return;
   openDialog('Review Moderation Request',`Request from <b>${r.submittedBy}</b> against <b>${r.targetUser}</b> [PROTECTED]:`,`
-    <div style="font-size:11px;background:var(--bg-tbl-odd);padding:6px;border:1px solid var(--c-border);margin-bottom:8px;">
+    <div style="font-size:11px;background:var(--bg-tbl-odd);padding:6px;border:1px solid var(--c-border);margin-bottom:8px;color:var(--c-text);">
       <div><b>Requested Action:</b> ${r.action}</div>
       <div><b>Reason:</b> ${r.reason||'None provided.'}</div>
       <div><b>Submitted:</b> ${r.date}</div>
@@ -4561,7 +4561,7 @@ function openReviewRequest(lid){
     <div style="margin-bottom:4px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;">Review Note (required):</label>
       <textarea id="reqReviewNote" style="width:100%;height:40px;" placeholder="Explain your decision..."></textarea></div>
     <div style="display:flex;gap:6px;justify-content:center;margin-top:4px;">
-      <button class="btn" id="btn-approve-req" style="background:#c8e0c8;">Approve & Execute</button>
+      <button class="btn" id="btn-approve-req" style="background:#1a7f37;color:#fff;border-color:#1a7f37;">Approve & Execute</button>
       <button class="btn red" id="btn-deny-req">Deny Request</button>
     </div>
     <div id="reqResult" style="font-size:11px;margin-top:4px;text-align:center;"></div>`,null);
@@ -4580,7 +4580,7 @@ function openReviewRequest(lid){
     }
     await update(ref(db,`modRequests/${lid}`),{status:'Approved',reviewedBy:ME,reviewNote:note});
     auditLog('Mod Request Approved',`${r.targetUser}: ${r.action} by ${ME}`);
-    document.getElementById('reqResult').style.color='#006600'; document.getElementById('reqResult').textContent='Request approved and action executed.';
+    document.getElementById('reqResult').style.color='var(--c-ok)'; document.getElementById('reqResult').textContent='Request approved and action executed.';
     setTimeout(()=>closeDialog(),1200);
   };
   document.getElementById('btn-deny-req').onclick=async()=>{
@@ -5187,7 +5187,7 @@ function renderSamaritanMain(c){
     +'</div>'
     +'<div style="display:flex;align-items:center;gap:8px;">'
     +'<span style="font-size:10px;color:var(--c-text2);">'+SAM_SESSION.username+' — '+(isManager?'Manager':'Access')+'</span>'
-    +'<button class="btn small" onclick="SAM_SESSION=null;renderSamaritanPortal(document.getElementById(\'content\'))">Log Out</button>'
+    +'<button class="btn small" onclick="SAM_SESSION=null;nav(\'samaritan\')">Log Out</button>'
     +'<button class="btn small" onclick="nav(\'home\')">↩ Return</button>'
     +'</div>'
     +'</div>'
@@ -5738,7 +5738,8 @@ function renderBeehive(panel){
     +expiryInput('beehive')
     +'<div style="display:flex;gap:8px;margin-top:6px;">'
     +'<button class="btn" id="beehive-enable" style="background:#d29922;color:#fff;border-color:#d29922;">Broadcast Beehive</button>'
-    +'<button class="btn" id="beehive-disable">Cancel All Beehive Alerts</button>'
+    +'<button class="btn" id="beehive-disable">Cancel Beehive</button>'
+    +'<button class="btn small" id="bee-clear-site" style="opacity:0.7;">Clear All Site Alerts</button>'
     +'</div><div id="beehive-output" style="font-size:11px;margin-top:5px;color:var(--c-ok);"></div>'
   );
 
@@ -5751,35 +5752,46 @@ function renderBeehive(panel){
     var expTs = getExpiryTs('beehive');
     var typeInfo = alertTypes.find(function(t){return t.val===type;})||alertTypes[0];
     // Post as special beehive alert — will render with special styling
-    await push(ref(db,'siteAlerts'),{
+    // Store in dedicated beehive path — NOT siteAlerts (avoids duplicate regular alert)
+    await set(ref(db,'contingencies/beehive'),{
+      active: true,
       message: msg,
-      type: type==='emergency'||type==='lockdown'?'critical':type==='allclear'?'info':'warning',
       beehiveLevel: type,
-      beehiveIcon: typeInfo.icon,
-      by: ME, date: nowStr(), active: true, expiresAt: expTs, beehive: true, ts: Date.now()
+      by: ME, date: nowStr(), expiresAt: expTs, ts: Date.now()
     });
     document.getElementById('beehive-output').textContent='Beehive ['+type.toUpperCase()+'] broadcast sent.';
     auditLog('Beehive Alert',type+': '+msg);
     showToast('Beehive broadcast: '+typeInfo.icon+' '+type.toUpperCase(),'warning');
-    // Clear all other active site alerts so beehive isn't blocked
-    var clearSnap=await get(ref(db,'siteAlerts'));
-    if(clearSnap.exists()){
-      var clearUpdates={};
-      Object.entries(clearSnap.val()).forEach(function(e){ if(e[1].active&&!e[1].beehive) clearUpdates['siteAlerts/'+e[0]+'/active']=false; });
-      if(Object.keys(clearUpdates).length) await update(ref(db,'/'),clearUpdates);
-    }
+    // Clear announce bar glow from previous beehive
+    var barEl=document.getElementById('announceBar');
+    if(barEl){ barEl.style.boxShadow=''; barEl.style.background=''; }
+    if(window._beehiveBarFlash){ clearInterval(window._beehiveBarFlash); window._beehiveBarFlash=null; }
     // Show the animated overlay on the broadcaster's screen immediately
     showBeehiveOverlay({message:msg, beehiveLevel:type, beehiveIcon:typeInfo.icon});
   };
   document.getElementById('beehive-disable').onclick = async function(){
-    var snap = await get(ref(db,'siteAlerts'));
+    await update(ref(db,'contingencies/beehive'),{active:false});
+    // Reset the announce bar styling
+    var bar=document.getElementById('announceBar');
+    if(bar){ bar.style.boxShadow=''; bar.style.background=''; bar.style.borderBottom=''; }
+    if(window._beehiveBarFlash){ clearInterval(window._beehiveBarFlash); window._beehiveBarFlash=null; }
+    document.getElementById('beehive-output').textContent='Beehive alert cancelled.';
+    showToast('Beehive deactivated.','success');
+    auditLog('Beehive Cancelled','By '+ME);
+  };
+  // Clear all site alerts button
+  document.getElementById('bee-clear-site').onclick = async function(){
+    var snap=await get(ref(db,'siteAlerts'));
     if(snap.exists()){
       var updates={};
-      Object.entries(snap.val()).forEach(function(e){ if(e[1].beehive) updates['siteAlerts/'+e[0]+'/active']=false; });
+      Object.entries(snap.val()).forEach(function(e){ if(e[1].active) updates['siteAlerts/'+e[0]+'/active']=false; });
       if(Object.keys(updates).length) await update(ref(db,'/'),updates);
     }
-    document.getElementById('beehive-output').textContent='All Beehive alerts cancelled.';
-    showToast('Beehive alerts cancelled.','success');
+    var bar=document.getElementById('announceBar');
+    if(bar){ bar.style.display='none'; bar.style.boxShadow=''; }
+    if(window._beehiveBarFlash){ clearInterval(window._beehiveBarFlash); window._beehiveBarFlash=null; }
+    showToast('All site alerts cleared.','success');
+    document.getElementById('beehive-output').textContent='All site alerts cleared.';
   };
 }
 
@@ -7155,17 +7167,15 @@ function startListeners(){
   });
   onValue(ref(db,'contingencies/overtime'),snap=>{ OVERTIME_DATA=snap.val()||{}; });
   onValue(ref(db,'contingencies/openhouse'),snap=>{ OPENHOUSE_DATA=snap.val()||{}; });
-  // Beehive listener — show animated overlay when a new alert is posted
+  // Beehive listener — watch dedicated beehive path
   var _lastBeehiveTs = Date.now();
-  onValue(ref(db,'siteAlerts'),function(snap){
+  onValue(ref(db,'contingencies/beehive'),function(snap){
     if(!snap.exists()) return;
-    var alerts=snap.val();
-    Object.values(alerts).forEach(function(a){
-      if(a.beehive&&a.active&&a.ts&&a.ts>_lastBeehiveTs){
-        _lastBeehiveTs=a.ts;
-        setTimeout(function(){ showBeehiveOverlay(a); },500);
-      }
-    });
+    var a=snap.val();
+    if(a&&a.active&&a.ts&&a.ts>_lastBeehiveTs){
+      _lastBeehiveTs=a.ts;
+      setTimeout(function(){ showBeehiveOverlay(a); },300);
+    }
   });
   onValue(ref(db,'pinnedNotes'),snap=>{ PINNED_NOTES=snap.val()||{}; if(page==='home') safeRender(); });
   // Update online strip every 30s
