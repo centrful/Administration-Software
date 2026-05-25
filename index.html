@@ -1454,68 +1454,143 @@ window.loadAcked = function(){ try{ return JSON.parse(localStorage.getItem(windo
 window.saveAcked = function(arr){ try{ localStorage.setItem(window.getAckKey(), JSON.stringify(arr)); }catch(e){} };
 
 // ── BEEHIVE OVERLAY ──
-function showBeehiveOverlay(alert){
+function showBeehiveOverlay(alertData){
+  // Remove any existing beehive overlay
   var existing=document.getElementById('beehive-overlay');
   if(existing) existing.remove();
-  var level=(alert.beehiveLevel||'warning').toLowerCase();
-  var icon=alert.beehiveIcon||'🐝';
-  var msg=alert.message||'';
-  // Strip [BEEHIVE - X] prefix if present
+  if(window._beehiveSlideTimer){ clearTimeout(window._beehiveSlideTimer); clearInterval(window._beehiveFlashInterval); }
+
+  var level=(alertData.beehiveLevel||'warning').toLowerCase();
+  var icon=alertData.beehiveIcon||'🐝';
+  var msg=alertData.message||'';
   msg=msg.replace(/^\[BEEHIVE[^\]]*\]\s*/i,'');
-  var colors={
-    info:{bg:'rgba(9,105,218,0.95)',border:'#58a6ff',text:'#e6edf3'},
-    warning:{bg:'rgba(180,135,0,0.95)',border:'#f0c000',text:'#fff'},
-    critical:{bg:'rgba(200,30,30,0.97)',border:'#ff4444',text:'#fff'},
-    emergency:{bg:'rgba(180,0,0,0.98)',border:'#ff0000',text:'#fff'},
-    lockdown:{bg:'rgba(80,0,180,0.97)',border:'#cc88ff',text:'#fff'},
-    standby:{bg:'rgba(20,110,50,0.95)',border:'#3fb950',text:'#fff'},
-    allclear:{bg:'rgba(20,110,50,0.95)',border:'#3fb950',text:'#fff'},
+
+  // Dramatic color palette — each level is visually distinct and intense
+  var palette={
+    info:     {bg:'#0550ae',     glow:'#58a6ff', border:'#1f6feb', text:'#ffffff', label:'INFORMATION',  pulse:false},
+    warning:  {bg:'#9a6700',     glow:'#f0a000', border:'#e3b341', text:'#ffffff', label:'WARNING',       pulse:false},
+    critical: {bg:'#8a0000',     glow:'#ff3030', border:'#ff4444', text:'#ffffff', label:'CRITICAL',      pulse:true},
+    emergency:{bg:'#660000',     glow:'#ff0000', border:'#ff2020', text:'#ffffff', label:'EMERGENCY',     pulse:true},
+    lockdown: {bg:'#3a0070',     glow:'#bb44ff', border:'#9933ff', text:'#ffffff', label:'LOCKDOWN',      pulse:true},
+    standby:  {bg:'#004d1a',     glow:'#00dd44', border:'#3fb950', text:'#ffffff', label:'STAND BY',      pulse:false},
+    allclear: {bg:'#003d14',     glow:'#00ff55', border:'#2ea043', text:'#ffffff', label:'ALL CLEAR',     pulse:false},
   };
-  var c=colors[level]||colors.warning;
-  var isEmergency=(level==='emergency'||level==='lockdown');
+  var p=palette[level]||palette.warning;
+
+  // Inject CSS animations if not already there
+  if(!document.getElementById('beehive-css')){
+    var styleEl=document.createElement('style');
+    styleEl.id='beehive-css';
+    styleEl.textContent=
+      '@keyframes beeScaleIn{0%{transform:translateX(-50%) scaleX(0.1) scaleY(0.3);opacity:0;}60%{transform:translateX(-50%) scaleX(1.02) scaleY(1.05);}100%{transform:translateX(-50%) scaleX(1) scaleY(1);opacity:1;}}'
+      +'@keyframes beePulse{0%,100%{box-shadow:var(--bee-glow);}50%{box-shadow:var(--bee-glow-intense);}}'
+      +'@keyframes beeSirenL{0%,100%{opacity:0.2;}50%{opacity:1;}}'
+      +'@keyframes beeSirenR{0%,100%{opacity:1;}50%{opacity:0.2;}}'
+      +'@keyframes beeMorphDown{0%{top:50%;transform:translateX(-50%) translateY(-50%);}100%{top:0;transform:translateX(-50%) translateY(0);}}'
+      +'@keyframes beeTextFade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}';
+    document.head.appendChild(styleEl);
+  }
+
+  var isUrgent=p.pulse;
+  var glowNorm='0 0 20px '+p.glow+',0 0 60px '+p.glow+'88,inset 0 0 20px rgba(0,0,0,0.3)';
+  var glowIntense='0 0 40px '+p.glow+',0 0 120px '+p.glow+',0 0 200px '+p.glow+'44,inset 0 0 20px rgba(0,0,0,0.3)';
+
+  // The overlay — starts in center, morphs to announce bar position
   var el=document.createElement('div');
   el.id='beehive-overlay';
-  el.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.5);z-index:99998;'
-    +'background:'+c.bg+';border:2px solid '+c.border+';border-radius:12px;'
-    +'padding:24px 32px;text-align:center;max-width:480px;width:90%;'
-    +'box-shadow:0 0 60px '+c.border+',0 0 120px rgba(0,0,0,0.5);'
-    +'opacity:0;transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1),opacity 0.3s;';
-  el.innerHTML='<div style="font-size:32px;margin-bottom:8px;">'+icon+'</div>'
-    +'<div style="font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:'+c.text+';opacity:0.7;margin-bottom:4px;">BEEHIVE ALERT — '+level.toUpperCase()+'</div>'
-    +'<div style="font-size:16px;font-weight:700;color:'+c.text+';line-height:1.4;">'+msg+'</div>'
-    +(isEmergency?'<div style="margin-top:10px;animation:emergencyFlash 0.5s infinite alternate;font-size:11px;font-weight:700;letter-spacing:2px;color:'+c.text+';">⚠ IMMEDIATE ATTENTION REQUIRED ⚠</div>':'');
-  document.body.appendChild(el);
-  // Animate in
-  requestAnimationFrame(function(){
-    requestAnimationFrame(function(){
-      el.style.opacity='1';
-      el.style.transform='translate(-50%,-50%) scale(1)';
-    });
-  });
-  // Flash if emergency
-  if(isEmergency){
-    var flashInterval=setInterval(function(){ el.style.boxShadow=el.style.boxShadow.includes('120px')?'0 0 30px '+c.border:'0 0 60px '+c.border+',0 0 120px rgba(0,0,0,0.5)'; },400);
-    setTimeout(function(){clearInterval(flashInterval);},8000);
+  el.style.cssText=[
+    'position:fixed',
+    'top:50%',
+    'left:50%',
+    'transform:translateX(-50%) scaleX(0.1) scaleY(0.3)',
+    'width:min(90vw,700px)',
+    'background:'+p.bg,
+    'border:2px solid '+p.border,
+    'border-radius:8px',
+    'padding:14px 20px',
+    'z-index:99999',
+    'opacity:0',
+    'animation:beeScaleIn 0.5s cubic-bezier(0.34,1.2,0.64,1) 0.05s forwards',
+    '--bee-glow:'+glowNorm,
+    '--bee-glow-intense:'+glowIntense,
+    'box-shadow:'+glowNorm,
+    'overflow:hidden',
+  ].join(';');
+
+  // Siren lights for urgent
+  var sirenHTML='';
+  if(isUrgent){
+    sirenHTML='<div style="position:absolute;inset:0;pointer-events:none;overflow:hidden;">'
+      +'<div style="position:absolute;top:0;left:0;width:40%;height:100%;background:linear-gradient(90deg,'+p.glow+'33,transparent);animation:beeSirenL 0.6s ease-in-out infinite;"></div>'
+      +'<div style="position:absolute;top:0;right:0;width:40%;height:100%;background:linear-gradient(-90deg,'+p.glow+'33,transparent);animation:beeSirenR 0.6s ease-in-out infinite;"></div>'
+      +'</div>';
   }
-  // After 1.5s, slide alert down to the announce bar position
-  setTimeout(function(){
-    el.style.transition='transform 0.6s ease,top 0.6s ease,opacity 0.4s ease';
-    el.style.transform='translate(-50%,-50%) scale(0.85)';
-    el.style.opacity='0.7';
+
+  el.innerHTML=sirenHTML
+    +'<div style="display:flex;align-items:center;gap:12px;position:relative;">'
+    +'<span style="font-size:24px;flex-shrink:0;animation:beeTextFade 0.4s 0.3s both;">'+icon+'</span>'
+    +'<div style="flex:1;min-width:0;">'
+    +'<div style="font-size:10px;font-weight:800;letter-spacing:3px;color:'+p.text+';opacity:0.7;animation:beeTextFade 0.4s 0.35s both;">BEEHIVE — '+p.label+'</div>'
+    +'<div style="font-size:14px;font-weight:700;color:'+p.text+';margin-top:2px;animation:beeTextFade 0.4s 0.4s both;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+msg+'</div>'
+    +'</div>'
+    +(isUrgent?'<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:'+p.text+';flex-shrink:0;animation:beeSirenL 0.5s ease-in-out infinite;">⚠ URGENT</div>':'')
+    +'</div>';
+
+  document.body.appendChild(el);
+
+  // Start pulsing glow if urgent
+  if(isUrgent){
+    window._beehiveFlashInterval=setInterval(function(){
+      if(!document.getElementById('beehive-overlay')){ clearInterval(window._beehiveFlashInterval); return; }
+      el.style.boxShadow=el.style.boxShadow===glowIntense?glowNorm:glowIntense;
+    },600);
+  }
+
+  // After 2.2s: morph/slide to the announce bar (top of content area)
+  window._beehiveSlideTimer=setTimeout(function(){
+    var bar=document.getElementById('announceBar');
+    var barRect=bar?bar.getBoundingClientRect():{top:100,left:0,width:window.innerWidth};
+
+    el.style.transition='all 0.6s cubic-bezier(0.4,0,0.2,1)';
+    el.style.top=barRect.top+'px';
+    el.style.borderRadius='0';
+    el.style.width='100vw';
+    el.style.left='0';
+    el.style.transform='none';
+    el.style.padding='6px 16px';
+    el.style.fontSize='12px';
+
+    // After it morphs into the bar position, replace the announce bar content
     setTimeout(function(){
-      el.style.transition='all 0.5s ease';
-      el.style.top='60px';
-      el.style.opacity='0';
-      setTimeout(function(){ if(el.parentNode) el.remove(); },500);
-    },1000);
-  },3500);
+      if(el.parentNode) el.remove();
+      // Now force-update the announce bar to show this beehive alert as a permanent bar
+      if(bar){
+        bar.style.background=p.bg;
+        bar.style.borderBottom='2px solid '+p.border;
+        bar.style.boxShadow='0 2px 20px '+p.glow+'66';
+        bar.style.display='flex';
+        bar.style.alignItems='center';
+        bar.style.padding='6px 16px';
+        bar.style.transition='all 0.3s';
+        bar.innerHTML='<span style="font-size:14px;margin-right:8px;">'+icon+'</span>'
+          +'<span style="font-size:10px;font-weight:800;letter-spacing:2px;color:'+p.text+';opacity:0.7;margin-right:8px;">'+p.label+'</span>'
+          +'<span style="font-size:12px;font-weight:600;color:'+p.text+';flex:1;">'+msg+'</span>'
+          +(isUrgent?'<span style="font-size:10px;font-weight:800;letter-spacing:2px;color:'+p.text+';margin-left:8px;animation:beeSirenL 0.5s ease-in-out infinite;">⚠ URGENT</span>':'');
+        if(isUrgent){
+          var barFlash=setInterval(function(){ bar.style.boxShadow=bar.style.boxShadow.includes('200px')?'0 2px 20px '+p.glow+'66':'0 2px 60px '+p.glow+',0 4px 200px '+p.glow+'33'; },700);
+          setTimeout(function(){clearInterval(barFlash); bar.style.boxShadow='';},30000);
+        }
+      }
+      clearInterval(window._beehiveFlashInterval);
+    },620);
+  },2200);
 }
-if(!document.getElementById('beehive-flash-style')){
-  var s=document.createElement('style');
-  s.id='beehive-flash-style';
-  s.textContent='@keyframes emergencyFlash{from{opacity:1;}to{opacity:0.3;}}';
-  document.head.appendChild(s);
+if(!document.getElementById('beehive-css')){
+  var _bs=document.createElement('style');
+  _bs.id='beehive-css-init';
+  document.head.appendChild(_bs);
 }
+
 
 // ── TOAST NOTIFICATIONS ──
 function showToast(message, type='info', duration=3000){
@@ -2082,12 +2157,17 @@ function render(){
 
   // Check Glasgow channel block — page-name based, no toasts, no sidebar interference
   if(glasgowPageBlocked(page)){
-    c.innerHTML='<div style="position:fixed;inset:0;background:rgba(1,4,9,0.92);z-index:100;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;" onwheel="event.preventDefault();event.stopPropagation();" ontouchmove="event.preventDefault();">'
+    c.innerHTML='<div style="position:absolute;inset:0;background:rgba(1,4,9,0.92);z-index:10;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;pointer-events:all;" onwheel="event.preventDefault();event.stopPropagation();" ontouchmove="event.preventDefault();">'
       +'<div style="font-size:40px;font-weight:900;color:#f85149;letter-spacing:6px;text-shadow:0 0 40px rgba(248,81,73,0.4);">ERROR</div>'
       +'<div style="font-size:18px;font-weight:700;color:#f85149;letter-spacing:4px;margin-top:4px;">GLASGOW BLOCK</div>'
       +'</div>';
+    c.style.position='relative';
+    c.style.overflow='hidden';
     return;
   }
+  // Reset content positioning for non-blocked pages
+  c.style.position='';
+  c.style.overflow='';
 
   // PAUSED enforcement — non-SW managers can only see a locked screen
   if(SITE_STATUS&&SITE_STATUS.status==='PAUSED'&&!isSoftwareManager()){
@@ -5495,57 +5575,142 @@ function renderElephant(panel){
 
 function renderGoldfish(panel){
   panel.innerHTML = contPanel('Temporary Management','🐟','#0550ae',
-    '<div style="margin-bottom:8px;"><label style="font-size:11px;font-weight:600;color:var(--c-text);display:block;margin-bottom:4px;">Target Staff (comma-separated usernames, blank = all)</label>'
-    +'<input type="text" id="goldfish-staff-filter" style="width:100%;" placeholder="e.g. rpatoff, teststaff"/></div>'
-    +'<div style="margin-bottom:10px;"><label style="font-size:11px;font-weight:600;color:var(--c-text);display:block;margin-bottom:4px;">What to restrict</label>'
+    '<div style="margin-bottom:8px;"><label style="font-size:11px;font-weight:600;color:var(--c-text);display:block;margin-bottom:3px;">Target Staff (comma-separated, blank = all)</label>'
+    +'<input type="text" id="goldfish-staff-filter" style="width:100%;" placeholder="e.g. rpatoff, testing123"/></div>'
+    +'<div style="margin-bottom:10px;"><label style="font-size:11px;font-weight:600;color:var(--c-text);display:block;margin-bottom:4px;">Track and revert on disable/expiry</label>'
     +'<div style="display:flex;flex-direction:column;gap:4px;">'
-    +'<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--c-text);cursor:pointer;"><input type="checkbox" id="gf-block-messaging"/> Block all messaging</label>'
-    +'<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--c-text);cursor:pointer;"><input type="checkbox" id="gf-block-all"/> Block all panel actions (view-only)</label>'
-    +'<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--c-text);cursor:pointer;"><input type="checkbox" id="gf-revoke-actions"/> On expiry: revoke all actions taken during this period</label>'
+    +'<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--c-text);cursor:pointer;"><input type="checkbox" id="gf-track-modlog" checked/> Moderation actions (ban, warn, suspend…)</label>'
+    +'<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--c-text);cursor:pointer;"><input type="checkbox" id="gf-track-revoke"/> Revoke log entries</label>'
+    +'<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--c-text);cursor:pointer;"><input type="checkbox" id="gf-track-messages"/> Staff messages sent</label>'
+    +'<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--c-text);cursor:pointer;"><input type="checkbox" id="gf-track-staffmod"/> Staff admin actions (suspend, terminate…)</label>'
+    +'<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--c-text);cursor:pointer;"><input type="checkbox" id="gf-track-appeals"/> Appeal decisions</label>'
     +'</div></div>'
     +expiryInput('goldfish')
     +'<div style="display:flex;gap:8px;margin-top:6px;">'
     +'<button class="btn" id="goldfish-enable" style="background:#0550ae;color:#fff;border-color:#0550ae;">Enable</button>'
-    +'<button class="btn" id="goldfish-disable">Disable</button>'
+    +'<button class="btn" id="goldfish-disable" style="background:#cf222e;color:#fff;border-color:#cf222e;">Disable + Revert Now</button>'
     +'</div><div id="goldfish-msg" style="font-size:11px;margin-top:5px;color:var(--c-ok);"></div>'
   );
 
-  // Show current status
+  // Load current state
   get(ref(db,'contingencies/goldfish')).then(function(snap){
     if(snap.exists()&&snap.val().active){
       var d=snap.val();
-      document.getElementById('goldfish-msg').textContent='Active. Expires: '+new Date(d.expiry||0).toLocaleString();
+      document.getElementById('goldfish-msg').textContent='Active since '+new Date(d.startTs||0).toLocaleString()+'. Expires: '+new Date(d.expiry||0).toLocaleString();
       document.getElementById('goldfish-msg').style.color='var(--c-sus)';
-      if(d.blockMessaging) document.getElementById('gf-block-messaging').checked=true;
-      if(d.blockAll) document.getElementById('gf-block-all').checked=true;
-      if(d.revokeOnExpiry) document.getElementById('gf-revoke-actions').checked=true;
-      var staffInp=document.getElementById('goldfish-staff-filter');
-      if(staffInp&&d.staff) staffInp.value=d.staff;
+      if(d.trackModlog && document.getElementById('gf-track-modlog')) document.getElementById('gf-track-modlog').checked=true;
+      if(d.trackRevoke && document.getElementById('gf-track-revoke')) document.getElementById('gf-track-revoke').checked=true;
+      if(d.trackMessages && document.getElementById('gf-track-messages')) document.getElementById('gf-track-messages').checked=true;
+      if(d.trackStaffmod && document.getElementById('gf-track-staffmod')) document.getElementById('gf-track-staffmod').checked=true;
+      if(d.trackAppeals && document.getElementById('gf-track-appeals')) document.getElementById('gf-track-appeals').checked=true;
+      if(d.staff && document.getElementById('goldfish-staff-filter')) document.getElementById('goldfish-staff-filter').value=d.staff;
     }
   });
 
   document.getElementById('goldfish-enable').onclick = async function(){
-    var staff=document.getElementById('goldfish-staff-filter').value.trim();
-    var blockMsg=document.getElementById('gf-block-messaging').checked;
-    var blockAll=document.getElementById('gf-block-all').checked;
-    var revokeOnExpiry=document.getElementById('gf-revoke-actions').checked;
-    if(!blockMsg&&!blockAll){ showToast('Select at least one restriction.','error'); return; }
+    var staff=(document.getElementById('goldfish-staff-filter').value||'').trim();
+    var staffArr=staff?staff.split(',').map(function(s){return s.trim().toLowerCase();}).filter(Boolean):null;
     var expTs=getExpiryTs('goldfish');
     if(!expTs){ showToast('Set an expiry time.','error'); return; }
-    var startTs=Date.now();
-    await set(ref(db,'contingencies/goldfish'),{
-      active:true, staff:staff||null, blockMessaging:blockMsg, blockAll:blockAll,
-      revokeOnExpiry:revokeOnExpiry, expiry:expTs, startTs:startTs, by:ME, ts:Date.now()
-    });
-    document.getElementById('goldfish-msg').textContent='Temporary Management active until '+new Date(expTs).toLocaleString();
-    auditLog('Temporary Management Enabled','staff:'+(staff||'all')+' until '+new Date(expTs).toLocaleString());
-    showToast('Temporary Management activated.','warning');
+    var settings={
+      active:true, staff:staff||null, staffArr:staffArr,
+      trackModlog:document.getElementById('gf-track-modlog').checked,
+      trackRevoke:document.getElementById('gf-track-revoke').checked,
+      trackMessages:document.getElementById('gf-track-messages').checked,
+      trackStaffmod:document.getElementById('gf-track-staffmod').checked,
+      trackAppeals:document.getElementById('gf-track-appeals').checked,
+      expiry:expTs, startTs:Date.now(), by:ME, ts:Date.now()
+    };
+    await set(ref(db,'contingencies/goldfish'),settings);
+    document.getElementById('goldfish-msg').textContent='Active. Will revert tracked actions at '+new Date(expTs).toLocaleString();
+    auditLog('Temp Management Enabled','staff:'+(staff||'all')+' expiry:'+new Date(expTs).toLocaleString());
+    showToast('Temporary Management active.','warning');
   };
+
   document.getElementById('goldfish-disable').onclick = async function(){
+    document.getElementById('goldfish-msg').textContent='Reverting...';
+    document.getElementById('goldfish-msg').style.color='var(--c-sus)';
+    var snap=await get(ref(db,'contingencies/goldfish'));
+    if(snap.exists()&&snap.val().active){
+      await executeGoldfishRevert(snap.val());
+    }
     await update(ref(db,'contingencies/goldfish'),{active:false});
-    document.getElementById('goldfish-msg').textContent='Disabled.';
-    showToast('Temporary Management deactivated.','success');
+    showToast('Temporary Management disabled. Actions reverted.','success');
+    auditLog('Temp Management Disabled + Reverted','By '+ME);
+    document.getElementById('goldfish-msg').textContent='Disabled. Actions reverted.';
+    document.getElementById('goldfish-msg').style.color='var(--c-ok)';
   };
+}
+
+async function executeGoldfishRevert(cfg){
+  var startTs=cfg.startTs||0;
+  var staffArr=cfg.staffArr||null;
+  var reverted=0;
+  function matchesStaff(entry){
+    if(!staffArr) return true;
+    var mod=(entry.mod||entry.by||entry.from||'').toLowerCase();
+    return staffArr.some(function(s){return mod===s;});
+  }
+  // Revert moderation log entries + undo user status changes
+  if(cfg.trackModlog){
+    var snap=await get(ref(db,'logs/moderation'));
+    if(snap.exists()){
+      var entries=snap.val();
+      for(var lid in entries){
+        var e=entries[lid];
+        if(new Date(e.date||0).getTime()>startTs && matchesStaff(e)){
+          await remove(ref(db,'logs/moderation/'+lid));
+          // Undo the status change — find user and revert
+          var uid=Object.keys(USERS).find(function(id){return (USERS[id].username||'').toLowerCase()===(e.user||'').toLowerCase();});
+          if(uid && (e.action||'').toLowerCase().includes('ban')){
+            await update(ref(db,'users/'+uid),{status:'active'});
+            // Remove the punishment entry that was added
+            var punSnap=await get(ref(db,'users/'+uid+'/punishments'));
+            if(punSnap.exists()){
+              var puns=punSnap.val();
+              for(var pid in puns){
+                if(puns[pid].mod===e.mod && Math.abs(new Date(puns[pid].created||0).getTime()-new Date(e.date||0).getTime())<5000){
+                  await remove(ref(db,'users/'+uid+'/punishments/'+pid)); break;
+                }
+              }
+            }
+          }
+          if(uid && (e.action||'').toLowerCase().includes('suspend')){
+            await update(ref(db,'users/'+uid),{status:'active'});
+          }
+          reverted++;
+        }
+      }
+    }
+  }
+  // Revert staff messages
+  if(cfg.trackMessages){
+    var snap2=await get(ref(db,'staffMessages'));
+    if(snap2.exists()){
+      var msgs=snap2.val();
+      for(var mid in msgs){
+        var m=msgs[mid];
+        if(new Date(m.date||0).getTime()>startTs && matchesStaff(m)){
+          await remove(ref(db,'staffMessages/'+mid));
+          reverted++;
+        }
+      }
+    }
+  }
+  // Revert revoke log
+  if(cfg.trackRevoke){
+    var snap3=await get(ref(db,'logs/revoke'));
+    if(snap3.exists()){
+      var rv=snap3.val();
+      for(var rid in rv){
+        if(new Date(rv[rid].date||0).getTime()>startTs && matchesStaff(rv[rid])){
+          await remove(ref(db,'logs/revoke/'+rid)); reverted++;
+        }
+      }
+    }
+  }
+  showToast('Reverted '+reverted+' actions.','success');
+  return reverted;
 }
 
 
@@ -5596,7 +5761,14 @@ function renderBeehive(panel){
     document.getElementById('beehive-output').textContent='Beehive ['+type.toUpperCase()+'] broadcast sent.';
     auditLog('Beehive Alert',type+': '+msg);
     showToast('Beehive broadcast: '+typeInfo.icon+' '+type.toUpperCase(),'warning');
-    // Also show the animated overlay on the broadcaster's screen immediately
+    // Clear all other active site alerts so beehive isn't blocked
+    var clearSnap=await get(ref(db,'siteAlerts'));
+    if(clearSnap.exists()){
+      var clearUpdates={};
+      Object.entries(clearSnap.val()).forEach(function(e){ if(e[1].active&&!e[1].beehive) clearUpdates['siteAlerts/'+e[0]+'/active']=false; });
+      if(Object.keys(clearUpdates).length) await update(ref(db,'/'),clearUpdates);
+    }
+    // Show the animated overlay on the broadcaster's screen immediately
     showBeehiveOverlay({message:msg, beehiveLevel:type, beehiveIcon:typeInfo.icon});
   };
   document.getElementById('beehive-disable').onclick = async function(){
@@ -6968,7 +7140,19 @@ function startListeners(){
   onValue(ref(db,'clearance'),snap=>{ CLEARANCE_DATA=snap.val()||{}; });
   onValue(ref(db,'contingencies/glasgow'),snap=>{ GLASGOW_DATA=snap.val()||{}; });
   onValue(ref(db,'contingencies/freeze'),snap=>{ FREEZE_DATA=snap.val()||{}; });
-  onValue(ref(db,'contingencies/lullaby'),snap=>{ LULLABY_DATA=snap.val()||{}; });
+  onValue(ref(db,'contingencies/lullaby'),function(snap){
+    LULLABY_DATA=snap.val()||{};
+    // Instantly enforce lullaby on messaging if currently on that page
+    if(page==='messaging'){
+      var myLullaby=LULLABY_DATA[ME];
+      var lullabyActive=myLullaby&&myLullaby.active&&(!myLullaby.expiry||myLullaby.expiry===0||Date.now()<myLullaby.expiry);
+      var sendBtn=document.getElementById('btn-sendmsg');
+      var msgArea=document.getElementById('msgBody');
+      if(sendBtn){ sendBtn.disabled=lullabyActive; sendBtn.style.opacity=lullabyActive?'0.4':'1'; sendBtn.title=lullabyActive?'ERROR — LULLABY ACTIVE':''; }
+      if(msgArea){ msgArea.disabled=lullabyActive; msgArea.placeholder=lullabyActive?'ERROR — LULLABY ACTIVE':'Write your message…'; }
+      if(lullabyActive) showToast('LULLABY ACTIVATED — Messaging disabled.','error',4000);
+    }
+  });
   onValue(ref(db,'contingencies/overtime'),snap=>{ OVERTIME_DATA=snap.val()||{}; });
   onValue(ref(db,'contingencies/openhouse'),snap=>{ OPENHOUSE_DATA=snap.val()||{}; });
   // Beehive listener — show animated overlay when a new alert is posted
