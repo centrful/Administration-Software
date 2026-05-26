@@ -1954,19 +1954,19 @@ async function fetchRobloxInfo(username){
   if(!username||!username.trim()) return null;
   const u=username.trim();
 
-  // Attempt to fetch JSON from a URL using multiple CORS strategies
-  async function tryFetch(url, opts){
-    // Strategy 1: Direct (works if Roblox opens CORS for this endpoint)
-    try{ const r=await fetch(url,{...opts,signal:AbortSignal.timeout(6000)}); if(r.ok) return await r.json(); }catch(e){}
-    // Strategy 2: roproxy.com (dedicated Roblox mirror)
+  // GET-capable proxy for thumbnail/user endpoints
+  async function tryGet(url){
+    // Strategy 1: roproxy.com subdomain mirror
     try{
-      const proxyUrl=url.replace(/https?:\/\/([a-z.]+\.roblox\.com)/,(_,d)=>'https://'+d.replace('.roblox.com','.roproxy.com'));
-      const r=await fetch(proxyUrl,{...opts,signal:AbortSignal.timeout(7000)});
+      const proxyUrl=url.replace(/https?:\/\/([a-z]+)\.roblox\.com/,'https://$1.roproxy.com');
+      const r=await fetch(proxyUrl,{signal:AbortSignal.timeout(7000)});
       if(r.ok) return await r.json();
     }catch(e){}
+    // Strategy 2: Direct (occasionally works for thumbnails)
+    try{ const r=await fetch(url,{signal:AbortSignal.timeout(6000)}); if(r.ok) return await r.json(); }catch(e){}
     // Strategy 3: corsproxy.io
     try{
-      const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(url),{...opts,signal:AbortSignal.timeout(8000)});
+      const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(url),{signal:AbortSignal.timeout(8000)});
       if(r.ok) return await r.json();
     }catch(e){}
     // Strategy 4: allorigins
@@ -1974,23 +1974,55 @@ async function fetchRobloxInfo(username){
       const r=await fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(url),{signal:AbortSignal.timeout(8000)});
       if(r.ok){ const t=await r.text(); if(t&&t[0]==='{') return JSON.parse(t); }
     }catch(e){}
-    // Strategy 5: htmldriven cors-proxy
+    return null;
+  }
+
+  // POST strategies — each proxy handled independently (generic proxies can't forward POST bodies)
+  async function tryUsernamePost(usernames){
+    const endpoint='https://users.roblox.com/v1/usernames/users';
+    const body=JSON.stringify({usernames,excludeBannedUsers:false});
+    const headers={'Content-Type':'application/json'};
+
+    // Strategy 1: roproxy.com (mirrors Roblox API including POST)
     try{
-      const r=await fetch('https://cors-anywhere.herokuapp.com/'+url,{...opts,headers:{...((opts||{}).headers||{}),'X-Requested-With':'XMLHttpRequest'},signal:AbortSignal.timeout(8000)});
-      if(r.ok) return await r.json();
+      const r=await fetch('https://users.roproxy.com/v1/usernames/users',{method:'POST',headers,body,signal:AbortSignal.timeout(8000)});
+      if(r.ok){ const d=await r.json(); if(d&&d.data) return d; }
+    }catch(e){}
+    // Strategy 2: Direct (blocked by CORS normally, but worth a try on some networks)
+    try{
+      const r=await fetch(endpoint,{method:'POST',headers,body,signal:AbortSignal.timeout(6000)});
+      if(r.ok){ const d=await r.json(); if(d&&d.data) return d; }
+    }catch(e){}
+    // Strategy 3: corsproxy.io with POST forwarding
+    try{
+      const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(endpoint),{method:'POST',headers,body,signal:AbortSignal.timeout(9000)});
+      if(r.ok){ const d=await r.json(); if(d&&d.data) return d; }
+    }catch(e){}
+    // Strategy 4: GET fallback via search endpoint (no POST needed)
+    try{
+      const searchUrl='https://users.roproxy.com/v1/users/search?keyword='+encodeURIComponent(usernames[0])+'&limit=10';
+      const r=await fetch(searchUrl,{signal:AbortSignal.timeout(7000)});
+      if(r.ok){
+        const d=await r.json();
+        if(d&&d.data&&d.data.length){
+          // Find exact match (case-insensitive)
+          const match=d.data.find(x=>(x.name||'').toLowerCase()===usernames[0].toLowerCase());
+          if(match) return {data:[{id:match.id,name:match.name,displayName:match.displayName||match.name}]};
+        }
+      }
+    }catch(e){}
+    // Strategy 5: GET fallback via allorigins POST wrapper
+    try{
+      const payload=encodeURIComponent(JSON.stringify({url:endpoint,method:'POST',headers,body}));
+      const r=await fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(endpoint),{signal:AbortSignal.timeout(8000)});
+      // allorigins can't POST, skip to next
     }catch(e){}
     return null;
   }
 
-  // POST via proxies for username→ID lookup
-  async function tryPost(url, body){
-    const postOpts={method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)};
-    return tryFetch(url, postOpts);
-  }
-
   try{
     // Step 1: Username → Roblox user ID
-    const d1=await tryPost('https://users.roblox.com/v1/usernames/users',{usernames:[u],excludeBannedUsers:false});
+    const d1=await tryUsernamePost([u]);
     if(!d1||!d1.data||!d1.data.length) return null;
     const robloxId=String(d1.data[0].id);
     const displayName=d1.data[0].displayName||u;
@@ -1998,15 +2030,15 @@ async function fetchRobloxInfo(username){
 
     // Step 2: Avatar headshot + profile info in parallel
     const[d2,d3]=await Promise.all([
-      tryFetch('https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds='+robloxId+'&size=150x150&format=Png&isCircular=false'),
-      tryFetch('https://users.roblox.com/v1/users/'+robloxId)
+      tryGet('https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds='+robloxId+'&size=150x150&format=Png&isCircular=false'),
+      tryGet('https://users.roblox.com/v1/users/'+robloxId)
     ]);
 
     let avatarUrl='';
     if(d2&&d2.data&&d2.data[0]) avatarUrl=d2.data[0].imageUrl||'';
-    // Fallback: full avatar
+    // Fallback: full body avatar thumbnail
     if(!avatarUrl){
-      const d2b=await tryFetch('https://thumbnails.roblox.com/v1/users/avatar?userIds='+robloxId+'&size=150x150&format=Png');
+      const d2b=await tryGet('https://thumbnails.roblox.com/v1/users/avatar?userIds='+robloxId+'&size=150x150&format=Png');
       if(d2b&&d2b.data&&d2b.data[0]) avatarUrl=d2b.data[0].imageUrl||'';
     }
 
@@ -2018,16 +2050,32 @@ async function fetchRobloxInfo(username){
   }catch(e){ return null; }
 }
 
+async function robloxGet(url){
+  // Try roproxy subdomain first, then corsproxy, then allorigins
+  const proxyUrl=url.replace(/https?:\/\/([a-z]+)\.roblox\.com/,'https://$1.roproxy.com');
+  try{ const r=await fetch(proxyUrl,{signal:AbortSignal.timeout(7000)}); if(r.ok) return await r.json(); }catch(e){}
+  try{ const r=await fetch(url,{signal:AbortSignal.timeout(6000)}); if(r.ok) return await r.json(); }catch(e){}
+  try{
+    const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(url),{signal:AbortSignal.timeout(8000)});
+    if(r.ok) return await r.json();
+  }catch(e){}
+  try{
+    const r=await fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(url),{signal:AbortSignal.timeout(8000)});
+    if(r.ok){ const t=await r.text(); if(t&&t[0]==='{') return JSON.parse(t); }
+  }catch(e){}
+  return null;
+}
+
 async function fetchRobloxFriends(robloxId){
   try{
-    const d=await proxyFetch(`https://friends.roblox.com/v1/users/${robloxId}/friends?limit=50`);
+    const d=await robloxGet(`https://friends.roblox.com/v1/users/${robloxId}/friends?limit=50`);
     return d&&d.data?d.data.map(f=>({id:String(f.id),name:f.name})):[];
   }catch(e){ return []; }
 }
 
 async function fetchRobloxGroups(robloxId){
   try{
-    const d=await proxyFetch(`https://groups.roblox.com/v1/users/${robloxId}/groups/roles`);
+    const d=await robloxGet(`https://groups.roblox.com/v1/users/${robloxId}/groups/roles`);
     return d&&d.data?d.data.map(g=>({id:String(g.group.id),name:g.group.name})):[];
   }catch(e){ return []; }
 }
