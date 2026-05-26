@@ -1953,47 +1953,69 @@ async function proxyPost(url, body){
 async function fetchRobloxInfo(username){
   if(!username||!username.trim()) return null;
   const u=username.trim();
-  // Try different approaches to reach Roblox API from browser
-  async function robGet(path){
-    const base='https://'+path.replace(/^https?:\/\/[^/]+/,'').replace('/','');
-    const domain=path.match(/https?:\/\/([^/]+)/)[1];
-    const proxyUrl=path.replace(domain,domain.replace('roblox.com','roproxy.com'));
-    // 1. roproxy (dedicated Roblox CORS mirror)
-    try{ const r=await fetch(proxyUrl,{signal:AbortSignal.timeout(8000)}); if(r.ok) return await r.json(); }catch(e){}
-    // 2. corsproxy.io
-    try{ const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(path),{signal:AbortSignal.timeout(8000)}); if(r.ok) return await r.json(); }catch(e){}
-    // 3. allorigins
-    try{ const r=await fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(path),{signal:AbortSignal.timeout(8000)}); const t=await r.text(); return JSON.parse(t); }catch(e){}
+
+  // Attempt to fetch JSON from a URL using multiple CORS strategies
+  async function tryFetch(url, opts){
+    // Strategy 1: Direct (works if Roblox opens CORS for this endpoint)
+    try{ const r=await fetch(url,{...opts,signal:AbortSignal.timeout(6000)}); if(r.ok) return await r.json(); }catch(e){}
+    // Strategy 2: roproxy.com (dedicated Roblox mirror)
+    try{
+      const proxyUrl=url.replace(/https?:\/\/([a-z.]+\.roblox\.com)/,(_,d)=>'https://'+d.replace('.roblox.com','.roproxy.com'));
+      const r=await fetch(proxyUrl,{...opts,signal:AbortSignal.timeout(7000)});
+      if(r.ok) return await r.json();
+    }catch(e){}
+    // Strategy 3: corsproxy.io
+    try{
+      const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(url),{...opts,signal:AbortSignal.timeout(8000)});
+      if(r.ok) return await r.json();
+    }catch(e){}
+    // Strategy 4: allorigins
+    try{
+      const r=await fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(url),{signal:AbortSignal.timeout(8000)});
+      if(r.ok){ const t=await r.text(); if(t&&t[0]==='{') return JSON.parse(t); }
+    }catch(e){}
+    // Strategy 5: htmldriven cors-proxy
+    try{
+      const r=await fetch('https://cors-anywhere.herokuapp.com/'+url,{...opts,headers:{...((opts||{}).headers||{}),'X-Requested-With':'XMLHttpRequest'},signal:AbortSignal.timeout(8000)});
+      if(r.ok) return await r.json();
+    }catch(e){}
     return null;
   }
-  async function robPost(path,body){
-    const domain=path.match(/https?:\/\/([^/]+)/)[1];
-    const proxyUrl=path.replace(domain,domain.replace('roblox.com','roproxy.com'));
-    try{ const r=await fetch(proxyUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(8000)}); if(r.ok) return await r.json(); }catch(e){}
-    try{ const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(path),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(8000)}); if(r.ok) return await r.json(); }catch(e){}
-    return null;
+
+  // POST via proxies for username→ID lookup
+  async function tryPost(url, body){
+    const postOpts={method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)};
+    return tryFetch(url, postOpts);
   }
+
   try{
-    // Step 1: Resolve username → ID (POST endpoint)
-    const d1=await robPost('https://users.roblox.com/v1/usernames/users',{usernames:[u],excludeBannedUsers:false});
+    // Step 1: Username → Roblox user ID
+    const d1=await tryPost('https://users.roblox.com/v1/usernames/users',{usernames:[u],excludeBannedUsers:false});
     if(!d1||!d1.data||!d1.data.length) return null;
     const robloxId=String(d1.data[0].id);
     const displayName=d1.data[0].displayName||u;
-    // Step 2: Get avatar and profile info in parallel
+    if(!robloxId||robloxId==='0') return null;
+
+    // Step 2: Avatar headshot + profile info in parallel
     const[d2,d3]=await Promise.all([
-      robGet('https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds='+robloxId+'&size=150x150&format=Png&isCircular=false'),
-      robGet('https://users.roblox.com/v1/users/'+robloxId)
+      tryFetch('https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds='+robloxId+'&size=150x150&format=Png&isCircular=false'),
+      tryFetch('https://users.roblox.com/v1/users/'+robloxId)
     ]);
+
     let avatarUrl='';
     if(d2&&d2.data&&d2.data[0]) avatarUrl=d2.data[0].imageUrl||'';
-    // Fallback avatar endpoint
+    // Fallback: full avatar
     if(!avatarUrl){
-      const d2b=await robGet('https://thumbnails.roblox.com/v1/users/avatar?userIds='+robloxId+'&size=150x150&format=Png');
+      const d2b=await tryFetch('https://thumbnails.roblox.com/v1/users/avatar?userIds='+robloxId+'&size=150x150&format=Png');
       if(d2b&&d2b.data&&d2b.data[0]) avatarUrl=d2b.data[0].imageUrl||'';
     }
-    const accountCreated=d3&&d3.created?new Date(d3.created).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}):'';
-    return {robloxId,avatarUrl,accountCreated,displayName};
-  }catch(e){return null;}
+
+    const accountCreated=d3&&d3.created
+      ?new Date(d3.created).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'})
+      :'';
+
+    return {robloxId, avatarUrl, accountCreated, displayName};
+  }catch(e){ return null; }
 }
 
 async function fetchRobloxFriends(robloxId){
@@ -3173,6 +3195,15 @@ function openManageUser(uid){
     });
     await update(ref(db,`users/${uid}`),{customData:newData});
     auditLog('User Custom Data Updated',`${u.username}`);
+    // Log each changed field to the custom fields log
+    const oldData=u.customData||{};
+    CUSTOM_FIELDS.forEach(f=>{
+      const oldVal=oldData[f.name]||'';
+      const newVal=newData[f.name]||'';
+      if(oldVal!==newVal){
+        logCustomFieldChange(u.username,f.name,newVal?'set':'cleared',oldVal,newVal);
+      }
+    });
   });
 }
 
@@ -3456,7 +3487,7 @@ function renderAccounts(c){
           avatarBox.innerHTML=info.avatarUrl?'<img src="'+info.avatarUrl+'" width="40" height="40" style="border-radius:50%;object-fit:cover;">':'';
           previewInfo.innerHTML='<b>'+val+'</b><br><span style="color:var(--c-text2);">Roblox ID: '+info.robloxId+'</span>'+(info.displayName&&info.displayName!==val?'<br><span style="color:var(--c-text2);">Display: '+info.displayName+'</span>':'');
           el.style.color='var(--c-ok)'; el.textContent='Roblox data found ✓';
-        } else { el.style.color='var(--c-sus)'; el.textContent='Roblox user not found — will add without data.'; preview.style.display='none'; }
+        } else { el.style.color='var(--c-sus)'; el.textContent='Could not reach Roblox API — will add without Roblox data. You can Refresh Roblox Data later.'; preview.style.display='none'; }
       } catch(e){ el.style.color='var(--c-sus)'; el.textContent='Could not fetch Roblox data.'; preview.style.display='none'; }
     },600);
   };
@@ -6536,7 +6567,7 @@ function renderStaffEvaluations(c){
         +modeTag
         +(canReview&&r.mode==='auto'?'<button class="btn small eval-run-auto" data-rid="'+rid+'">Run Analysis</button>':'')
         +(canReview&&r.mode!=='auto'?'<button class="btn small eval-open-btn" data-rid="'+rid+'">Review</button>':'')
-        +'<button class="btn small" style="color:var(--c-ban);" onclick="if(confirm(\'Delete this evaluation?\')) remove(ref(db,\'staffReviews/'+rid+'\')).then(()=>nav(\'evaluations\'))">✕</button>'
+        +'<button class="btn small eval-del-btn" data-rid="'+rid+'" style="color:var(--c-ban);">✕</button>'
         +'</div>';
     }).join('')
     +'</div></div>':'')
@@ -6558,7 +6589,7 @@ function renderStaffEvaluations(c){
         +'<td>'+tinyAvatar(r.reviewedBy||'[AUTO]',avatarUrlFor(r.reviewedBy||''))+'</td>'
         +'<td style="font-size:10px;">'+r.reviewedAt+'</td>'
         +'<td><button class="btn small eval-view-btn" data-rid="'+rid+'">View</button></td>'
-        +(isSuperAdmin()?'<td><button class="btn small" style="color:var(--c-ban);" onclick="if(confirm(\'Delete?\')) remove(ref(db,\'staffReviews/'+rid+'\'))">✕</button></td>':'<td></td>')
+        +(isSuperAdmin()?'<td><button class="btn small eval-del-btn" data-rid="'+rid+'" style="color:var(--c-ban);">✕</button></td>':'<td></td>')
         +'</tr>';
     }).join('')
     +'</table></div></div></div>':'');
@@ -8557,24 +8588,31 @@ function renderMsgAnalyze(c){
   const history=[];
 
   function showResult(parsed, resultEl, historyEl, user, msg){
-    const verdictColor=parsed.verdict==='No Action'?'#006600':parsed.verdict==='Warning'?'#cc8800':'#cc0000';
-    const bgColor=parsed.verdict==='No Action'?'#e8f4e8':parsed.verdict==='Warning'?'#fff8e0':'#fde8e8';
+    const isNone=parsed.verdict==='No Action'||parsed.verdict==='Monitor';
+    const isWarn=parsed.severity==='Medium'||parsed.severity==='Low';
+    const isCrit=parsed.severity==='Critical'||parsed.severity==='High';
+    const verdictColor=isCrit?'var(--c-ban)':isWarn?'var(--c-sus)':'var(--c-ok)';
+    const bgColor=isCrit?'rgba(248,81,73,0.12)':isWarn?'rgba(210,153,34,0.12)':'rgba(63,185,80,0.1)';
+    const borderColor=isCrit?'var(--c-ban)':isWarn?'var(--c-sus)':'var(--c-ok)';
     resultEl.innerHTML=`
-      <div style="border:2px solid ${verdictColor};background:${bgColor};padding:8px 10px;">
-        <div style="font-size:12px;font-weight:bold;color:${verdictColor};margin-bottom:5px;">${parsed.verdict} &mdash; ${parsed.severity} Severity</div>
-        <div style="font-size:11px;color:var(--c-text);margin-bottom:3px;"><b>Reason:</b> ${parsed.reason||'—'}</div>
-        ${parsed.suggested_action?`<div style="font-size:11px;color:var(--c-text);margin-bottom:3px;"><b>Suggested:</b> ${parsed.suggested_action}</div>`:''}
-        ${parsed.flags&&parsed.flags.length?`<div style="font-size:11px;color:var(--c-text);margin-bottom:3px;"><b>Flags:</b> ${parsed.flags.join(', ')}</div>`:''}
-        <div style="font-size:10px;color:var(--c-text2);margin-top:4px;">Engine: ${parsed.source||'AI'}</div>
+      <div style="border:2px solid ${borderColor};background:${bgColor};padding:10px 12px;border-radius:6px;">
+        <div style="font-size:13px;font-weight:800;color:${verdictColor};margin-bottom:6px;">${parsed.verdict} — ${parsed.severity} Severity</div>
+        <div style="font-size:11px;color:var(--c-text);margin-bottom:4px;"><b>Reason:</b> ${parsed.reason||'—'}</div>
+        ${parsed.suggested_action?`<div style="font-size:11px;color:var(--c-text);margin-bottom:4px;"><b>Suggested Action:</b> ${parsed.suggested_action}</div>`:''}
+        ${parsed.flags&&parsed.flags.length?`<div style="font-size:11px;color:var(--c-text2);margin-bottom:4px;"><b>Flags:</b> <code style="background:var(--bg-topinfo);padding:1px 5px;border-radius:3px;">${parsed.flags.join(', ')}</code></div>`:''}
+        <div style="font-size:10px;color:var(--c-text2);margin-top:4px;border-top:1px solid var(--c-border);padding-top:4px;">Engine: ${parsed.source||'AI'}</div>
       </div>
-      ${canDo('canModerateUsers')&&parsed.verdict!=='No Action'?`<button class="btn small" style="margin-top:4px;" onclick="nav('moderate')">Go to Moderate User</button>`:''}`;
-    history.unshift({user:user||'Unknown',msg:msg.substring(0,50)+(msg.length>50?'...':''),verdict:parsed.verdict,date:nowStr()});
-    historyEl.innerHTML=history.map(h=>`
-      <div style="border-bottom:1px solid var(--c-border);padding:3px 0;font-size:11px;">
-        <span style="color:var(--c-text2);font-size:10px;">${h.date}</span> &mdash;
-        <b>${h.user}</b>: "${h.msg}" &mdash;
-        <span style="font-weight:bold;color:${h.verdict==='No Action'?'#006600':h.verdict==='Warning'?'#cc8800':'#cc0000'};">${h.verdict}</span>
-      </div>`).join('');
+      ${canDo('canModerateUsers')&&!isNone?`<button class="btn small" style="margin-top:4px;" onclick="nav('moderate')">Go to Moderate User →</button>`:''}`;
+    history.unshift({user:user||'Unknown',msg:msg.substring(0,50)+(msg.length>50?'...':''),verdict:parsed.verdict,severity:parsed.severity,date:nowStr()});
+    historyEl.innerHTML=history.map(h=>{
+      const hc=h.severity==='Critical'||h.severity==='High'?'var(--c-ban)':h.severity==='Medium'||h.severity==='Low'?'var(--c-sus)':'var(--c-ok)';
+      return `<div style="border-bottom:1px solid var(--c-border);padding:4px 0;font-size:11px;display:flex;align-items:center;gap:6px;">
+        <span style="color:var(--c-text2);font-size:10px;white-space:nowrap;">${h.date}</span>
+        <b style="color:var(--c-text);">${h.user}</b>
+        <span style="color:var(--c-text2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">"${h.msg}"</span>
+        <span style="font-weight:700;color:${hc};white-space:nowrap;">${h.verdict}</span>
+      </div>`;
+    }).join('');
   }
 
   document.getElementById('btn-maanalyze').onclick=async()=>{
