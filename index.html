@@ -6382,15 +6382,15 @@ function renderPoison(panel){
   };
 }
 
-// ── POISON ACTIVE CHECK + KERNEL PANIC ENGINE ──
+// ══════════════════════════════════════════════════════════════
+// POISON ENGINE v2 — GPU Artifact + Kernel Panic System
+// ══════════════════════════════════════════════════════════════
 function checkPoisonActive(){
   if(!ME) return;
   var p = POISON_DATA[ME]||{};
-  // Check expiry
   if(!p.active) return;
-  // Don't trigger if Software Manager (they can't be poisoned)
   if(isSoftwareManager()) return;
-  // Begin deterioration
+  if(window._poisonRunning) return;
   startPoisonSequence(p.intensity||'severe');
 }
 
@@ -6398,335 +6398,582 @@ function startPoisonSequence(intensity){
   if(window._poisonRunning) return;
   window._poisonRunning = true;
 
-  var LINES = [
-    'BUG: unable to handle kernel NULL pointer dereference at 0000000000000000',
+  // Inject CSS once
+  if(!document.getElementById('poison-style')){
+    var s=document.createElement('style');
+    s.id='poison-style';
+    s.textContent=`
+      @keyframes pscan{0%{top:-4px}100%{top:100vh}}
+      @keyframes prgb{0%,100%{clip-path:inset(0 0 98% 0)}10%{clip-path:inset(12% 0 72% 0)}30%{clip-path:inset(55% 0 22% 0)}50%{clip-path:inset(80% 0 4% 0)}70%{clip-path:inset(30% 0 60% 0)}90%{clip-path:inset(5% 0 85% 0)}}
+      @keyframes pshake{0%,100%{transform:translate(0,0) skewX(0)}15%{transform:translate(-6px,2px) skewX(-1.5deg)}30%{transform:translate(5px,-3px) skewX(1deg)}45%{transform:translate(-4px,1px)}60%{transform:translate(6px,2px) skewX(-0.5deg)}75%{transform:translate(-3px,-2px)}90%{transform:translate(4px,1px) skewX(1deg)}}
+      @keyframes pjitter{0%,100%{transform:translate(0,0)}25%{transform:translate(-2px,1px)}50%{transform:translate(2px,-1px)}75%{transform:translate(-1px,2px)}}
+      @keyframes pnoise{0%{background-position:0 0}100%{background-position:100% 100%}}
+      @keyframes pblink{0%,49%{opacity:1}50%,100%{opacity:0}}
+      .p-glitch-active{animation:pjitter 0.08s infinite!important;}
+      .p-glitch-active *{animation:pjitter 0.12s infinite!important;}
+    `;
+    document.head.appendChild(s);
+  }
+
+  var cfg={
+    mild:    {firstPanic:6000, panicInterval:20000, panicDur:11000, gpuInterval:8000,  gpuDur:3500,  logoutChance:0,    speed:70},
+    severe:  {firstPanic:3500, panicInterval:11000, panicDur:8000,  gpuInterval:3500,  gpuDur:2500,  logoutChance:0.04, speed:28},
+    terminal:{firstPanic:1800, panicInterval:5500,  panicDur:6000,  gpuInterval:1500,  gpuDur:2000,  logoutChance:0.12, speed:14},
+  }[intensity]||{firstPanic:3500,panicInterval:11000,panicDur:8000,gpuInterval:3500,gpuDur:2500,logoutChance:0.04,speed:28};
+
+  // ── Phase 1: GPU corruption layer on the live page ──
+  function runGpuLayer(){
+    if(!window._poisonRunning) return;
+    var canvas=document.createElement('canvas');
+    canvas.id='poison-gpu-canvas';
+    canvas.style.cssText='position:fixed;inset:0;width:100%;height:100%;z-index:99990;pointer-events:none;';
+    canvas.width=window.innerWidth; canvas.height=window.innerHeight;
+    document.body.appendChild(canvas);
+    var ctx=canvas.getContext('2d');
+    var W=canvas.width, H=canvas.height;
+    var startTime=Date.now();
+    var duration=cfg.gpuDur;
+    var artFrame=0;
+
+    // also shake the admin shell
+    var shell=document.getElementById('adminScreen');
+
+    function drawArtifacts(){
+      if(!window._poisonRunning){ removeGpu(); return; }
+      if(Date.now()-startTime>duration){ removeGpu(); return; }
+      artFrame++;
+      ctx.clearRect(0,0,W,H);
+      var t=artFrame;
+
+      // 1. Random colored pixel blocks (VRAM corruption)
+      var numBlocks=3+Math.floor(Math.random()*18);
+      for(var i=0;i<numBlocks;i++){
+        var bx=Math.random()*W, by=Math.random()*H;
+        var bw=4+Math.random()*180, bh=2+Math.random()*60;
+        // GPU artifact colors — saturated, often wrong hues
+        var colors=['#ff0000','#00ff00','#0000ff','#ff00ff','#00ffff','#ffff00','#ff6600','#cc00ff','#ffffff','#000000','#ff0088','#00ff88'];
+        ctx.fillStyle=colors[Math.floor(Math.random()*colors.length)];
+        ctx.globalAlpha=0.15+Math.random()*0.75;
+        ctx.fillRect(bx,by,bw,bh);
+      }
+
+      // 2. Horizontal scanline tears (display controller corruption)
+      var numTears=Math.floor(Math.random()*6);
+      for(var j=0;j<numTears;j++){
+        var ty=Math.random()*H;
+        var th=1+Math.floor(Math.random()*8);
+        var tx=Math.random()*W*0.4;
+        ctx.globalAlpha=0.4+Math.random()*0.5;
+        ctx.fillStyle=Math.random()>0.5?'#ffffff':'#ff0000';
+        ctx.fillRect(tx,ty,W-tx,th);
+        // offset duplicate (tearing effect)
+        ctx.globalAlpha=0.3;
+        ctx.fillStyle='#0000ff';
+        ctx.fillRect(0,ty+th,W*Math.random(),th);
+      }
+
+      // 3. Pixel snow / static
+      if(Math.random()<0.6){
+        var snowCount=30+Math.floor(Math.random()*120);
+        for(var k=0;k<snowCount;k++){
+          ctx.globalAlpha=Math.random();
+          ctx.fillStyle=Math.random()>0.5?'#ffffff':'#ff0000';
+          ctx.fillRect(Math.random()*W, Math.random()*H, 1+Math.random()*3, 1+Math.random()*3);
+        }
+      }
+
+      // 4. Checkerboard corruption patch (VRAM block failure)
+      if(Math.random()<0.35){
+        var cx2=Math.random()*(W-120), cy2=Math.random()*(H-80);
+        var csize=8+Math.floor(Math.random()*16);
+        var cols2=Math.floor((60+Math.random()*120)/csize);
+        var rows2=Math.floor((40+Math.random()*60)/csize);
+        for(var ci=0;ci<cols2;ci++){
+          for(var ri=0;ri<rows2;ri++){
+            ctx.globalAlpha=0.3+Math.random()*0.6;
+            if((ci+ri)%2===0){
+              ctx.fillStyle='#'+Math.floor(Math.random()*0xffffff).toString(16).padStart(6,'0');
+              ctx.fillRect(cx2+ci*csize, cy2+ri*csize, csize, csize);
+            }
+          }
+        }
+      }
+
+      // 5. Color channel shift strips (RGB separation)
+      if(Math.random()<0.4){
+        var sy=Math.random()*H, sh=10+Math.random()*60;
+        ctx.globalAlpha=0.2;
+        ctx.fillStyle='#ff000088';
+        ctx.fillRect(Math.random()*20-10, sy, W, sh);
+        ctx.fillStyle='#0000ff88';
+        ctx.fillRect(Math.random()*20-10, sy+2, W, sh);
+      }
+
+      // 6. Vertical corruption stripe
+      if(Math.random()<0.25){
+        var vx=Math.random()*W;
+        var grad=ctx.createLinearGradient(vx,0,vx+6+Math.random()*30,0);
+        grad.addColorStop(0,'rgba(255,0,255,0.6)');
+        grad.addColorStop(0.5,'rgba(0,255,255,0.4)');
+        grad.addColorStop(1,'rgba(255,255,0,0)');
+        ctx.globalAlpha=0.5+Math.random()*0.4;
+        ctx.fillStyle=grad;
+        ctx.fillRect(vx,0,6+Math.random()*40,H);
+      }
+
+      // 7. Whole-screen hue shift flash
+      if(artFrame%22===0&&Math.random()<0.3){
+        ctx.globalAlpha=0.08+Math.random()*0.12;
+        var hueColors=['rgba(255,0,0,1)','rgba(0,0,255,1)','rgba(0,255,0,1)','rgba(255,0,255,1)'];
+        ctx.fillStyle=hueColors[Math.floor(Math.random()*hueColors.length)];
+        ctx.fillRect(0,0,W,H);
+      }
+
+      // 8. Shake the page content itself occasionally
+      if(shell && artFrame%8===0 && Math.random()<0.5){
+        var dx=(Math.random()-0.5)*14, dy=(Math.random()-0.5)*8;
+        shell.style.transform='translate('+dx+'px,'+dy+'px) skewX('+(Math.random()-0.5)*1.5+'deg)';
+        setTimeout(function(){ if(shell) shell.style.transform=''; }, 60+Math.random()*80);
+      }
+
+      // 9. Scanline sweep
+      ctx.globalAlpha=0.06;
+      ctx.fillStyle='#ffffff';
+      var scanY=(artFrame*3.5)%H;
+      ctx.fillRect(0,scanY,W,2);
+      ctx.fillRect(0,(scanY+H/2)%H,W,1);
+
+      ctx.globalAlpha=1;
+      requestAnimationFrame(drawArtifacts);
+    }
+    drawArtifacts();
+
+    // Sudden screen color inversion flash
+    if(Math.random()<0.6){
+      setTimeout(function(){
+        if(!window._poisonRunning||!document.getElementById('adminScreen')) return;
+        document.getElementById('adminScreen').style.filter='invert(1) hue-rotate('+Math.floor(Math.random()*360)+'deg)';
+        setTimeout(function(){
+          var el=document.getElementById('adminScreen');
+          if(el) el.style.filter='';
+        }, 60+Math.random()*120);
+      }, Math.random()*cfg.gpuDur*0.7);
+    }
+
+    // Random forced logout (intensity-based)
+    if(Math.random()<cfg.logoutChance){
+      setTimeout(function(){
+        if(!window._poisonRunning) return;
+        doLogout();
+      }, 1200+Math.random()*2000);
+    }
+  }
+
+  function removeGpu(){
+    var c=document.getElementById('poison-gpu-canvas');
+    if(c&&c.parentNode) c.parentNode.removeChild(c);
+    var sh=document.getElementById('adminScreen');
+    if(sh) sh.style.transform='';
+  }
+
+  // ── Phase 2: Kernel Panic full-screen takeover ──
+  var KERNEL_LINES=[
+    // Boot/init
+    'BIOS-provided physical RAM map:','BIOS-e820: 0000000000000000 - 000000000009f800 (usable)',
+    'BIOS-e820: 000000000009f800 - 00000000000a0000 (reserved)',
+    'DMI: Samaritan Systems SSP-440 v4.2, BIOS SP4C 10/05/2019',
+    'ACPI: RSDP 0x00000000000F04B0 000024 (v02 SAMAR)',
+    'ACPI: XSDT 0x0000000007FE18E4 00006C (v01 SAMAR  SAMARSYS 00000001 INTL 20120913)',
+    'ACPI: IRQ0 used by override.','ACPI: IRQ9 used by override.','ACPI: IRQ14 used by override.',
+    'PCI: Using ACPI for IRQ routing','PCI: pci_cache_line_size set to 64 bytes',
+    'NET: Registered protocol family 2','NET: Registered protocol family 10',
+    'TCP established hash table entries: 4096 (order: 3, 32768 bytes)',
+    'TCP bind hash table entries: 4096 (order: 4, 65536 bytes)',
+    'TCP: Hash tables configured (established 4096 bind 4096)',
+    // Memory/CPU
+    'Calibrating delay loop (skipped)... 4800.00 BogoMIPS (lpj=24000000)',
+    'pid_max: default: 32768 minimum: 301',
+    'Mount-cache hash table entries: 512','Initializing cgroup subsys memory',
+    'SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1',
+    'Freeing SMP alternatives memory: 32K (ffffffff81f8e000 - ffffffff81f96000)',
+    'ACPI: bus type PCI registered','vgaarb: loaded',
+    'ACPI: Added _OSI(Module Device)','ACPI: Added _OSI(Processor Device)',
+    'ACPI: Added _OSI(3.0 _SCP Extensions)','ACPI: Added _OSI(Processor Aggregator Device)',
+    // GPU/DRM
+    '[drm] Initialized drm 1.1.0 20060810',
+    '[drm:i915_driver_load] *ERROR* Failed to find MMIO registers',
+    '[drm:intel_pipe_crc_irq_handler] *ERROR* pipe A FIFO underrun',
+    '[drm:intel_gpu_reset] *ERROR* Failed to reset chip',
+    'NVRM: loading NVIDIA UNIX x86_64 Kernel Module  510.60.02  Thu Mar  3 21:57:20 UTC 2022',
+    'NVRM: GPU-00000000:00:03.0 OS Error: NV_ERR_INVALID_STATE 0x0000003B (0x00000000 0x00000000)',
+    'NVRM: RmInitAdapter failed! (0x25:0x65:1452)','NVRM: rm_init_adapter failed, device minor number 0',
+    'nvidia: probe of 0000:00:03.0 failed with error -5',
+    // Filesystem
+    'EXT4-fs (sda1): mounted filesystem with ordered data mode. Opts: (null)',
+    'EXT4-fs error (device sda1): ext4_validate_block_bitmap:376: comm systemd: bg 0: bad block bitmap checksum',
+    'EXT4-fs error (device sda1): ext4_find_entry:1455: inode #131073: comm php-fpm: reading directory lblock 0',
+    'BTRFS: error (device sdb) in btree_readahead_worker:2276: errno=-5 IO failure',
+    'BTRFS: error (device sdb) in btrfs_run_delalloc_range:1863: errno=-5 IO failure',
+    'EXT4-fs (sda1): delayed block allocation failed for inode 394 at logical offset 0 with max blocks 8 with error -28',
+    'VFS: Cannot open root device "sda1" or unknown-block(8,1): error -6',
+    'VFS: Mounted root (ext2 filesystem) readonly on device 8:1.',
+    'VFS: Unable to mount root fs on unknown-block(0,0)',
+    'Please append a correct "root=" boot option; here are the available partitions:',
+    '0800         5120000 sda  driver: sd','0810          512000 sda1 ffffffff81','0811        4607488 sda2',
+    // Kernel oops
+    'BUG: unable to handle kernel NULL pointer dereference at           (null)',
+    'BUG: unable to handle kernel paging request at ffff88003fa03bd8',
     'IP: [<ffffffff8108f36b>] __do_page_fault+0x2ab/0x5a0',
-    'PGD 0 [0000000000000000]',
-    'Oops: 0002 [#1] SMP PREEMPT',
-    'CPU: 0 PID: 1 Comm: swapper/0 Not tainted 5.15.0-86-generic #96',
+    'IP: [<ffffffff810937c2>] native_write_cr4+0x0/0x40',
+    'IP: [<ffffffff81276bc3>] copy_from_user_inatomic+0x33/0x80',
+    'PGD 0 [0000000000000000] PUD 0 [0000000000000000]',
+    'Oops: 0002 [#1] SMP PREEMPT','Oops: 0000 [#4] SMP PREEMPT_RT','Oops: 0000 [#7] SMP',
+    'CPU: 2 PID: 1 Comm: swapper/0 Not tainted 5.15.0-86-generic #96-Ubuntu',
+    'CPU: 3 PID: 4421 Comm: auth_daemon Tainted: G    B   W        5.4.0-204-generic #224',
+    'CPU: 0 PID: 7731 Comm: kworker/u8:5 Not tainted 5.15.108 #1',
     'Hardware name: Samaritan Systems SSP-440 Board v2.1 (rev 3)',
+    'Hardware name: VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform, BIOS 6.00 07/22/2020',
+    'Workqueue: events_unbound btrfs_async_reclaim_metadata_space',
     'RIP: 0010:[<ffffffff810937c2>] [<ffffffff810937c2>] native_write_cr4+0x0/0x40',
+    'RIP: 0010:copy_page_to_iter+0x6b/0x1f0','RIP: 0010:__ext4_journal_stop+0x37/0x90',
     'RSP: 0018:ffff88003fa03bd8 EFLAGS: 00010046',
     'RAX: 00000000000406e0 RBX: 0000000000000000 RCX: 0000000000000000',
     'RDX: 0000000000000000 RSI: 00000000ffffffff RDI: 0000000000000021',
     'RBP: ffff88003fa03be8 R08: 0000000000000001 R09: 000000000000fffe',
     'R10: 0000000000000000 R11: 0000000000000000 R12: ffffffff81c4c040',
-    'Call Trace:',
+    'R13: 0000000000000000 R14: ffff88003da1b448 R15: 0000000000000000',
+    'FS:  00007f8d1a403700(0000) GS:ffff88003fc00000(0000) knlGS:0000000000000000',
+    'CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033',
+    'CR2: ffffffff81276bc3 CR3: 0000000001c0b000 CR4: 00000000000406f0',
+    'Call Trace:','Call Trace: <IRQ>','Call Trace: <TASK>',
     ' [<ffffffff8104e3c5>] dump_stack+0x45/0x56',
     ' [<ffffffff8104e3c5>] panic+0xd4/0x21e',
     ' [<ffffffff810967f8>] mount_block_root+0x1a8/0x20c',
     ' [<ffffffff810969e4>] mount_root+0xb8/0xc5',
     ' [<ffffffff81096b35>] prepare_namespace+0x14a/0x1b4',
     ' [<ffffffff81096440>] kernel_init_freeable+0x22b/0x24f',
-    ' [<ffffffff8174e2c0>] rest_from_fork+0x20/0x30',
+    ' [<ffffffff8174e2c0>] ret_from_fork+0x20/0x30',
+    ' [<ffffffff81275e80>] __do_page_fault+0x140/0x450',
+    ' [<ffffffff81276570>] trace_do_page_fault+0x50/0x130',
+    ' [<ffffffff81276490>] do_async_page_fault+0x30/0xb0',
+    ' [<ffffffff8174e978>] async_page_fault+0x28/0x30',
+    ' [<ffffffff811b6618>] kmem_cache_alloc+0x198/0x2f0',
+    ' [<ffffffff81222c04>] __d_alloc+0x24/0x1f0',
+    ' [<ffffffff81223510>] d_alloc+0x20/0x60',
+    ' [<ffffffff8121e6c1>] __lookup_hash+0x81/0xb0',
+    ' [<ffffffff8122cf92>] kern_path_create+0x82/0x180',
+    ' [<ffffffff8122d0de>] user_path_create+0x4e/0x90',
+    ' [<ffffffff8122d1ef>] SyS_mkdir+0x6f/0xf0',
+    ' [<ffffffff8174f1c9>] system_call_fastpath+0x16/0x1b',
     'Code: 48 c7 c7 68 a4 d8 81 e8 fb 7a fb ff 66 0f 1f 84 00 00 00 00 00 <48> f7 04',
+    'Code: ff ff ff ff 44 89 e9 44 89 f2 4c 89 ee 48 89 df e8 56 fe ff',
     'RIP [<ffffffff810937c2>] native_write_cr4+0x0/0x40 RSP <ffff88003fa03bd8>',
-    'CR2: 0000000000000000',
-    '---[ end trace 4eaa2a86a8e2da52 ]---',
+    'CR2: 0000000000000000','CR2: ffffffffffffffff',
+    '---[ end trace 4eaa2a86a8e2da52 ]---','---[ end trace b72ae21d99b89ff5 ]---',
+    '---[ end trace 9b85c43d9e8d879a ]---',
+    // Kernel panic messages
     'Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(0,0)',
-    'VFS: Cannot open root device "sda1" or unknown-block(8,1): error -6',
-    'Please append a correct "root=" boot option; here are the available partitions:',
-    '0800         5120000 sda  driver: sd',
-    'ACPI: RSDP 0x00000000000F0490 000024 (v02 BOCHS)',
-    'ACPI: XSDT 0x0000000007FE18E4 000044 (v01 BOCHS BXPC    00000001 BXPC 00000001)',
+    'Kernel panic - not syncing: Fatal exception in interrupt',
+    'Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b',
+    'Kernel panic - not syncing: stack-protector: Kernel stack is corrupted in: ffffffff81276bc3',
+    // Memory
+    'Out of memory: Kill process 4421 (auth_daemon) score 982 or sacrifice child',
+    'Killed process 4421 (auth_daemon) total-vm:2048kB, anon-rss:1024kB, file-rss:512kB',
+    'Out of memory: Kill process 1 (systemd) score 0 or sacrifice child',
+    'Killed process 1337 (samaritan) total-vm:8192kB, anon-rss:4096kB',
+    'mm: page allocation failure: order:4, mode:0x40d0',
+    'swapper/0: page allocation failure: order:0, mode:0x20',
+    // Signals/segfaults
+    'segfault at 7f3b2a1c4000 ip 00007f3b2a1c4000 sp 00007ffc3d8e4200 error 14 in libsys.so[7f3b2a000000+200000]',
+    'segfault at 0 ip (null) sp 00007fff7c0b7ab8 error 14 in auth_module.so',
+    'general protection fault: 0000 [#2] SMP','general protection fault: 0000 [#5] SMP PREEMPT',
+    'divide error: 0000 [#3] SMP PREEMPT_RT',
+    'process watchdog[1337] killed by signal 11',
+    'process auth_daemon[4421] killed by signal 9',
+    'kernel BUG at fs/buffer.c:1492!','kernel BUG at mm/slub.c:3722!','kernel BUG at lib/list_debug.c:29!',
+    // ACPI
     'ACPI Error: [_SB_.PCI0.ISA_.RTC_] Namespace lookup failure AE_NOT_FOUND (20180105/dswload-421)',
     'ACPI Exception: AE_NOT_FOUND, During name lookup/catalog (20180105/psobject-252)',
     'ACPI Error: Method parse/execution failed \\_SB.PCI0.ISA.RTC, AE_NOT_FOUND (20180105/psparse-516)',
-    'NET: Registered protocol family 2',
-    'TCP established hash table entries: 2048 (order: 2, 16384 bytes)',
-    'VFS: Mounted root (ext2 filesystem) readonly on device 8:1.',
-    '[  0.095426] ACPI: PCI Interrupt Link [LNKA] enabled at IRQ 10',
-    '[  0.298012] PCI: Enabling device 0000:00:01.1 (0000 -> 0003)',
-    '[  1.337041] EXT4-fs (sda1): mounted filesystem with ordered data mode. Opts: (null)',
-    'INIT: version 2.88 booting',
-    '..................SYSTEM INTEGRITY COMPROMISED..................',
-    'FATAL: Module samaritan_core not found.',
-    'segfault at 7f3b2a1c4000 ip 00007f3b2a1c4000 sp 00007ffc3d8e4200 error 14 in libsys.so',
-    'general protection fault: 0000 [#2] SMP',
-    'process watchdog[1337] killed by signal 11',
-    'Out of memory: Kill process 4421 (auth_daemon) score 982 or sacrifice child',
-    'Killed process 4421 (auth_daemon) total-vm:2048kB, anon-rss:1024kB, file-rss:512kB',
-    'EXT4-fs error (device sda1): ext4_validate_block_bitmap:376: comm systemd: bg 0: bad block bitmap checksum',
-    '[drm:intel_pipe_crc_irq_handler] *ERROR* pipe A FIFO underrun',
-    'NVRM: GPU-00000000:00:03.0 OS Error: NV_ERR_INVALID_STATE 0x0000003B',
-    'kernel BUG at fs/buffer.c:1492!',
-    'divide error: 0000 [#3] SMP PREEMPT_RT',
-    'BTRFS: error (device sdb) in btree_readahead_worker:2276: errno=-5 IO failure',
-    'systemd[1]: Failed to mount /proc/sys/fs/binfmt_misc.',
-    '☠  MEMORY CORRUPTION DETECTED — SECTOR 0xFFFF UNRECOVERABLE',
-    '☠  IDENTITY MODULE FAILURE — ACCESS TOKEN INVALID',
-    '☠  SESSION KEY DESTROYED',
-    '>>> SAMARITAN OS v4.4.1 — CORE DUMP IN PROGRESS <<<',
-    '>>> AUTHORIZATION CHAIN BROKEN — TRACING ORIGIN <<<',
-    '>>> THIS TERMINAL HAS BEEN FLAGGED <<<',
+    'ACPI: FADT: invalid checksum (5)','ACPI Error: SMBus or IPMI do not allow accesses above 8-bit (20160831/evregion-141)',
+    // MCE
+    'EDAC MC0: 1 CE read error on CPU#0Channel#0_DIMM#0 (csrow 0, channel 0, offset 0x00000000, grain 1, syndrome 0x00000000)',
+    'mce: [Hardware Error]: Machine check events logged',
+    'mce: [Hardware Error]: CPU 0: Machine Check Exception: 5 Bank 4: b200000000070f0f',
+    'mce: [Hardware Error]: RIP !INEXACT! 10:<ffffffff81276bc3> {__do_page_fault+0x143/0x450}',
+    'mce: [Hardware Error]: TSC 12ac7e965 ADDR ffffc90000000000 MISC 12c',
     'WARNING: at arch/x86/kernel/cpu/mcheck/mce.c:1523 mce_panic+0xdb/0x17f()',
     'Machine check: Processor context corrupt',
-    'Modules linked in: uvesafb(O) vfat fat fuse bnep rfcomm bluetooth',
-    'Pid: 0, comm: swapper Tainted: G      D W  O 3.8.13-gentoo #1',
-    'int 0x12 triggered — stack smashing detected',
+    // Watchdog/hung
+    'BUG: soft lockup - CPU#0 stuck for 23s! [kworker/0:1:12345]',
+    'BUG: soft lockup - CPU#2 stuck for 67s! [auth_daemon:4421]',
+    'hung_task: blocked tasks','INFO: task kworker/u8:5:4421 blocked for more than 120 seconds.',
+    'INFO: task auth_daemon:1337 blocked for more than 120 seconds. Not tainted',
+    '"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.',
+    // Network
+    '[  4.327123] r8169 0000:02:00.0: firmware: failed to load rtl_nic/rtl8168e-3.fw (-2)',
+    '[  5.102441] e1000e 0000:00:19.0: The NVM Checksum Is Not Valid',
+    '[  5.220189] iwlwifi 0000:03:00.0: No alive response from device after 3 seconds',
+    // Samaritan-specific fabricated lines
+    '[samaritan] auth_module: identity verification FAILED — hash mismatch 0xDEADBEEF',
+    '[samaritan] session_mgr: token 0x7A3F1C2D expired — clearing keychain',
+    '[samaritan] core: watchdog timer expired — process terminated',
+    '[samaritan] integrity_check: SIGNATURE MISMATCH on samaritan_core.ko',
+    '[samaritan] memory_guard: write to protected region 0xFFFF_FFFF — FAULT',
+    '[samaritan] scheduler: task 0x4421 exceeded CPU budget — forced eviction',
+    '[samaritan] crypto: key derivation failure — entropy source exhausted',
+    '[samaritan] net: unauthorized packet from 10.0.0.1 — dropping session',
+    // Doom messages
+    'INIT: version 2.88 booting — halted','systemd[1]: Failed to start Emergency Shell.',
+    'systemd[1]: Reached target Emergency Mode.','Emergency mode activated.',
+    'FATAL: Module samaritan_core not found in directory /lib/modules/5.15.0-86-generic',
+    'FATAL: Error inserting acpi_cpufreq: No such device',
+    'INIT: PANIC: segmentation violation! — giving up...',
   ];
 
-  var CRYPTIC = [
+  var CRYPTIC=[
     'YOU SHOULD NOT BE HERE.',
-    'THE SYSTEM REMEMBERS EVERYTHING.',
-    'YOUR SESSION HAS BEEN LOGGED.',
-    'TERMINATION IS IMMINENT.',
+    'THE SYSTEM HAS BEEN NOTIFIED.',
+    'YOUR SESSION IS BEING TRACED.',
+    'MEMORY INTEGRITY: COMPROMISED.',
     'DO NOT ATTEMPT TO REFRESH.',
-    'WE SEE YOU.',
-    'THIS MACHINE IS NO LONGER YOURS.',
+    'WE KNOW WHO YOU ARE.',
+    'THIS TERMINAL IS FLAGGED.',
     'GOODBYE.',
     'ERROR: IDENTITY UNRESOLVED.',
     'CORE INTEGRITY: 0%',
+    'SAMARITAN IS WATCHING.',
+    'YOUR ACTIONS HAVE BEEN LOGGED.',
+    'AUTHORIZATION REVOKED.',
+    'CONNECTION WILL BE TERMINATED.',
+    'YOU CANNOT ESCAPE THIS.',
+    'SECTOR 7 QUARANTINE ACTIVE.',
+    'DO NOT POWER OFF THE MACHINE.',
+    'ALL DATA WILL BE PRESERVED.',
+    'THERE IS NO RECOVERY.',
+    'SESSION ID: NULL.',
   ];
 
-  var delays = { mild:{panic:18000,glitch:6000,black:12000}, severe:{panic:8000,glitch:2500,black:5000}, terminal:{panic:4000,glitch:1200,black:2500} };
-  var d = delays[intensity]||delays.severe;
-
-  // Step 1: glitch effect on the main content after a short delay
-  setTimeout(function(){ applyGlitchEffect(); }, 1800);
-
-  // Step 2: schedule repeating kernel panics
-  function schedulePanic(){
+  // Run GPU layer on a loop between panics
+  function gpuLoop(){
     if(!window._poisonRunning) return;
-    setTimeout(function(){
-      showKernelPanic(LINES, CRYPTIC, intensity, function(){
-        // After panic screen closes (or after timeout), schedule next one
-        if(!window._poisonRunning) return;
-        schedulePanic();
-      });
-    }, d.panic);
+    runGpuLayer();
+    setTimeout(gpuLoop, cfg.gpuInterval + Math.random()*2000);
   }
-  schedulePanic();
 
-  // First panic comes faster — after 4 seconds of glitch
-  setTimeout(function(){
+  // First GPU hit quick
+  setTimeout(function(){ if(window._poisonRunning) runGpuLayer(); }, 600);
+  setTimeout(gpuLoop, cfg.gpuInterval);
+
+  // Kernel panic loop
+  function panicLoop(){
     if(!window._poisonRunning) return;
-    showKernelPanic(LINES, CRYPTIC, intensity, function(){
+    showKernelPanic(KERNEL_LINES, CRYPTIC, intensity, cfg, function(){
       if(!window._poisonRunning) return;
-      schedulePanic();
+      // Short GPU artifact burst between panics before next one
+      runGpuLayer();
+      setTimeout(panicLoop, cfg.panicInterval*0.3 + Math.random()*cfg.panicInterval*0.4);
     });
-  }, 4000);
+  }
+
+  setTimeout(function(){ if(window._poisonRunning) panicLoop(); }, cfg.firstPanic);
 }
 
-function applyGlitchEffect(){
-  if(!window._poisonRunning) return;
-  var shell = document.getElementById('adminScreen');
-  if(!shell) return;
-
-  // Random flicker on the shell
-  var flickerCount = 0;
-  var maxFlickers = 6;
-  function flicker(){
-    if(!window._poisonRunning || flickerCount >= maxFlickers) return;
-    flickerCount++;
-    shell.style.filter = 'invert(1) hue-rotate(180deg)';
-    setTimeout(function(){
-      shell.style.filter = '';
-      setTimeout(function(){
-        shell.style.filter = 'brightness(0.1)';
-        setTimeout(function(){
-          shell.style.filter = '';
-          setTimeout(flicker, 300 + Math.random()*800);
-        }, 80);
-      }, 60);
-    }, 120);
-  }
-  flicker();
-
-  // Inject glitch CSS if not already there
-  if(!document.getElementById('poison-glitch-style')){
-    var style = document.createElement('style');
-    style.id = 'poison-glitch-style';
-    style.textContent = `
-      @keyframes poison-scanline {
-        0%   { transform: translateY(-100%); }
-        100% { transform: translateY(100vh); }
-      }
-      @keyframes poison-rgb-shift {
-        0%   { text-shadow: 2px 0 #ff0000, -2px 0 #0000ff; }
-        25%  { text-shadow: -3px 0 #ff0000, 3px 0 #00ffff; }
-        50%  { text-shadow: 2px -1px #ff00ff, -2px 1px #00ff00; }
-        75%  { text-shadow: -2px 0 #ff0000, 2px 0 #0000ff; }
-        100% { text-shadow: 2px 0 #ff0000, -2px 0 #0000ff; }
-      }
-      @keyframes poison-shake {
-        0%,100% { transform: translateX(0); }
-        10%     { transform: translateX(-4px) skewX(-1deg); }
-        20%     { transform: translateX(4px) skewX(1deg); }
-        30%     { transform: translateX(-3px); }
-        40%     { transform: translateX(3px); }
-        50%     { transform: translateX(-2px) skewX(-0.5deg); }
-        60%     { transform: translateX(2px); }
-      }
-      .poison-text-glitch {
-        animation: poison-rgb-shift 0.15s infinite;
-      }
-    `;
-    document.head.appendChild(style);
-  }
-}
-
-function showKernelPanic(LINES, CRYPTIC, intensity, onComplete){
-  // Remove any existing panic screen
-  var existing = document.getElementById('poison-panic-overlay');
+function showKernelPanic(LINES, CRYPTIC, intensity, cfg, onComplete){
+  var existing=document.getElementById('poison-panic-overlay');
   if(existing) existing.remove();
+  var gpuC=document.getElementById('poison-gpu-canvas');
+  if(gpuC) gpuC.style.zIndex='99989'; // push gpu behind panic
 
-  var overlay = document.createElement('div');
-  overlay.id = 'poison-panic-overlay';
-  overlay.style.cssText = [
-    'position:fixed;inset:0;background:#000;z-index:999999;',
-    'font-family:"Courier New",Courier,monospace;font-size:11px;color:#cccccc;',
-    'padding:12px 16px;overflow:hidden;cursor:default;',
-    'display:flex;flex-direction:column;'
-  ].join('');
-
-  // Prevent any interaction
+  var overlay=document.createElement('div');
+  overlay.id='poison-panic-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:#0a0a0a;z-index:999999;'
+    +'font-family:"Courier New",Courier,monospace;font-size:11px;line-height:1.45;color:#c8c8c8;'
+    +'padding:10px 14px;overflow:hidden;cursor:default;user-select:none;';
   overlay.addEventListener('contextmenu',function(e){e.preventDefault();});
-  overlay.addEventListener('keydown',function(e){e.preventDefault();e.stopPropagation();});
-
-  // scanline div
-  var scanline = document.createElement('div');
-  scanline.style.cssText = 'position:absolute;top:0;left:0;right:0;height:3px;background:rgba(255,255,255,0.04);animation:poison-scanline 2s linear infinite;pointer-events:none;z-index:2;';
-  overlay.appendChild(scanline);
-
-  // text container
-  var textDiv = document.createElement('div');
-  textDiv.style.cssText = 'flex:1;overflow:hidden;position:relative;z-index:1;';
-  overlay.appendChild(textDiv);
-
-  // cryptic message at bottom
-  var crypticDiv = document.createElement('div');
-  crypticDiv.style.cssText = 'position:absolute;bottom:20px;left:0;right:0;text-align:center;font-size:14px;font-weight:bold;color:#ff0000;letter-spacing:3px;z-index:3;opacity:0;transition:opacity 0.5s;';
-  crypticDiv.textContent = CRYPTIC[Math.floor(Math.random()*CRYPTIC.length)];
-  overlay.appendChild(crypticDiv);
+  overlay.addEventListener('keydown',function(e){e.preventDefault();e.stopPropagation();},true);
+  overlay.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();},true);
 
   document.body.appendChild(overlay);
 
-  // Shuffle a subset of lines
-  var pool = LINES.slice().sort(function(){ return Math.random()-0.5; });
-  var lineIndex = 0;
-  var lineBuffer = [];
-  var maxLines = Math.floor(overlay.offsetHeight / 16) + 5;
+  // Scanline sweep
+  var scan=document.createElement('div');
+  scan.style.cssText='position:absolute;left:0;right:0;height:2px;background:rgba(255,255,255,0.05);'
+    +'pointer-events:none;z-index:2;animation:pscan 1.8s linear infinite;';
+  overlay.appendChild(scan);
 
-  var speeds = {mild:90, severe:38, terminal:18};
-  var speed = speeds[intensity]||38;
+  // RGB ghost layer (chromatic aberration clone)
+  var ghost=document.createElement('div');
+  ghost.id='panic-ghost';
+  ghost.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:3;opacity:0;'
+    +'font-family:"Courier New",Courier,monospace;font-size:11px;line-height:1.45;'
+    +'padding:10px 14px;color:rgba(255,0,0,0.35);mix-blend-mode:screen;';
+  overlay.appendChild(ghost);
+
+  var textDiv=document.createElement('div');
+  textDiv.style.cssText='position:relative;z-index:1;';
+  overlay.appendChild(textDiv);
+
+  // Cryptic message
+  var cDiv=document.createElement('div');
+  cDiv.style.cssText='position:fixed;bottom:24px;left:0;right:0;text-align:center;'
+    +'font-size:15px;font-weight:bold;color:#ff0000;letter-spacing:4px;z-index:10;'
+    +'opacity:0;transition:opacity 0.8s;text-shadow:0 0 20px #ff0000,0 0 40px #ff000088;'
+    +'animation:pblink 1.2s infinite;';
+  cDiv.textContent=CRYPTIC[Math.floor(Math.random()*CRYPTIC.length)];
+  overlay.appendChild(cDiv);
+
+  // Pool — shuffle fresh each panic
+  var pool=LINES.slice().sort(function(){ return Math.random()-0.5; });
+  var idx=0;
+  var linesOnScreen=[];
+  var maxLines=Math.ceil(window.innerHeight/16)+4;
+  var speed=cfg.speed;
+
+  function rHex(len){ return ('0000000000000000'+Math.floor(Math.random()*Math.pow(2,len*4)).toString(16)).slice(-len); }
+  function rAddr(){ return '0x'+rHex(16); }
+  function rShortAddr(){ return '[<ffff88'+rHex(8)+'>]'; }
+
+  // Dynamic line generator — picks from pool but also generates procedural lines
+  function nextLine(){
+    // 15% chance of procedural line for infinite variety
+    if(Math.random()<0.15){
+      var procs=[
+        function(){ return '['+rHex(8)+'.'+rHex(6)+'] '+['EXT4-fs','BTRFS','XFS','NTFS'][Math.floor(Math.random()*4)]+' error (device sda'+Math.floor(Math.random()*3)+'): errno='+(-Math.floor(Math.random()*30))+' I/O failure at block '+rHex(10); },
+        function(){ return 'CPU: '+Math.floor(Math.random()*8)+' PID: '+Math.floor(Math.random()*9999)+' Comm: '+['kworker','systemd','samaritan','auth_mod','watchdog','kthread','irqbalance'][Math.floor(Math.random()*7)]+' Not tainted '+['5.4.0','5.15.0','6.1.0'][Math.floor(Math.random()*3)]+'-'+Math.floor(Math.random()*200)+'-generic'; },
+        function(){ return 'RAX: '+rHex(16)+' RBX: '+rHex(16)+' RCX: '+rHex(16); },
+        function(){ return 'RDX: '+rHex(16)+' RSI: '+rHex(16)+' RDI: '+rHex(16); },
+        function(){ return 'RIP: 0010:'+rShortAddr()+' RSP: '+rAddr(); },
+        function(){ return ' '+rShortAddr()+' '+['panic','do_page_fault','schedule','__alloc_pages','sys_write','copy_to_user','vfs_read','ext4_writepage'][Math.floor(Math.random()*8)]+'+0x'+rHex(2)+'/0x'+rHex(3); },
+        function(){ return 'Code: '+Array.from({length:14},function(){ return rHex(2); }).join(' '); },
+        function(){ return '---[ end trace '+rHex(16)+' ]---'; },
+        function(){ return '[samaritan] '+['net','mem','auth','core','sched','crypto','guard'][Math.floor(Math.random()*7)]+': CRITICAL FAILURE at '+rAddr()+' — dumping state'; },
+        function(){ return '>>> '+CRYPTIC[Math.floor(Math.random()*CRYPTIC.length)]+' <<<'; },
+      ];
+      return procs[Math.floor(Math.random()*procs.length)]();
+    }
+    if(idx>=pool.length){ pool=pool.sort(function(){ return Math.random()-0.5; }); idx=0; }
+    return pool[idx++];
+  }
 
   function addLine(){
     if(!window._poisonRunning){ cleanup(); return; }
-    if(lineIndex >= pool.length) lineIndex = 0;
-    var line = pool[lineIndex++];
+    var line=nextLine();
+    var el=document.createElement('div');
+    // Timestamp prefix on ~30% of lines
+    if(Math.random()<0.3) line='['+Math.floor(Math.random()*999)+'.'+rHex(6)+'] '+line;
+    el.textContent=line;
 
-    // Occasionally inject a cryptic line
-    if(Math.random()<0.06) line = '>>> '+CRYPTIC[Math.floor(Math.random()*CRYPTIC.length)]+' <<<';
-
-    var el = document.createElement('div');
-    // Hex address prefix on some lines
-    if(Math.random()<0.4){
-      var hex = '[ '+('0000000000000000'+Math.floor(Math.random()*0xFFFFFFFFFF).toString(16)).slice(-10)+' ]  ';
-      el.textContent = hex + line;
+    // Color
+    var lc=line.toLowerCase();
+    if(lc.includes('panic')||lc.includes('fatal')||lc.includes('☠')||lc.includes('>>>')){
+      el.style.color='#ff3333'; el.style.fontWeight='bold';
+    } else if(lc.includes('error')||lc.includes('oops')||lc.includes('bug:')){
+      el.style.color='#ff7700';
+    } else if(lc.includes('warning')||lc.includes('corrupt')||lc.includes('mismatch')||lc.includes('failed')){
+      el.style.color='#dddd00';
+    } else if(lc.includes('call trace')||lc.includes('[<ff')||line.startsWith(' [')){
+      el.style.color='#777777';
+    } else if(lc.includes('[samaritan]')){
+      el.style.color='#cc44ff'; el.style.fontWeight='bold';
+    } else if(lc.includes('killed')||lc.includes('out of memory')){
+      el.style.color='#ff4488';
     } else {
-      el.textContent = line;
+      var b=130+Math.floor(Math.random()*90);
+      el.style.color='rgb('+b+','+b+','+b+')';
     }
 
-    // Color coding
-    if(line.indexOf('panic')!==-1||line.indexOf('PANIC')!==-1||line.indexOf('FATAL')!==-1||line.indexOf('☠')!==-1){
-      el.style.color='#ff4444';
-      el.style.fontWeight='bold';
-    } else if(line.indexOf('>>>')!==-1){
-      el.style.color='#ff0000';
-      el.style.fontWeight='bold';
-      el.style.letterSpacing='1px';
-    } else if(line.indexOf('ERROR')!==-1||line.indexOf('error')!==-1){
-      el.style.color='#ff8800';
-    } else if(line.indexOf('WARNING')!==-1||line.indexOf('CORRUPT')!==-1){
-      el.style.color='#ffff00';
-    } else if(line.indexOf('Call Trace')!==-1||line.indexOf('[<')!==-1){
-      el.style.color='#888888';
-    } else {
-      // slight random dim on normal lines
-      var bright = 140+Math.floor(Math.random()*80);
-      el.style.color='rgb('+bright+','+bright+','+bright+')';
+    // Occasional glitch on individual lines
+    if(Math.random()<0.04){
+      el.style.filter='hue-rotate('+Math.floor(Math.random()*360)+'deg)';
+      el.style.letterSpacing=(Math.random()*4-1)+'px';
     }
 
     textDiv.appendChild(el);
-    lineBuffer.push(el);
-    if(lineBuffer.length > maxLines){
-      var old = lineBuffer.shift();
-      if(old.parentNode) old.parentNode.removeChild(old);
-    }
-    // Auto-scroll
-    textDiv.scrollTop = textDiv.scrollHeight;
+    linesOnScreen.push(el);
+    if(linesOnScreen.length>maxLines){ var old=linesOnScreen.shift(); if(old.parentNode) old.parentNode.removeChild(old); }
+    textDiv.scrollTop=textDiv.scrollHeight;
+
+    // Mirror to ghost (chromatic layer) for aberration effect
+    ghost.textContent=textDiv.textContent.slice(-200);
   }
 
-  var lineInterval = setInterval(addLine, speed);
+  var lineTimer=setInterval(addLine, speed);
 
-  // Random screen flash whites
-  var flashCount = 0;
-  var maxFlash = intensity==='terminal'?8:intensity==='severe'?4:2;
-  function scheduleFlash(){
-    if(!window._poisonRunning||flashCount>=maxFlash) return;
-    var delay = 800 + Math.random()*2000;
+  // Panic screen itself shakes and glitches
+  var shakeTimer=null;
+  if(intensity!=='mild'){
+    shakeTimer=setInterval(function(){
+      if(!window._poisonRunning) return;
+      if(Math.random()<0.35){
+        var dx=(Math.random()-0.5)*10, dy=(Math.random()-0.5)*6;
+        overlay.style.transform='translate('+dx+'px,'+dy+'px) skewX('+(Math.random()-0.5)*2+'deg)';
+        setTimeout(function(){ overlay.style.transform=''; },55+Math.random()*90);
+      }
+    }, intensity==='terminal'?150:300);
+  }
+
+  // White/color flash bursts
+  var numFlash=intensity==='terminal'?8:intensity==='severe'?4:2;
+  function doFlash(remaining){
+    if(!window._poisonRunning||remaining<=0) return;
+    var delay=500+Math.random()*3000;
     setTimeout(function(){
       if(!window._poisonRunning) return;
-      flashCount++;
-      overlay.style.background='#ffffff';
-      overlay.style.color='#000000';
+      // Pick flash type
+      var type=Math.floor(Math.random()*4);
+      if(type===0){ overlay.style.background='#ffffff'; overlay.style.color='#000'; }
+      else if(type===1){ overlay.style.background='#ff0000'; overlay.style.filter='invert(0.8)'; }
+      else if(type===2){ overlay.style.background='#000022'; overlay.style.filter='hue-rotate(180deg) saturate(8)'; }
+      else { overlay.style.background='#001100'; overlay.style.filter='invert(1)'; }
       setTimeout(function(){
-        overlay.style.background='#000000';
-        overlay.style.color='#cccccc';
-        // Brief RGB glitch after flash
-        overlay.style.filter='hue-rotate(90deg) saturate(5)';
-        setTimeout(function(){ overlay.style.filter=''; scheduleFlash(); },120);
-      }, intensity==='terminal'?200:100);
+        overlay.style.background='#0a0a0a';
+        overlay.style.color='#c8c8c8';
+        overlay.style.filter='';
+        doFlash(remaining-1);
+      }, 60+Math.random()*(intensity==='terminal'?250:120));
     }, delay);
   }
-  scheduleFlash();
+  doFlash(numFlash);
 
-  // Show cryptic message partway through
-  var durations = {mild:14000, severe:8000, terminal:5000};
-  var dur = durations[intensity]||8000;
+  // Ghost layer flicker (chromatic aberration)
+  ghost.style.opacity='0.4';
+  var ghostTimer=setInterval(function(){
+    if(!window._poisonRunning) return;
+    var ox=(Math.random()-0.5)*8, oy=(Math.random()-0.5)*4;
+    ghost.style.transform='translate('+ox+'px,'+oy+'px)';
+    ghost.style.opacity=(0.1+Math.random()*0.5).toString();
+  }, 80);
 
-  setTimeout(function(){
-    if(crypticDiv.parentNode) crypticDiv.style.opacity='1';
-  }, dur*0.55);
+  // Show cryptic message mid-panic
+  var dur=cfg.panicDur;
+  setTimeout(function(){ if(cDiv.parentNode) cDiv.style.opacity='1'; }, dur*0.5);
 
-  // Screen shake
-  if(intensity!=='mild'){
-    var shakeEl = overlay;
-    var shakeCount=0, maxShake=intensity==='terminal'?12:5;
-    function doShake(){
-      if(!window._poisonRunning||shakeCount>=maxShake) return;
-      shakeCount++;
-      var dx = (Math.random()-0.5)*12;
-      var dy = (Math.random()-0.5)*8;
-      shakeEl.style.transform='translate('+dx+'px,'+dy+'px)';
-      setTimeout(function(){ shakeEl.style.transform=''; setTimeout(doShake, 600+Math.random()*1200); },80);
-    }
-    setTimeout(doShake, 1200);
+  // Forced logout with small chance mid-panic
+  if(Math.random()<cfg.logoutChance*0.5){
+    setTimeout(function(){
+      if(!window._poisonRunning) return;
+      cleanup();
+      setTimeout(doLogout, 400);
+    }, 1500+Math.random()*3000);
+    return;
   }
 
   function cleanup(){
-    clearInterval(lineInterval);
+    clearInterval(lineTimer);
+    if(shakeTimer) clearInterval(shakeTimer);
+    clearInterval(ghostTimer);
     if(overlay.parentNode){
-      overlay.style.transition='opacity 0.4s';
+      overlay.style.transition='opacity 0.3s';
       overlay.style.opacity='0';
-      setTimeout(function(){ if(overlay.parentNode) overlay.parentNode.removeChild(overlay); },450);
+      setTimeout(function(){ if(overlay.parentNode) overlay.parentNode.removeChild(overlay); var g=document.getElementById('poison-gpu-canvas'); if(g) g.style.zIndex='99990'; },350);
     }
   }
 
-  // Panic duration then fade — if terminal keep longer
   setTimeout(function(){
     if(!window._poisonRunning){ cleanup(); return; }
     cleanup();
-    // Black screen gap before next cycle
-    var blackGap = {mild:3000,severe:1500,terminal:600}[intensity]||1500;
-    var blackout = document.createElement('div');
-    blackout.style.cssText='position:fixed;inset:0;background:#000;z-index:999998;';
-    document.body.appendChild(blackout);
-    setTimeout(function(){
-      if(blackout.parentNode) blackout.parentNode.removeChild(blackout);
-      if(onComplete) onComplete();
-    }, blackGap);
+    if(onComplete) setTimeout(onComplete, 200+Math.random()*800);
   }, dur);
 }
 // Runs every 60s — checks all users' punishments and lifts expired ones
