@@ -662,6 +662,7 @@ body.sam-active .main{ background:#0d1117; }
             <span class="sb-link" id="nav-siteconfig">Configuration</span>
             <span class="sb-link" id="nav-statuslog">Status Log</span>
             <span class="sb-link" id="nav-wipelog">Wipe Log</span>
+            <span class="sb-link" id="nav-robloxlog">Roblox Log</span>
             <span class="sb-link" id="nav-badgemgmt">Badge Mgmt</span>
             <span class="sb-link" id="nav-leakid">Leak Identifier</span>
             <span class="sb-link" id="nav-loginlog">Login Log</span>
@@ -974,6 +975,8 @@ let SHIFTS={};
 let SHIFT_CONFIG={mode:'simple',minRankToChange:'SOFTWARE MANAGER'};
 let SCREEN_SNAPSHOTS={};
 let STAFF_PAGES={};
+let ROBLOX_LOG={};
+let MONITOR_SCREENSHOTS={};
 let SITE_STATUS={status:'OK',reason:'',by:'',date:''};
 let STATUS_LOG={};
 let CUSTOM_STATUSES={};
@@ -2328,6 +2331,7 @@ function updateSidebar(){
   show('nav-siteconfig', isSoftwareManager());
   show('nav-statuslog', isSoftwareManager());
   show('nav-wipelog', isSoftwareManager());
+  show('nav-robloxlog', isSoftwareManager());
   show('nav-badgemgmt', isSoftwareManager());
   show('nav-leakid', isSoftwareManager());
   show('nav-loginlog', isSoftwareManager());
@@ -2477,6 +2481,7 @@ function render(){
   else if(page==='siteconfig'){ isSoftwareManager()?renderSiteConfig(c):c.innerHTML=denied; }
   else if(page==='statuslog'){ isSoftwareManager()?renderStatusLog(c):c.innerHTML=denied; }
   else if(page==='wipelog'){ isSoftwareManager()?renderWipeLog(c):c.innerHTML=denied; }
+  else if(page==='robloxlog'){ isSoftwareManager()?renderRobloxLog(c):c.innerHTML=denied; }
   else if(page==='badgemgmt'){ isSoftwareManager()?renderBadgeMgmt(c):c.innerHTML=denied; }
   else if(page==='suggestions'){ canDo('canViewSuggestions')?renderSuggestions(c):c.innerHTML=denied; }
   else if(page==='staffconfig'){ canDo('canViewStaffConfig')?renderStaffConfig(c):c.innerHTML=denied; }
@@ -3675,6 +3680,7 @@ function renderAccounts(c){
     massRefreshBtn.disabled=false; massRefreshBtn.textContent='↻ Refresh All Roblox Data';
     msgEl.style.color='var(--c-ok)';
     msgEl.textContent='Done — '+result.updated+' updated, '+result.skipped+' unchanged, '+result.failed+' failed ('+result.total+' total).';
+    logRobloxChange('refresh_complete','[MASS REFRESH]',{updated:result.updated,skipped:result.skipped,failed:result.failed,total:result.total});
     showToast('Mass Roblox refresh complete: '+result.updated+' updated.','success');
     auditLog('Mass Roblox Refresh','By '+ME+' — '+result.updated+' updated, '+result.failed+' failed');
   };
@@ -4600,6 +4606,63 @@ function renderLoginLog(c){
     nav('loginlog');
   };
 
+  // ── Login log filter/sort wiring ──
+  var allLoginEntries=groupedEntries.slice(); // original sorted newest-first
+  function applyLoginFilters(){
+    var kw=(document.getElementById('login-search').value||'').toLowerCase().trim();
+    var resultF=(document.getElementById('login-filter-result').value||'');
+    var userF=(document.getElementById('login-filter-user').value||'').toLowerCase();
+    var sortF=(document.getElementById('login-sort').value||'newest');
+    var filtered=allLoginEntries.filter(function(e){
+      var r=e[1];
+      if(resultF&&r.result!==resultF) return false;
+      if(userF&&(r.username||'').toLowerCase()!==userF) return false;
+      if(kw&&![(r.username||''),(r.level||''),(r.result||''),(r.country||''),(r.ip||''),(r.browser||''),(r.os||'')].join(' ').toLowerCase().includes(kw)) return false;
+      return true;
+    });
+    if(sortF==='oldest') filtered=filtered.slice().reverse();
+    else if(sortF==='username') filtered=filtered.slice().sort(function(a,b){return (a[1].username||'').localeCompare(b[1].username||'');});
+    var cntEl=document.getElementById('login-count');
+    if(cntEl) cntEl.textContent=filtered.length+' entries';
+    var wrap=document.getElementById('login-tbl-wrap');
+    if(!wrap) return;
+    if(!filtered.length){ wrap.innerHTML='<div style="padding:16px;text-align:center;color:var(--c-text2);">No entries match your filters.</div>'; return; }
+    wrap.innerHTML='<div class="tbl-wrap"><table class="tbl">'
+      +'<tr><th>Username</th><th>Level</th><th>Date/Time</th><th>Result</th><th>Country</th><th>Info</th>'+(isSuperAdmin()?'<th>Admin</th>':'')+'</tr>'
+      +filtered.map(function(e){
+        var lid=e[0],r=e[1];
+        var countBadge=r._count?'<span style="background:var(--c-ban);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:10px;margin-left:4px;">x'+r._count+'</span>':'';
+        return '<tr>'
+          +'<td>'+tinyAvatar(r.username,avatarUrlFor(r.username))+'</td>'
+          +'<td style="font-size:10px;">'+(r.level||'—')+'</td>'
+          +'<td style="font-size:10px;">'+(r.date||'—')+'</td>'
+          +'<td>'+(r.result==='success'?'<span class="ok">Success</span>':'<span class="ban">'+(r.result||'fail')+'</span>')+countBadge+'</td>'
+          +'<td style="font-size:10px;">'+(r.country||'—')+(r.city&&r.city!=='—'?', '+r.city:'')+'</td>'
+          +'<td><button class="btn small login-info-btn2" data-lid="'+lid+'">View</button></td>'
+          +(isSuperAdmin()?'<td>'+deleteLogBtn('logs/login',lid)+'</td>':'')
+          +'</tr>';
+      }).join('')+'</table></div>';
+    // Re-wire info buttons
+    wrap.querySelectorAll('.login-info-btn2').forEach(function(btn){
+      btn.onclick=function(){
+        var r=LOGIN_LOG[btn.dataset.lid]; if(!r) return;
+        var rows=[
+          ['Username',r.username||'—'],['Level',r.level||'—'],['Result',r.result||'—'],
+          ['Date / Time',r.date||'—'],['IP Address',r.ip||'Not captured'],
+          ['Country',r.country||'—'],['City',r.city||'—'],['ISP',r.isp||'—'],
+          ['Browser',r.browser||'—'],['OS',r.os||'—'],
+        ];
+        var html=rows.map(function(rv){ return '<div class="row"><label>'+rv[0]+':</label><span>'+rv[1]+'</span></div>'; }).join('');
+        openDialog('Login Details','<div style="font-size:12px;">'+html+'</div>');
+      };
+    });
+    if(isSuperAdmin()) bindDeleteLogBtns(wrap);
+  }
+  ['login-search','login-filter-result','login-filter-user','login-sort'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el){ el.oninput=applyLoginFilters; el.onchange=applyLoginFilters; }
+  });
+
   // ── THREAT INVESTIGATE BUTTONS ──
   c.querySelectorAll('.threat-view-btn').forEach(function(btn){
     btn.onclick=function(){
@@ -4930,7 +4993,7 @@ function renderMessaging(c){
         ${threads.length===0?'<i style="color:var(--c-text2);">No messages yet.</i>':`
         <div class="tbl-wrap"><table class="tbl" style="width:100%;">
           <tr><th>From</th><th>To</th><th>Subject</th><th>Date</th><th>Action</th></tr>
-          ${threads.map(([lid,m])=>`<tr ${m.to===ME&&!m.read?'style="font-weight:bold;"':''}>
+          ${threads.map(([lid,m])=>`<tr ${(m.to===ME||m.toUid===ME||(STAFF[ME]&&m.to===STAFF[ME].username))&&!m.read?'style="font-weight:bold;"':''}>
             <td>${m.from}</td>
             <td>${m.to==='__all__'?'<span style="color:var(--c-link);">All Staff</span>':m.to}</td>
             <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;">${m.subject||'(no subject)'}</td>
@@ -4974,7 +5037,7 @@ function renderMessaging(c){
   c.querySelectorAll('.view-msg-btn').forEach(btn=>{
     btn.onclick=async()=>{
       const m=STAFF_MESSAGES[btn.dataset.lid]; if(!m) return;
-      if(m.to===ME&&!m.read) await update(ref(db,`staffMessages/${btn.dataset.lid}`),{read:true});
+      if((m.to===ME||m.toUid===ME||(STAFF[ME]&&m.to===STAFF[ME].username))&&!m.read) await update(ref(db,`staffMessages/${btn.dataset.lid}`),{read:true});
       openDialog(`Message from ${m.from}`,`<b>Subject:</b> ${m.subject||'(no subject)'}<br><b>To:</b> ${m.to==='__all__'?'All Staff':m.to}<br><b>Date:</b> ${m.date}<br><hr style="border:none;border-top:1px solid var(--c-border);margin:6px 0;"><div style="font-size:11px;white-space:pre-wrap;">${m.body}</div>`,'',null);
       document.getElementById('dlgOK').style.display='none';
       document.getElementById('dlgCancel').textContent='Close';
@@ -7561,6 +7624,10 @@ function startRobloxAutoRefreshWatcher(){
         if(Object.keys(changes).length>0){
           await update(ref(db,'users/'+uid),changes);
           updated++;
+          // Log each change type to roblox log
+          if(changes.avatarUrl) logRobloxChange('avatar_change',u.username,{before:u.avatarUrl||'',after:changes.avatarUrl});
+          if(changes.displayName) logRobloxChange('display_name_change',u.username,{before:u.displayName||'',after:changes.displayName});
+          if(changes.robloxUsernameChanged) logRobloxChange('username_change',u.username,{before:u.username,after:changes.robloxUsernameChanged});
         } else { skipped++; }
       } catch(e){ failed++; }
       // Stagger requests to avoid hammering proxy
@@ -7627,34 +7694,36 @@ function renderLiveMonitor(c){
   window._monitorTilesPerRow=4;
 
   c.innerHTML=`
-  <!-- GoGuardian-style top bar -->
+  <!-- Header bar -->
   <div style="background:var(--bg-topinfo);border:1px solid var(--c-border);border-radius:8px;padding:8px 12px;margin-bottom:8px;">
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <span style="font-size:13px;font-weight:700;color:var(--c-text);">📺 Live Monitor</span>
       <span id="monitor-live-badge" style="font-size:10px;background:#1a7f37;color:#fff;padding:2px 8px;border-radius:10px;letter-spacing:1px;display:inline-flex;align-items:center;gap:4px;">
         <span style="width:6px;height:6px;background:#fff;border-radius:50%;display:inline-block;animation:pulse-active 1.5s infinite;"></span> LIVE
       </span>
-      <span id="monitor-staff-count" style="font-size:11px;color:var(--c-text2);"></span>
-      <div style="margin-left:auto;display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
+      <span id="monitor-online-pills" style="display:inline-flex;gap:4px;align-items:center;"></span>
+      <div style="margin-left:auto;display:flex;gap:5px;align-items:center;flex-wrap:wrap;" id="monitor-tile-controls">
         <span style="font-size:11px;color:var(--c-text2);">Tiles:</span>
         ${[2,3,4,5,6].map(n=>`<button class="btn small monitor-tile-size" data-n="${n}" style="padding:1px 7px;min-width:26px;${n===4?'background:var(--c-link);color:#fff;border-color:var(--c-link);':''}">${n}</button>`).join('')}
-        <span style="font-size:11px;color:var(--c-text2);margin-left:6px;">Sort:</span>
+        <button class="btn small" id="monitor-compact-toggle" style="padding:1px 8px;margin-left:4px;">⊞ Compact</button>
         <select id="monitor-sort" style="font-size:11px;background:var(--bg-input);color:var(--c-text);border:1px solid var(--c-border);border-radius:3px;padding:2px 5px;">
-          <option value="active">Active First</option>
-          <option value="name">Name</option>
-          <option value="page">Page</option>
-          <option value="level">Level</option>
+          <option value="active">Active First</option><option value="name">Name</option><option value="page">Page</option><option value="level">Level</option>
         </select>
         <select id="monitor-filter" style="font-size:11px;background:var(--bg-input);color:var(--c-text);border:1px solid var(--c-border);border-radius:3px;padding:2px 5px;">
-          <option value="all">All Staff</option>
-          <option value="active">Active Only</option>
-          <option value="idle">Idle/Offline</option>
+          <option value="all">All Staff</option><option value="active">Active Only</option><option value="idle">Idle/Offline</option>
         </select>
       </div>
     </div>
   </div>
 
-  <!-- Bulk action bar — hidden until selection -->
+  <!-- Tabs -->
+  <div style="display:flex;gap:0;border-bottom:2px solid var(--c-border);margin-bottom:8px;">
+    ${['screens','analytics','screenshots'].map((tab,i)=>
+      `<button class="monitor-tab-btn" data-tab="${tab}" style="padding:6px 16px;font-size:12px;font-weight:600;background:${i===0?'var(--c-link)':'transparent'};color:${i===0?'#fff':'var(--c-text2)'};border:none;border-bottom:2px solid ${i===0?'var(--c-link)':'transparent'};margin-bottom:-2px;cursor:pointer;border-radius:4px 4px 0 0;transition:all 0.15s;">${tab==='screens'?'📺 Screens':tab==='analytics'?'📊 Analytics':'📷 Screenshots'}</button>`
+    ).join('')}
+  </div>
+
+  <!-- Bulk action bar -->
   <div id="monitor-bulk-bar" style="display:none;background:rgba(88,166,255,0.07);border:1px solid rgba(88,166,255,0.25);border-radius:8px;padding:7px 12px;margin-bottom:8px;gap:7px;align-items:center;flex-wrap:wrap;">
     <span id="monitor-sel-label" style="font-size:12px;font-weight:700;color:var(--c-link);"></span>
     <div style="display:flex;gap:5px;flex-wrap:wrap;margin-left:4px;">
@@ -7662,21 +7731,23 @@ function renderLiveMonitor(c){
       <button class="btn small" id="monitor-bulk-unlock" style="padding:3px 10px;">🔓 Unlock All</button>
       <button class="btn small" id="monitor-bulk-logout" style="padding:3px 10px;">⚡ Force Logout</button>
       <button class="btn small" id="monitor-bulk-msg" style="padding:3px 10px;">💬 Broadcast</button>
-      <button class="btn small" id="monitor-bulk-audit" style="padding:3px 10px;">📋 View Audit Log</button>
+      <button class="btn small" id="monitor-bulk-audit" style="padding:3px 10px;">📋 Audit Log</button>
     </div>
     <button class="btn small red" id="monitor-bulk-deselect" style="margin-left:auto;padding:3px 10px;">✕ Deselect</button>
   </div>
-
-  <!-- Broadcast bar -->
   <div id="monitor-msg-bar" style="display:none;background:rgba(88,166,255,0.06);border:1px solid rgba(88,166,255,0.2);border-radius:6px;padding:8px 12px;margin-bottom:8px;gap:8px;align-items:center;flex-wrap:wrap;">
     <span style="font-size:11px;color:var(--c-text);font-weight:600;">Broadcast to selected:</span>
-    <input type="text" id="monitor-broadcast-input" style="flex:1;min-width:200px;font-size:11px;" placeholder="Type message to send..."/>
+    <input type="text" id="monitor-broadcast-input" style="flex:1;min-width:200px;font-size:11px;" placeholder="Type message..."/>
     <button class="btn small" id="monitor-broadcast-send" style="padding:3px 12px;">Send</button>
     <button class="btn small" id="monitor-broadcast-cancel" style="padding:3px 8px;">Cancel</button>
   </div>
 
-  <!-- Tile grid -->
-  <div id="monitor-tiles-wrap" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;"></div>
+  <!-- Tab panels -->
+  <div id="monitor-tab-screens">
+    <div id="monitor-tiles-wrap" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;"></div>
+  </div>
+  <div id="monitor-tab-analytics" style="display:none;"></div>
+  <div id="monitor-tab-screenshots" style="display:none;"></div>
   `;
 
   // Wire tile size buttons
@@ -7706,7 +7777,7 @@ function renderLiveMonitor(c){
     if(!msg||!window._monitorSelected.size) return;
     window._monitorSelected.forEach(sid=>{
       var s=STAFF[sid]||{};
-      push(ref(db,'staffMessages'),{from:ME,to:s.username||sid,subject:'[Monitor Broadcast]',body:msg,date:nowStr(),ts:Date.now()}).catch(()=>{});
+      var sdata=STAFF[sid]||{}; push(ref(db,'staffMessages'),{from:STAFF[ME]&&STAFF[ME].username||ME,fromUid:ME,to:sdata.username||sid,toUid:sid,subject:'[Monitor Broadcast]',body:msg,date:nowStr(),ts:Date.now(),read:false}).catch(()=>{});
     });
     showToast('Broadcast sent to '+window._monitorSelected.size+' staff.','success');
     auditLog('Monitor Broadcast','To '+window._monitorSelected.size+' staff: '+msg.substring(0,60));
@@ -7715,12 +7786,174 @@ function renderLiveMonitor(c){
   };
   document.getElementById('monitor-broadcast-cancel').onclick=()=>{ document.getElementById('monitor-msg-bar').style.display='none'; };
 
+  // Tab switching
+  var activeTab='screens';
+  c.querySelectorAll('.monitor-tab-btn').forEach(btn=>{
+    btn.onclick=()=>{
+      activeTab=btn.dataset.tab;
+      c.querySelectorAll('.monitor-tab-btn').forEach(b=>{ b.style.background='transparent'; b.style.color='var(--c-text2)'; b.style.borderBottom='2px solid transparent'; });
+      btn.style.background='var(--c-link)'; btn.style.color='#fff'; btn.style.borderBottom='2px solid var(--c-link)';
+      ['screens','analytics','screenshots'].forEach(t=>{
+        var el=document.getElementById('monitor-tab-'+t);
+        if(el) el.style.display=t===activeTab?'block':'none';
+      });
+      var tileControls=document.getElementById('monitor-tile-controls');
+      if(tileControls) tileControls.style.display=activeTab==='screens'?'flex':'none';
+      if(activeTab==='analytics') renderMonitorAnalytics();
+      if(activeTab==='screenshots') renderMonitorScreenshots();
+    };
+  });
+
+  // Compact toggle
+  window._monitorCompact=false;
+  document.getElementById('monitor-compact-toggle').onclick=()=>{
+    window._monitorCompact=!window._monitorCompact;
+    var btn=document.getElementById('monitor-compact-toggle');
+    if(btn){ btn.style.background=window._monitorCompact?'var(--c-link)':''; btn.style.color=window._monitorCompact?'#fff':''; btn.textContent=window._monitorCompact?'⊟ Compact':'⊞ Compact'; }
+    renderMonitorTiles();
+  };
+
   renderMonitorTiles();
+  renderOnlinePills();
+
   if(window._monitorRefreshInterval) clearInterval(window._monitorRefreshInterval);
   window._monitorRefreshInterval=setInterval(()=>{
-    if(document.getElementById('monitor-tiles-wrap')) renderMonitorTiles();
-    else { clearInterval(window._monitorRefreshInterval); if(window._monitorCleanup){ window._monitorCleanup(); window._monitorCleanup=null; } }
+    if(!document.getElementById('monitor-tiles-wrap')){ clearInterval(window._monitorRefreshInterval); if(window._monitorCleanup){ window._monitorCleanup(); window._monitorCleanup=null; } return; }
+    renderMonitorTiles();
+    renderOnlinePills();
+    if(document.getElementById('monitor-tab-screenshots')&&document.getElementById('monitor-tab-screenshots').style.display!=='none') renderMonitorScreenshots();
   },4000);
+}
+
+function renderOnlinePills(){
+  var el=document.getElementById('monitor-online-pills');
+  if(!el) return;
+  var now=new Date();
+  var active=0,idle=0,offline=0;
+  Object.values(STAFF).forEach(s=>{
+    if(!s||!s.username) return;
+    var la=s.lastActive&&s.lastActive!=='Never'?new Date(s.lastActive):null;
+    var diff=la?(now-la):Infinity;
+    if(la&&diff<300000&&s.lastAction!=='Logged out') active++;
+    else if(la&&diff<1200000&&s.lastAction!=='Logged out') idle++;
+    else offline++;
+  });
+  el.innerHTML=[
+    ['#3fb950',active,'Active'],['#e3b341',idle,'Idle'],['var(--c-text2)',offline,'Offline']
+  ].map(([c,n,l])=>`<span style="font-size:10px;background:${c}22;color:${c};border:1px solid ${c}55;padding:1px 7px;border-radius:10px;font-weight:700;">${n} ${l}</span>`).join('');
+}
+
+function renderMonitorAnalytics(){
+  var el=document.getElementById('monitor-tab-analytics');
+  if(!el) return;
+  var sids=[...( window._monitorSelected&&window._monitorSelected.size>0 ? window._monitorSelected : new Set(Object.keys(STAFF)) )];
+  var staffNames=sids.map(sid=>(STAFF[sid]&&STAFF[sid].username)||sid);
+  var now=new Date();
+
+  // Page visit counts from snapshot history + currentPage
+  var pageCounts={};
+  sids.forEach(sid=>{
+    var s=STAFF[sid]||{};
+    if(s.currentPage){ pageCounts[s.currentPage]=(pageCounts[s.currentPage]||0)+1; }
+  });
+
+  // Mod actions by these staff (last 7 days)
+  var weekAgo=now-7*86400000;
+  var recentMods=Object.values(MOD_LOG||{}).filter(r=>r&&r.mod&&staffNames.includes(r.mod));
+  var recentModsWeek=recentMods.filter(r=>{ try{ return new Date(r.date).getTime()>weekAgo; }catch(e){return false;} });
+  var modsByAction={};
+  recentModsWeek.forEach(r=>{ modsByAction[r.action]=(modsByAction[r.action]||0)+1; });
+  var modsByStaff={};
+  recentMods.forEach(r=>{ modsByStaff[r.mod]=(modsByStaff[r.mod]||0)+1; });
+
+  var topPages=Object.entries(pageCounts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  var topActions=Object.entries(modsByAction).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  var topStaff=Object.entries(modsByStaff).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  var maxPage=topPages[0]?topPages[0][1]:1;
+  var maxAction=topActions[0]?topActions[0][1]:1;
+  var maxStaff=topStaff[0]?topStaff[0][1]:1;
+
+  var scope=window._monitorSelected&&window._monitorSelected.size>0?staffNames.join(', '):'All Staff';
+
+  el.innerHTML=`<div style="margin-bottom:6px;display:flex;align-items:center;gap:8px;">
+    <span style="font-size:12px;font-weight:700;color:var(--c-text);">Analytics</span>
+    <span style="font-size:11px;color:var(--c-text2);">Scope: ${scope}</span>
+    ${window._monitorSelected&&window._monitorSelected.size>0?'<span style="font-size:10px;background:rgba(88,166,255,0.15);color:var(--c-link);padding:1px 6px;border-radius:10px;">Selected staff only</span>':''}
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;">
+    ${[
+      ['Current Pages (Live)','Where staff are right now',topPages,maxPage,'var(--c-link)'],
+      ['Mod Actions (7 days)','Action type breakdown',topActions,maxAction,'#1a7f37'],
+      ['Top Moderators (All Time)','Actions per staff member',topStaff.map(([name,n])=>[name,n]),maxStaff,'#8250df'],
+    ].map(([title,sub,data,max,color])=>`
+      <div style="background:var(--bg-sbox);border:1px solid var(--c-border);border-radius:8px;padding:10px 12px;">
+        <div style="font-size:11px;font-weight:700;color:var(--c-text);margin-bottom:2px;">${title}</div>
+        <div style="font-size:10px;color:var(--c-text2);margin-bottom:8px;">${sub}</div>
+        ${data.length===0?'<div style="font-size:11px;color:var(--c-text2);font-style:italic;">No data yet.</div>':
+          data.map(([label,count])=>`<div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;">
+            <span style="font-size:10px;color:var(--c-text);min-width:80px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${label}</span>
+            <div style="flex:1;height:6px;background:var(--c-border);border-radius:3px;overflow:hidden;">
+              <div style="height:100%;width:${Math.round(count/max*100)}%;background:${color};border-radius:3px;"></div>
+            </div>
+            <span style="font-size:10px;font-weight:700;color:var(--c-text);min-width:22px;text-align:right;">${count}</span>
+          </div>`).join('')}
+      </div>`).join('')}
+  </div>`;
+}
+
+function renderMonitorScreenshots(){
+  var el=document.getElementById('monitor-tab-screenshots');
+  if(!el) return;
+  var shots=Object.entries(MONITOR_SCREENSHOTS||{}).sort((a,b)=>(b[1].savedAt||0)-(a[1].savedAt||0));
+  el.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'
+    +'<span style="font-size:12px;font-weight:700;color:var(--c-text);">Saved Screenshots</span>'
+    +'<span style="font-size:11px;color:var(--c-text2);">'+shots.length+' saved — these won\'t auto-expire</span>'
+    +'</div>'
+    +(shots.length===0
+      ?'<div style="padding:30px;text-align:center;color:var(--c-text2);font-size:12px;">No screenshots saved yet.<br><span style="font-size:11px;">Click Save Screenshot when viewing a staff member\'s screen.</span></div>'
+      :'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;">'
+        +shots.map(([key,s])=>`
+          <div style="background:var(--bg-sbox);border:1px solid var(--c-border);border-radius:8px;overflow:hidden;">
+            <div style="padding:5px 8px;border-bottom:1px solid var(--c-border);display:flex;align-items:center;gap:5px;">
+              <span style="font-size:11px;font-weight:700;color:var(--c-text);flex:1;">${s.username||'?'}</span>
+              <span style="font-size:9px;color:var(--c-text2);">${PAGE_ICONS[s.page]||'📄'} ${s.page||'?'}</span>
+            </div>
+            <div style="position:relative;background:var(--bg-content);height:120px;overflow:hidden;">
+              <div style="position:absolute;inset:0;transform:scale(0.26);transform-origin:top left;width:385%;height:385%;pointer-events:none;overflow:hidden;background:var(--bg-page);color:var(--c-text);font-size:11px;">${s.html||''}</div>
+            </div>
+            <div style="padding:5px 8px;display:flex;align-items:center;gap:4px;border-top:1px solid var(--c-border);">
+              <span style="font-size:10px;color:var(--c-text2);flex:1;">${s.savedAtStr||'—'}</span>
+              <button class="btn small screenshot-view-btn" data-key="${key}" style="padding:2px 7px;font-size:10px;">View</button>
+              <button class="btn small red screenshot-del-btn" data-key="${key}" style="padding:2px 6px;font-size:10px;">✕</button>
+            </div>
+          </div>`).join('')
+        +'</div>');
+
+  el.querySelectorAll('.screenshot-view-btn').forEach(btn=>{
+    btn.onclick=()=>{
+      var s=MONITOR_SCREENSHOTS[btn.dataset.key]; if(!s) return;
+      var overlay=document.createElement('div');
+      overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:var(--bg-overlay);display:flex;align-items:center;justify-content:center;';
+      var box=document.createElement('div');
+      box.style.cssText='background:var(--bg-dialog);border:1px solid var(--c-border);border-radius:10px;overflow:hidden;width:min(95vw,1000px);height:min(88vh,720px);display:flex;flex-direction:column;';
+      box.innerHTML=`<div style="background:var(--bg-stitle);color:var(--c-stitle-text);padding:10px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;">
+        <span style="flex:1;font-size:13px;font-weight:700;">${s.username} — ${PAGE_ICONS[s.page]||'📄'} ${s.page} — Saved: ${s.savedAtStr||'?'}</span>
+        <span style="cursor:pointer;font-size:20px;opacity:0.6;" id="ss-close">✕</span>
+      </div>
+      <div style="flex:1;overflow:auto;background:var(--bg-page);color:var(--c-text);padding:8px;font-size:11px;">${s.html||''}</div>`;
+      overlay.appendChild(box);
+      document.body.appendChild(overlay);
+      box.querySelector('#ss-close').onclick=()=>overlay.remove();
+      overlay.onclick=e=>{ if(e.target===overlay) overlay.remove(); };
+    };
+  });
+  el.querySelectorAll('.screenshot-del-btn').forEach(btn=>{
+    btn.onclick=async()=>{
+      await remove(ref(db,'monitorScreenshots/'+btn.dataset.key));
+      showToast('Screenshot deleted.','success');
+      renderMonitorScreenshots();
+    };
+  });
 }
 
 function renderMonitorTiles(){
@@ -7757,7 +7990,52 @@ function renderMonitorTiles(){
   var cntEl=document.getElementById('monitor-staff-count');
   if(cntEl) cntEl.textContent=sArr.length+' staff shown';
 
-  wrap.innerHTML=sArr.map(([sid,s])=>{
+  if(window._monitorCompact){
+    // Compact list view
+    wrap.style.gridTemplateColumns='1fr';
+    wrap.innerHTML='<div style="background:var(--bg-sbox);border:1px solid var(--c-border);border-radius:8px;overflow:hidden;">'
+      +'<table class="tbl"><tr><th style="width:16px;"></th><th>Staff</th><th>Status</th><th>Current Page</th><th>Last Action</th><th>Snapshot</th><th>Actions</th></tr>'
+      +sArr.map(([sid,s])=>{
+        var snap=SCREEN_SNAPSHOTS[sid];
+        var la=s.lastActive&&s.lastActive!=='Never'?new Date(s.lastActive):null;
+        var diff=la?(now-la):Infinity;
+        var active=la&&diff<300000&&s.lastAction!=='Logged out';
+        var idle=la&&diff>=300000&&diff<1200000&&s.lastAction!=='Logged out';
+        var dotClass=s.suspended?'suspended':active?'active':idle?'idle':'offline';
+        var statusLabel=s.suspended?'<span class="sus">SUSPENDED</span>':s.secured?'<span class="ban">SECURED</span>':active?'<span class="ok">Active</span>':idle?'<span style="color:#e3b341;">Idle</span>':'<span style="color:var(--c-text2);">Offline</span>';
+        var isFrozen=FREEZE_DATA&&FREEZE_DATA[sid]&&FREEZE_DATA[sid].active;
+        var isSelected=window._monitorSelected&&window._monitorSelected.has(sid);
+        var pageIcon=PAGE_ICONS[s.currentPage]||'📄';
+        var pageName=s.currentPage?s.currentPage.charAt(0).toUpperCase()+s.currentPage.slice(1):'—';
+        var snapAge=snap&&snap.ts?(now-snap.ts):Infinity;
+        var snapFresh=snapAge<25000;
+        return `<tr data-sid="${sid}" style="cursor:pointer;${isSelected?'background:rgba(88,166,255,0.08);':''}">
+          <td><input type="checkbox" class="monitor-cb" data-sid="${sid}" ${isSelected?'checked':''} onclick="event.stopPropagation();" style="cursor:pointer;"/></td>
+          <td><span class="activity-dot ${dotClass}" style="margin-right:4px;"></span>${tinyAvatar(s.username||sid,s.avatarUrl||'')}${isFrozen?'<span style="font-size:9px;background:#cf222e;color:#fff;padding:1px 4px;border-radius:3px;margin-left:4px;">LOCKED</span>':''}</td>
+          <td>${statusLabel}</td>
+          <td style="font-size:11px;">${pageIcon} ${pageName}</td>
+          <td style="font-size:10px;color:var(--c-text2);">${s.lastAction||'—'}</td>
+          <td style="font-size:10px;color:${snapFresh?'#3fb950':'#e3b341'};">${snap&&snap.ts?timeAgo(snap.ts):'No data'}</td>
+          <td>
+            <div style="display:flex;gap:3px;">
+              <button class="btn small mon-act" data-a="profile" data-sid="${sid}" style="padding:2px 6px;font-size:10px;">👤</button>
+              ${isFrozen?`<button class="btn small mon-act" data-a="unlock" data-sid="${sid}" style="padding:2px 6px;font-size:10px;background:#1a7f37;color:#fff;border-color:#1a7f37;">🔓</button>`:
+              `<button class="btn small mon-act" data-a="lock" data-sid="${sid}" style="padding:2px 6px;font-size:10px;">🔒</button>`}
+              <button class="btn small mon-act" data-a="audit" data-sid="${sid}" style="padding:2px 6px;font-size:10px;">📋</button>
+              <button class="btn small mon-act red" data-a="logout" data-sid="${sid}" style="padding:2px 6px;font-size:10px;">⚡</button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('')
+      +'</table></div>';
+    // Wire compact row clicks
+    wrap.querySelectorAll('tr[data-sid]').forEach(row=>{
+      row.onclick=e=>{ if(e.target.closest('.monitor-cb,.mon-act')) return; openMonitorDetail(row.dataset.sid); };
+    });
+  } else {
+    // Tile view
+    wrap.style.gridTemplateColumns='repeat('+(window._monitorTilesPerRow||4)+',1fr)';
+    wrap.innerHTML=sArr.map(([sid,s])=>{
     var snap=SCREEN_SNAPSHOTS[sid];
     var la=s.lastActive&&s.lastActive!=='Never'?new Date(s.lastActive):null;
     var diff=la?(now-la):Infinity;
@@ -7776,7 +8054,6 @@ function renderMonitorTiles(){
     return `<div class="monitor-tile${isSelected?' monitor-tile-sel':''}" data-sid="${sid}"
       style="background:var(--bg-sbox);border:2px solid ${isSelected?'var(--c-link)':isFrozen?'#cf222e':snapFresh&&active?'rgba(63,185,80,0.5)':'var(--c-border)'};
       border-radius:8px;overflow:hidden;cursor:pointer;position:relative;transition:border-color 0.2s,box-shadow 0.15s,transform 0.1s;">
-      <!-- Header strip -->
       <div style="padding:5px 8px;display:flex;align-items:center;gap:5px;background:var(--bg-topinfo);border-bottom:1px solid var(--c-border);">
         <input type="checkbox" class="monitor-cb" data-sid="${sid}" ${isSelected?'checked':''} style="cursor:pointer;flex-shrink:0;" onclick="event.stopPropagation();"/>
         <span class="activity-dot ${dotClass}" style="flex-shrink:0;"></span>
@@ -7784,7 +8061,6 @@ function renderMonitorTiles(){
         ${isFrozen?'<span style="font-size:9px;background:#cf222e;color:#fff;padding:1px 4px;border-radius:3px;font-weight:700;">LOCKED</span>':''}
         <span style="font-size:9px;font-weight:600;color:${statusColor};">${statusLabel}</span>
       </div>
-      <!-- Snapshot preview -->
       <div style="position:relative;background:var(--bg-content);height:150px;overflow:hidden;">
         ${snap&&snap.html
           ?`<div style="position:absolute;inset:0;transform:scale(0.26);transform-origin:top left;width:385%;height:385%;pointer-events:none;overflow:hidden;background:var(--bg-page);color:var(--c-text);font-size:11px;line-height:1.3;">${snap.html}</div>
@@ -7795,23 +8071,21 @@ function renderMonitorTiles(){
               <span style="font-size:10px;color:var(--c-text2);">${active?'Loading snapshot…':'Offline'}</span>
             </div>`}
       </div>
-      <!-- Footer -->
       <div style="padding:4px 8px 5px;display:flex;align-items:center;gap:5px;border-top:1px solid var(--c-border);">
         <span style="font-size:13px;">${pageIcon}</span>
         <span style="font-size:11px;color:var(--c-link);font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${pageName}</span>
         ${snap&&snap.scrollY>30?`<span style="font-size:9px;color:var(--c-text2);">↕${snap.scrollY}px</span>`:''}
       </div>
-      <!-- Hover action bar -->
-      <div class="mtile-hover" style="display:none;position:absolute;bottom:0;left:0;right:0;background:rgba(13,17,23,0.92);backdrop-filter:blur(2px);padding:5px 5px;gap:4px;flex-wrap:wrap;justify-content:center;border-top:1px solid rgba(255,255,255,0.08);">
+      <div class="mtile-hover" style="display:none;position:absolute;bottom:0;left:0;right:0;background:rgba(13,17,23,0.92);backdrop-filter:blur(2px);padding:5px;gap:4px;flex-wrap:wrap;justify-content:center;border-top:1px solid rgba(255,255,255,0.08);">
         <button class="btn small mon-act" data-a="profile" data-sid="${sid}" style="padding:3px 8px;font-size:10px;">👤 Profile</button>
-        ${isFrozen
-          ?`<button class="btn small mon-act" data-a="unlock" data-sid="${sid}" style="padding:3px 8px;font-size:10px;background:#1a7f37;color:#fff;border-color:#1a7f37;">🔓 Unlock</button>`
-          :`<button class="btn small mon-act" data-a="lock" data-sid="${sid}" style="padding:3px 8px;font-size:10px;">🔒 Lock</button>`}
+        ${isFrozen?`<button class="btn small mon-act" data-a="unlock" data-sid="${sid}" style="padding:3px 8px;font-size:10px;background:#1a7f37;color:#fff;border-color:#1a7f37;">🔓 Unlock</button>`:
+        `<button class="btn small mon-act" data-a="lock" data-sid="${sid}" style="padding:3px 8px;font-size:10px;">🔒 Lock</button>`}
         <button class="btn small mon-act" data-a="audit" data-sid="${sid}" style="padding:3px 8px;font-size:10px;">📋 Audit</button>
         <button class="btn small mon-act red" data-a="logout" data-sid="${sid}" style="padding:3px 8px;font-size:10px;">⚡ Logout</button>
       </div>
     </div>`;
   }).join('');
+  }
 
   // Event wiring
   wrap.querySelectorAll('.monitor-cb').forEach(cb=>{
@@ -7937,7 +8211,7 @@ function openMonitorProfile(sid){
         ${FREEZE_DATA&&FREEZE_DATA[sid]&&FREEZE_DATA[sid].active?'<span style="color:var(--c-ban);font-weight:700;">🔒 SESSION LOCKED</span>':'<span style="color:var(--c-ok);">Session active</span>'}
       </div>
       ${warns.length?`<div style="font-size:11px;font-weight:700;color:var(--c-text);margin-bottom:4px;">Recent Warnings</div>
-        <div style="margin-bottom:10px;">${warns.slice(-3).map(w=>`<div style="font-size:11px;padding:4px 8px;background:var(--bg-tbl-odd);border-left:3px solid var(--c-sus);margin-bottom:3px;border-radius:2px;">${w.severity}: ${w.reason} <span style="color:var(--c-text2);">(${w.date})</span></div>`).join('')}</div>`:''}
+        <div style="margin-bottom:10px;">${warns.slice(-3).map(w=>`<div style="font-size:11px;padding:4px 8px;background:var(--bg-tbl-odd);border-left:3px solid var(--c-sus);margin-bottom:3px;border-radius:2px;"><span style="color:var(--c-sus);font-weight:700;">${w.severity}</span><span style="color:var(--c-text);">: ${w.reason}</span> <span style="color:var(--c-text2);">(${w.date})</span></div>`).join('')}</div>`:''}
     </div>
     <div style="border-top:1px solid var(--c-border);padding:8px 12px;display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;">
       ${FREEZE_DATA&&FREEZE_DATA[sid]&&FREEZE_DATA[sid].active
@@ -8085,6 +8359,7 @@ function openMonitorDetail(sid){
           ?`<button class="btn small" id="det-lock" style="padding:3px 10px;background:#1a7f37;color:#fff;border-color:#1a7f37;">🔓 Unlock</button>`
           :`<button class="btn small" id="det-lock" style="padding:3px 10px;">🔒 Lock</button>`}
         <button class="btn small" id="det-audit" style="padding:3px 10px;">📋 Audit</button>
+        <button class="btn small" id="det-screenshot" style="padding:3px 10px;">📷 Save</button>
         <button class="btn small red" id="det-logout" style="padding:3px 10px;">⚡ Logout</button>
       </div>
       <span style="cursor:pointer;font-size:20px;opacity:0.6;margin-left:10px;line-height:1;" id="det-close">✕</span>
@@ -8102,7 +8377,12 @@ function openMonitorDetail(sid){
       <span style="font-size:10px;color:var(--c-text2);">Last snapshot: <b>${snap&&snap.ts?new Date(snap.ts).toLocaleTimeString():'Never'}</b></span>
       ${snap&&snap.scrollY>0?`<span style="font-size:10px;color:var(--c-text2);">Scroll: <b>${snap.scrollY}px</b></span>`:''}
       <span style="font-size:10px;color:var(--c-text2);">Last action: <b>${s.lastAction||'—'}</b></span>
-      <span id="det-refresh-badge" style="margin-left:auto;font-size:10px;color:var(--c-text2);">Auto-refreshing every 2s</span>
+      <div style="margin-left:auto;display:flex;gap:4px;flex-wrap:wrap;">
+        <span style="font-size:10px;color:var(--c-text2);align-self:center;" id="det-refresh-badge">Auto-refreshing</span>
+        <button class="btn small" id="det-warn-btn" style="padding:2px 8px;font-size:10px;">⚠ Warn</button>
+        <button class="btn small" id="det-suspend-btn" style="padding:2px 8px;font-size:10px;background:var(--c-sus);color:#fff;border-color:var(--c-sus);">⏸ Suspend</button>
+        <button class="btn small red" id="det-terminate-btn" style="padding:2px 8px;font-size:10px;">🚫 Terminate</button>
+      </div>
     </div>`;
 
   overlay.appendChild(box);
@@ -8113,12 +8393,39 @@ function openMonitorDetail(sid){
   box.querySelector('#det-close').onclick=close;
   box.querySelector('#det-profile').onclick=()=>{ close(); openMonitorProfile(sid); };
   box.querySelector('#det-audit').onclick=()=>{ close(); openMonitorAuditLog([sid]); };
+  box.querySelector('#det-screenshot').onclick=()=>{ openSaveScreenshotDialog(sid); };
   box.querySelector('#det-logout').onclick=()=>{ close(); monitorConfirmLogout([sid]); };
   box.querySelector('#det-lock').onclick=async()=>{
     var frozen=FREEZE_DATA&&FREEZE_DATA[sid]&&FREEZE_DATA[sid].active;
     await monitorLockSession(sid,!frozen);
     close();
-    openMonitorDetail(sid); // reopen with updated state
+    openMonitorDetail(sid);
+  };
+  var warnBtn=box.querySelector('#det-warn-btn');
+  var suspBtn=box.querySelector('#det-suspend-btn');
+  var termBtn=box.querySelector('#det-terminate-btn');
+  if(warnBtn) warnBtn.onclick=()=>{ close(); openMonitorProfile(sid); }; // Profile has warn action
+  if(suspBtn) suspBtn.onclick=async()=>{
+    var s2=STAFF[sid]||{};
+    if(!s2.username) return;
+    var reason=prompt('Suspension reason for '+s2.username+':');
+    if(!reason) return;
+    var updates={}; updates['staff/'+sid+'/suspended']=true; updates['staff/'+sid+'/suspendInfo']={reason:reason,by:ME,date:nowStr()};
+    await update(ref(db,'/'),updates);
+    await push(ref(db,'logs/suspend'),{username:s2.username,action:'Suspend',by:ME,date:nowStr(),reason:reason});
+    auditLog('Monitor: Staff Suspended',s2.username+' — '+reason);
+    showToast(s2.username+' suspended.','warning');
+    close();
+  };
+  if(termBtn) termBtn.onclick=async()=>{
+    var s2=STAFF[sid]||{};
+    if(!s2.username) return;
+    var reason=prompt('Termination reason for '+s2.username+':');
+    if(!reason) return;
+    currentStaffId=sid;
+    close();
+    nav('staff'); // Redirect to staff registry for full termination flow
+    showToast('Navigate to staff registry to complete termination for '+s2.username+'.','warning');
   };
 
   // Scroll to match their scroll position
@@ -8144,6 +8451,134 @@ function openMonitorDetail(sid){
       if(snapInfo) snapInfo.innerHTML='Last snapshot: <b>'+new Date(ns.ts).toLocaleTimeString()+'</b>';
     }
   },2000);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// ROBLOX LOG
+// ══════════════════════════════════════════════════════════════
+function logRobloxChange(type, username, data){
+  push(ref(db,'logs/robloxLog'),{
+    type:type, username:username, by:'[SYSTEM]',
+    date:nowStr(), ts:Date.now(), ...data
+  }).catch(()=>{});
+}
+
+function renderRobloxLog(c){
+  var entries=Object.entries(ROBLOX_LOG).sort((a,b)=>(b[1].ts||0)-(a[1].ts||0));
+  var typeColors={'avatar_change':'#0969da','display_name_change':'#8250df','username_change':'#1a7f37','user_added':'#2ea043','data_changed':'#9a6700','refresh_complete':'var(--c-text2)'};
+
+  c.innerHTML='<div class="ptitle">Roblox Log</div>'
+    +'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px;">'
+    +'<div class="search-wrap" style="flex:1;min-width:160px;"><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><input type="text" id="rlog-search" placeholder="Search username, type..."/></div>'
+    +'<select id="rlog-type" style="font-size:11px;background:var(--bg-input);color:var(--c-text);border:1px solid var(--c-border);border-radius:3px;padding:2px 6px;">'
+    +'<option value="">All Types</option><option value="user_added">User Added</option><option value="avatar_change">Avatar Change</option><option value="display_name_change">Display Name Change</option><option value="username_change">Username Change</option><option value="data_changed">Data Changed</option><option value="refresh_complete">Refresh Complete</option>'
+    +'</select>'
+    +'<span id="rlog-count" style="font-size:11px;color:var(--c-text2);">'+entries.length+' entries</span>'
+    +'</div>'
+    +'<div class="sbox"><div class="stitle">Change History</div><div class="sbody" id="rlog-list">'
+    +renderRobloxLogEntries(entries,typeColors)
+    +'</div></div>';
+
+  function applyRlogFilters(){
+    var kw=(document.getElementById('rlog-search').value||'').toLowerCase();
+    var type=(document.getElementById('rlog-type').value||'');
+    var filtered=entries.filter(e=>{ var r=e[1]; if(type&&r.type!==type) return false; if(kw&&!(r.username||'').toLowerCase().includes(kw)&&!(r.type||'').toLowerCase().includes(kw)&&!(r.detail||'').toLowerCase().includes(kw)) return false; return true; });
+    var cEl=document.getElementById('rlog-count'); if(cEl) cEl.textContent=filtered.length+' entries';
+    var lEl=document.getElementById('rlog-list'); if(lEl) lEl.innerHTML=renderRobloxLogEntries(filtered,typeColors);
+  }
+  ['rlog-search','rlog-type'].forEach(id=>{ var el=document.getElementById(id); if(el){ el.oninput=applyRlogFilters; el.onchange=applyRlogFilters; } });
+}
+
+function renderRobloxLogEntries(entries, typeColors){
+  if(!entries.length) return '<div style="padding:16px;text-align:center;color:var(--c-text2);">No Roblox log entries yet. They appear here when mass/auto refresh runs or users are added.</div>';
+  return '<div class="tbl-wrap"><table class="tbl">'
+    +'<tr><th>User</th><th>Type</th><th>Detail</th><th>Date</th></tr>'
+    +entries.map(([lid,r])=>{
+      var col=typeColors[r.type]||'var(--c-text2)';
+      var detail='';
+      if(r.type==='avatar_change') detail='Avatar updated'+(r.before?` <span style="color:var(--c-text2);">→</span> <img src="${r.after}" style="width:18px;height:18px;border-radius:50%;vertical-align:middle;">`:' ');
+      else if(r.type==='display_name_change') detail=`<span style="color:var(--c-text2);">${r.before||'?'}</span> → <b>${r.after||'?'}</b>`;
+      else if(r.type==='username_change') detail=`Roblox username: <span style="color:var(--c-text2);">${r.before||'?'}</span> → <b>${r.after||'?'}</b>`;
+      else if(r.type==='user_added') detail=`Added with Roblox ID: ${r.robloxId||'?'}`;
+      else if(r.type==='refresh_complete') detail=`Updated: ${r.updated||0} | Skipped: ${r.skipped||0} | Failed: ${r.failed||0} / ${r.total||0}`;
+      else detail=r.detail||'—';
+      return `<tr><td>${tinyAvatar(r.username,avatarUrlFor(r.username))}</td><td><span style="font-size:10px;font-weight:700;color:${col};background:${col}22;padding:1px 6px;border-radius:3px;">${(r.type||'').replace(/_/g,' ').toUpperCase()}</span></td><td style="font-size:11px;">${detail}</td><td style="font-size:10px;color:var(--c-text2);">${r.date||'—'}</td></tr>`;
+    }).join('')
+    +'</table></div>';
+}
+
+// ══════════════════════════════════════════════════════════════
+// SNAPSHOT EXPIRY — auto-deletes snapshots older than 24h
+// ══════════════════════════════════════════════════════════════
+function startSnapshotExpiry(){
+  if(window._snapExpiryRunning) return;
+  window._snapExpiryRunning=true;
+  async function clean(){
+    if(!isSoftwareManager()) return;
+    var cutoff=Date.now()-86400000; // 24 hours
+    var snap=await get(ref(db,'screenSnapshots')).catch(()=>null);
+    if(!snap||!snap.exists()) return;
+    var all=snap.val()||{};
+    for(var uid in all){
+      var s=all[uid];
+      if(s&&s.ts&&s.ts<cutoff){
+        // Only delete if not in saved screenshots
+        var savedSnap=await get(ref(db,'monitorScreenshots')).catch(()=>null);
+        var saved=savedSnap&&savedSnap.exists()?savedSnap.val():{};
+        var isSaved=Object.values(saved).some(ss=>ss&&ss.ts===s.ts&&ss.staffId===uid);
+        if(!isSaved) await remove(ref(db,'screenSnapshots/'+uid)).catch(()=>{});
+      }
+    }
+  }
+  setTimeout(clean, 30000);
+  setInterval(clean, 3600000); // every hour
+}
+
+// ══════════════════════════════════════════════════════════════
+// MONITOR SCREENSHOT SAVE
+// ══════════════════════════════════════════════════════════════
+async function saveMonitorScreenshot(sid, snap){
+  if(!snap||!snap.html) return;
+  var s=STAFF[sid]||{};
+  var key=sid+'_'+snap.ts;
+  await set(ref(db,'monitorScreenshots/'+key),{
+    staffId:sid,username:s.username||sid,
+    html:snap.html,page:snap.page,scrollY:snap.scrollY||0,
+    ts:snap.ts,savedAt:Date.now(),savedBy:ME,savedAtStr:nowStr()
+  });
+  showToast('Screenshot saved — view in Screenshots tab.','success');
+}
+
+function openSaveScreenshotDialog(sid){
+  // Show recent snapshots for this user to pick from
+  // For now we only have current snapshot, but we'll show it
+  var snap=SCREEN_SNAPSHOTS[sid];
+  var s=STAFF[sid]||{};
+  if(!snap||!snap.html){ showToast('No snapshot available to save.','error'); return; }
+  var panel=document.createElement('div');
+  panel.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:99999;background:var(--bg-dialog);border:1px solid var(--c-border);border-radius:10px;overflow:hidden;width:min(90vw,420px);box-shadow:0 20px 60px rgba(0,0,0,0.5);';
+  var backdrop=document.createElement('div');
+  backdrop.style.cssText='position:fixed;inset:0;z-index:99998;background:var(--bg-overlay);';
+  panel.innerHTML=`<div style="background:var(--bg-stitle);color:var(--c-stitle-text);padding:10px 14px;display:flex;align-items:center;gap:8px;">
+    <span style="flex:1;font-size:13px;font-weight:700;">Save Screenshot — ${s.username||sid}</span>
+    <span id="sss-close" style="cursor:pointer;font-size:18px;opacity:0.7;">✕</span>
+  </div>
+  <div style="padding:14px 16px;">
+    <div style="font-size:12px;color:var(--c-text);margin-bottom:10px;">Save the current snapshot of ${s.username||sid} on <b>${snap.page||'unknown page'}</b>?</div>
+    <div style="font-size:11px;color:var(--c-text2);margin-bottom:14px;">Captured: ${new Date(snap.ts).toLocaleString()} — This will be saved to the Screenshots tab and won't auto-expire.</div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn" id="sss-confirm" style="padding:4px 18px;">Save Screenshot</button>
+      <button class="btn small" id="sss-cancel" style="padding:4px 14px;">Cancel</button>
+    </div>
+  </div>`;
+  document.body.appendChild(backdrop);
+  document.body.appendChild(panel);
+  var close=()=>{ backdrop.remove(); panel.remove(); };
+  panel.querySelector('#sss-close').onclick=close;
+  panel.querySelector('#sss-cancel').onclick=close;
+  panel.querySelector('#sss-confirm').onclick=async()=>{ close(); await saveMonitorScreenshot(sid,snap); };
+  backdrop.onclick=close;
 }
 
 function timeAgo(ts){
@@ -9906,6 +10341,7 @@ async function doLogin(){
     startPunishmentExpiryWatcher();
     startAppealAutoCloseWatcher();
     startRobloxAutoRefreshWatcher();
+    startSnapshotExpiry();
     // Start scheduled alerts watcher (SM only)
     if(isSoftwareManager()) startScheduledAlertWatcher();
     // Push login to activity feed
@@ -10286,8 +10722,8 @@ function startListeners(){
     const raw=snap.val()||{};
     STAFF=Object.fromEntries(Object.entries(raw).filter(([,v])=>v&&v.username));
     // Only re-render pages that actually show staff data
-    const staffPages=['staff','activity','home','adminlog'];
-    if(staffPages.includes(page)) safeRender();
+    const staffPages=['staff','activity','home','adminlog','accounts','warnlog','staffconfig','evaluations'];
+    if(staffPages.includes(page)||document.getElementById('monitor-tiles-wrap')) { safeRender(); if(document.getElementById('monitor-tiles-wrap')) renderMonitorTiles(); }
   });
   onValue(ref(db,'logs/moderation'),snap=>{
     const prev=Object.keys(MOD_LOG||{}).length;
@@ -10378,6 +10814,8 @@ function startListeners(){
   onValue(ref(db,'logs/staffWarnings'),snap=>{ WARN_LOG=snap.val()||{}; if(page==='warnlog') safeRender(); });
   onValue(ref(db,'shifts'),snap=>{ SHIFTS=snap.val()||{}; if(page==='activity') safeRender(); });
   onValue(ref(db,'screenSnapshots'),snap=>{ SCREEN_SNAPSHOTS=snap.val()||{}; if(document.getElementById('monitor-tiles-wrap')) renderMonitorTiles(); });
+  onValue(ref(db,'logs/robloxLog'),snap=>{ ROBLOX_LOG=snap.val()||{}; if(page==='robloxlog') safeRender(); });
+  onValue(ref(db,'monitorScreenshots'),snap=>{ MONITOR_SCREENSHOTS=snap.val()||{}; });
   onValue(ref(db,'staff'),snap=>{ if(snap.exists()) Object.entries(snap.val()||{}).forEach(([sid,s])=>{ if(s&&s.currentPage) STAFF_PAGES[sid]=s; }); if(document.getElementById('monitor-tiles-wrap')) renderMonitorTiles(); });
   onValue(ref(db,'meta/shiftConfig'),snap=>{ if(snap.exists()) SHIFT_CONFIG=snap.val(); });
   // Poison listener — real-time check if current user is poisoned
@@ -11510,7 +11948,7 @@ function openNotifSettings(){
   document.getElementById('notifSettingsOverlay').classList.add('show');
 }
 
-['useradmin','moderate','accounts','reputation','appeals','altdetect','staff','activity','modlog','revokelog','suspendlog','terminatelog','warnlog','loginlog','auditlog','alerts','adminlog','home','messaging','requests','userconfig','siteconfig','suggestions','staffconfig','msganalyze','statuslog','badgemgmt','wipelog','information','leakid','clearance','samaritan','samlog','evaluations','blacklist'].forEach(p=>{
+['useradmin','moderate','accounts','reputation','appeals','altdetect','staff','activity','modlog','revokelog','suspendlog','terminatelog','warnlog','loginlog','auditlog','alerts','adminlog','home','messaging','requests','userconfig','siteconfig','suggestions','staffconfig','msganalyze','statuslog','badgemgmt','wipelog','robloxlog','information','leakid','clearance','samaritan','samlog','evaluations','blacklist'].forEach(p=>{
   const el=document.getElementById('nav-'+p);
   if(el) el.onclick=()=>nav(p);
 });
