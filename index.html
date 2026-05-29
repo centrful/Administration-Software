@@ -945,30 +945,30 @@ const auth = getAuth(fbApp);
 const OPERATOR_CODE = '3655125652373';
 
 const DEFAULT_PERMS = {
-  canViewUserAdmin:'TRIAL MODERATOR', canModerateUsers:'MODERATOR',
-  canViewStaff:'SUPER ADMINISTRATOR', canManageStaff:'SUPER ADMINISTRATOR',
-  canSuspendStaff:'ADMINISTRATOR', canTerminateStaff:'SUPER ADMINISTRATOR',
-  canViewModLog:'MODERATOR', canViewRevokeLogs:'MODERATOR',
-  canViewSuspendLogs:'ADMINISTRATOR', canViewTerminateLogs:'ADMINISTRATOR',
-  canViewLoginLog:'ADMINISTRATOR', canViewContentModeration:'MODERATOR',
-  canViewStaffActivity:'ADMINISTRATOR',
-  canSubmitAppeals:'MODERATOR', canViewAppealLog:'MODERATOR', canReviewAppeals:'ADMINISTRATOR',
-  canViewStaffProfile:'ADMINISTRATOR', canChangeStaffLevel:'SUPER ADMINISTRATOR', canChangeStaffPassword:'SUPER ADMINISTRATOR',
-  canExportLogs:'SUPER ADMINISTRATOR', canViewCustomFields:'TRIAL MODERATOR', canManageCustomFields:'SUPER ADMINISTRATOR',
-  canBulkAction:'ADMINISTRATOR', canSendStaffMessage:'MODERATOR',
-  canViewUserConfig:'ADMINISTRATOR', canManageUserConfig:'SUPER ADMINISTRATOR',
-  canViewRequests:'ADMINISTRATOR',
-  canManageSuggestions:'MODERATOR',
-  canViewSuggestions:'MODERATOR',
-  canViewMessageAnalyze:'MODERATOR',
-  canViewStaffConfig:'SUPER ADMINISTRATOR',
+  canViewUserAdmin:'CONTENT REVIEWER', canModerateUsers:'CONTENT MODERATOR',
+  canViewStaff:'SENIOR CONTENT ADMINISTRATOR', canManageStaff:'SENIOR CONTENT ADMINISTRATOR',
+  canSuspendStaff:'CONTENT ADMINISTRATOR', canTerminateStaff:'SENIOR CONTENT ADMINISTRATOR',
+  canViewModLog:'CONTENT MODERATOR', canViewRevokeLogs:'CONTENT MODERATOR',
+  canViewSuspendLogs:'CONTENT ADMINISTRATOR', canViewTerminateLogs:'CONTENT ADMINISTRATOR',
+  canViewLoginLog:'CONTENT ADMINISTRATOR', canViewContentModeration:'CONTENT MODERATOR',
+  canViewStaffActivity:'CONTENT ADMINISTRATOR',
+  canSubmitAppeals:'CONTENT MODERATOR', canViewAppealLog:'CONTENT MODERATOR', canReviewAppeals:'CONTENT ADMINISTRATOR',
+  canViewStaffProfile:'CONTENT ADMINISTRATOR', canChangeStaffLevel:'SENIOR CONTENT ADMINISTRATOR', canChangeStaffPassword:'SENIOR CONTENT ADMINISTRATOR',
+  canExportLogs:'SENIOR CONTENT ADMINISTRATOR', canViewCustomFields:'CONTENT REVIEWER', canManageCustomFields:'SENIOR CONTENT ADMINISTRATOR',
+  canBulkAction:'CONTENT ADMINISTRATOR', canSendStaffMessage:'CONTENT MODERATOR',
+  canViewUserConfig:'CONTENT ADMINISTRATOR', canManageUserConfig:'SENIOR CONTENT ADMINISTRATOR',
+  canViewRequests:'CONTENT ADMINISTRATOR',
+  canManageSuggestions:'CONTENT MODERATOR',
+  canViewSuggestions:'CONTENT MODERATOR',
+  canViewMessageAnalyze:'CONTENT MODERATOR',
+  canViewStaffConfig:'SENIOR CONTENT ADMINISTRATOR',
 };
 
 const DEFAULT_REP_POINTS = { 'Remind':1, 'Warn':2, 'Ban 1 Day':3, 'Ban 3 Days':3, 'Ban 7 Days':5, 'Ban 14 Days':5, 'Suspend':4, 'Ban Permanent':10 };
 
 const DEFAULT_APPEAL_PRESETS = ['Hacked Account','False Ban','Misunderstanding','Exploited by Another','No Warning Given','Other'];
-const LEVEL_RANK = {'TRIAL MODERATOR':1,'MODERATOR':2,'ADMINISTRATOR':3,'SUPER ADMINISTRATOR':4,'SOFTWARE MANAGER':5};
-const LEVEL_LIST = ['TRIAL MODERATOR','MODERATOR','ADMINISTRATOR','SUPER ADMINISTRATOR'];
+const LEVEL_RANK = {'CONTENT REVIEWER':1,'CONTENT MODERATOR':2,'CONTENT ADMINISTRATOR':3,'SENIOR CONTENT ADMINISTRATOR':4,'CONTENT MANAGER':5,'SOFTWARE MANAGER':6};
+const LEVEL_LIST = ['CONTENT REVIEWER','CONTENT MODERATOR','CONTENT ADMINISTRATOR','SENIOR CONTENT ADMINISTRATOR','CONTENT MANAGER'];
 // SOFTWARE MANAGER is intentionally excluded from LEVEL_LIST - only assignable via Firebase directly
 
 let ME='', MY_LEVEL='', currentPassword='';
@@ -999,6 +999,7 @@ let OPENHOUSE_DATA={};
 let POISON_DATA={};
 let WARN_LOG={};
 let SHIFTS={};
+let SHIFT_SLOTS={};
 let SHIFT_CONFIG={mode:'simple',minRankToChange:'SOFTWARE MANAGER'};
 let SCREEN_SNAPSHOTS={};
 let STAFF_PAGES={};
@@ -1111,7 +1112,8 @@ function localDateShort(str){
 }
 function rankOf(l){ if(l==='- NONE -') return 999; return LEVEL_RANK[l]||0; }
 function isSoftwareManager(){ return MY_LEVEL==='SOFTWARE MANAGER'; }
-function isSuperAdmin(){ return MY_LEVEL==='SUPER ADMINISTRATOR'||isSoftwareManager(); }
+function isContentManager(){ return MY_LEVEL==='CONTENT MANAGER'||isSoftwareManager(); }
+function isSuperAdmin(){ return MY_LEVEL==='SENIOR CONTENT ADMINISTRATOR'||isContentManager(); }
 // SOFTWARE MANAGER bypasses all permission checks; '- NONE -' means no one can access
 function canDo(k){
   if(isSoftwareManager()) return true;
@@ -1785,7 +1787,13 @@ function statusBadge(s){
   return s;
 }
 function levelBadge(l){
-  const cls=l==='TRIAL MODERATOR'?'intern':l==='MODERATOR'?'moderator':l==='ADMINISTRATOR'?'administrator':l==='SOFTWARE MANAGER'?'softwaremanager':'superadmin';
+  const cls=l==='CONTENT REVIEWER'?'intern'
+    :l==='CONTENT MODERATOR'?'moderator'
+    :l==='CONTENT ADMINISTRATOR'?'administrator'
+    :l==='SENIOR CONTENT ADMINISTRATOR'?'senioradmin'
+    :l==='CONTENT MANAGER'?'superadmin'
+    :l==='SOFTWARE MANAGER'?'softwaremanager'
+    :'moderator';
   return `<span class="badge ${cls}">${l}</span>`;
 }
 function userBadges(u){
@@ -2340,7 +2348,7 @@ function updateSidebar(){
   const sectionMap={
     people:['useradmin','moderate','accounts','requests'],
     moderation:['reputation','appeals','altdetect','msganalyze'],
-    'staff-section':['staff','activity','messaging','suggestions','staffconfig','evaluations'],
+    'staff-section':['staff','activity','messaging','suggestions','staffconfig','evaluations','calendar'],
     logs:['modlog','revokelog','suspendlog','terminatelog','warnlog','loginlog','auditlog'],
     configuration:['userconfig','alerts','adminlog','cflog'],
     machine:['siteconfig','statuslog','wipelog','robloxlog','badgemgmt','leakid','loginlog','clearance','samlog','blacklist','gameintegration','gamelogs'],
@@ -2368,7 +2376,7 @@ var SECTION_TABS={
 var SECTION_PAGES={
   people:['useradmin','moderate','accounts','requests'],
   moderation:['reputation','appeals','altdetect','msganalyze'],
-  'staff-section':['staff','activity','messaging','suggestions','staffconfig','evaluations'],
+  'staff-section':['staff','activity','messaging','suggestions','staffconfig','evaluations','calendar'],
   logs:['modlog','revokelog','suspendlog','terminatelog','warnlog','loginlog','auditlog'],
   configuration:['alerts','userconfig','adminlog','cflog'],
   machine:['siteconfig','statuslog','wipelog','robloxlog','badgemgmt','leakid','clearance','samlog','blacklist','gameintegration','gamelogs'],
@@ -2563,6 +2571,7 @@ function render(){
     renderSection('Staff',[
       {id:'staff', label:'🛡 Registry', perm:'canViewStaff'},
       {id:'activity', label:'📊 Activity', perm:'canViewStaffActivity'},
+      {id:'calendar', label:'📅 Calendar', perm:'canViewStaffActivity'},
       {id:'messaging', label:'💬 Messaging', perm:'canSendStaffMessage'},
       {id:'suggestions', label:'💡 Suggestions', perm:'canViewSuggestions'},
       {id:'staffconfig', label:'⚙️ Staff Config', perm:'canViewStaffConfig'},
@@ -2570,6 +2579,7 @@ function render(){
     ], inner=>{
       if(page==='staff') canDo('canViewStaff')?renderStaff(inner):inner.innerHTML=denied;
       else if(page==='activity') canDo('canViewStaffActivity')?renderActivity(inner):inner.innerHTML=denied;
+      else if(page==='calendar') canDo('canViewStaffActivity')?renderCalendar(inner):inner.innerHTML=denied;
       else if(page==='messaging') canDo('canSendStaffMessage')?renderMessaging(inner):inner.innerHTML=denied;
       else if(page==='suggestions') canDo('canViewSuggestions')?renderSuggestions(inner):inner.innerHTML=denied;
       else if(page==='staffconfig') canDo('canViewStaffConfig')?renderStaffConfig(inner):inner.innerHTML=denied;
@@ -4258,7 +4268,7 @@ function renderStaff(c){
         ${canDo('canChangeStaffLevel')?`
         <div style="font-size:11px;margin:4px 0 2px;color:var(--c-text);">Change Level:</div>
         <div style="display:flex;gap:3px;">
-          <select id="slInput" style="flex:1;min-width:0;">${LEVEL_LIST.map(l=>`<option>${l}</option>`).join('')}</select>
+          <select id="slInput" style="flex:1;min-width:0;">${LEVEL_LIST.filter(l=>rankOf(l)<rankOf(MY_LEVEL)||isSoftwareManager()).map(l=>`<option>${l}</option>`).join('')}</select>
           <button class="btn" id="btn-setlevel">Set</button>
         </div>`:''}
         <div id="spMsg" style="font-size:11px;margin-top:2px;word-break:break-word;"></div>
@@ -4384,7 +4394,7 @@ function renderActivity(c){
                 <div style="height:100%;width:${Math.round(cnt/barMax*100)}%;background:#0969da;border-radius:4px;"></div>
               </div>
             </div>
-            <span style="font-size:11px;font-weight:bold;color:var(--c-text);min-width:28px;text-align:right;">${cnt}</span>
+            <span style="font-size:11px;font-weight:bold;color:var(--c-link);min-width:28px;text-align:right;">${cnt}</span>
           </div>`).join('')}
       </div>
     </div>
@@ -4400,7 +4410,7 @@ function renderActivity(c){
                 <div style="height:100%;width:${Math.min(100,Math.round(cnt/Math.max(...Object.values(recentByStaff))*100))}%;background:#1a7f37;border-radius:4px;"></div>
               </div>
             </div>
-            <span style="font-size:11px;font-weight:bold;color:var(--c-text);min-width:28px;text-align:right;">${cnt}</span>
+            <span style="font-size:11px;font-weight:bold;color:var(--c-ok);min-width:28px;text-align:right;">${cnt}</span>
           </div>`).join('')}
       </div>
     </div>
@@ -4455,6 +4465,165 @@ function renderActivity(c){
     setTimeout(()=>{ if(msgEl) msgEl.textContent=''; },2000);
   };
 }
+
+// ── STAFF CALENDAR ──
+function renderCalendar(c){
+  var now=new Date();
+  var viewYear=parseInt(c.dataset.calYear||now.getFullYear());
+  var viewMonth=parseInt(c.dataset.calMonth||now.getMonth());
+
+  // Build slot data: {YYYY-MM-DD: [{username, start, end, assignedBy}]}
+  var slotsByDay={};
+  Object.values(SHIFT_SLOTS||{}).forEach(function(s){
+    if(!s||!s.start) return;
+    var d=new Date(s.start);
+    if(isNaN(d)) return;
+    var key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if(!slotsByDay[key]) slotsByDay[key]=[];
+    slotsByDay[key].push(s);
+  });
+
+  // Clock-ins: {YYYY-MM-DD: [{username, start, end, duration}]}
+  var clockInsByDay={};
+  Object.values(SHIFTS||{}).forEach(function(s){
+    if(!s||!s.start) return;
+    var d=new Date(s.start);
+    if(isNaN(d)) return;
+    var key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if(!clockInsByDay[key]) clockInsByDay[key]=[];
+    clockInsByDay[key].push(s);
+  });
+
+  var monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  // First day of month and total days
+  var firstDay=new Date(viewYear,viewMonth,1).getDay();
+  var daysInMonth=new Date(viewYear,viewMonth+1,0).getDate();
+
+  var prevMonth=viewMonth===0?11:viewMonth-1;
+  var prevYear=viewMonth===0?viewYear-1:viewYear;
+  var nextMonth=viewMonth===11?0:viewMonth+1;
+  var nextYear=viewMonth===11?viewYear+1:viewYear;
+
+  // Build calendar cells
+  var cells='';
+  var dayCount=1;
+  var totalCells=Math.ceil((firstDay+daysInMonth)/7)*7;
+  for(var i=0;i<totalCells;i++){
+    var cellDay=i-firstDay+1;
+    var isCurrentMonth=cellDay>=1&&cellDay<=daysInMonth;
+    var dateKey=viewYear+'-'+String(viewMonth+1).padStart(2,'0')+'-'+String(cellDay).padStart(2,'0');
+    var isToday=isCurrentMonth&&viewYear===now.getFullYear()&&viewMonth===now.getMonth()&&cellDay===now.getDate();
+    var slots=isCurrentMonth?(slotsByDay[dateKey]||[]):[];
+    var clocks=isCurrentMonth?(clockInsByDay[dateKey]||[]):[];
+
+    cells+='<td style="vertical-align:top;padding:4px;border:1px solid var(--c-border);min-width:80px;height:70px;background:'
+      +(isToday?'rgba(9,105,218,0.08)':'var(--bg-tbl-even)')+';cursor:default;">'
+      +(isCurrentMonth
+        ?'<div style="font-size:11px;font-weight:'+(isToday?'800':'600')+';color:'+(isToday?'var(--c-link)':'var(--c-text)')+';margin-bottom:3px;">'+cellDay+'</div>'
+          +slots.slice(0,2).map(function(s){
+            return '<div style="font-size:9px;background:rgba(9,105,218,0.15);border-left:2px solid var(--c-link);padding:1px 3px;border-radius:2px;margin-bottom:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--c-link);">📅 '+(s.username||'?')+'</div>';
+          }).join('')
+          +clocks.slice(0,2).map(function(s){
+            return '<div style="font-size:9px;background:rgba(46,160,67,0.12);border-left:2px solid var(--c-ok);padding:1px 3px;border-radius:2px;margin-bottom:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--c-ok);">🟢 '+(s.username||'?')+'</div>';
+          }).join('')
+          +((slots.length>2||clocks.length>2)?'<div style="font-size:9px;color:var(--c-text2);">+'+(slots.length+clocks.length-Math.min(2,slots.length)-Math.min(2,clocks.length))+' more</div>':'')
+        :'<div style="font-size:11px;color:var(--c-border);">'+(cellDay>0&&cellDay<=daysInMonth?cellDay:'')+'</div>')
+      +'</td>';
+    if((i+1)%7===0) cells+='</tr><tr>';
+  }
+
+  // Upcoming shifts list
+  var upcoming=Object.values(SHIFT_SLOTS||{}).filter(function(s){
+    if(!s||!s.start) return false;
+    return new Date(s.start).getTime()>=now.setHours(0,0,0,0);
+  }).sort(function(a,b){ return new Date(a.start)-new Date(b.start); }).slice(0,10);
+
+  c.innerHTML='<div class="ptitle">Staff Calendar</div>'
+    +'<div style="display:flex;gap:6px;flex-wrap:wrap;">'
+    +'<div style="flex:2;min-width:320px;">'
+    +'<div class="sbox"><div class="stitle" style="display:flex;align-items:center;justify-content:space-between;">'
+      +'<div style="display:flex;align-items:center;gap:8px;">'
+        +'<button class="btn small" id="cal-prev">&#8592;</button>'
+        +'<span style="font-size:13px;font-weight:700;color:var(--c-text);">'+monthNames[viewMonth]+' '+viewYear+'</span>'
+        +'<button class="btn small" id="cal-next">&#8594;</button>'
+      +'</div>'
+      +'<button class="btn small" id="cal-today">Today</button>'
+    +'</div><div class="sbody" style="padding:0;overflow-x:auto;">'
+    +'<table style="width:100%;border-collapse:collapse;min-width:400px;">'
+    +'<tr>'+dayNames.map(function(d){ return '<th style="padding:6px 4px;font-size:10px;font-weight:700;color:var(--c-stitle-text);background:var(--bg-stitle);text-transform:uppercase;letter-spacing:0.5px;border:1px solid var(--c-border);">'+d+'</th>'; }).join('')+'</tr>'
+    +'<tr>'+cells
+    +'</table>'
+    +'</div></div>'
+    +(canManageShifts()?'<div class="sbox" style="margin-top:0;"><div class="stitle">Schedule Shift</div><div class="sbody">'
+      +'<div style="display:flex;flex-direction:column;gap:6px;">'
+      +'<div><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;font-weight:600;">Staff Member</label>'
+        +'<select id="cal-staff" style="width:100%;">'+Object.values(STAFF).filter(function(s){return s&&s.username;}).map(function(s){return '<option value="'+s.username+'">'+s.username+' ['+s.level+']</option>';}).join('')+'</select></div>'
+      +'<div style="display:flex;gap:6px;">'
+        +'<div style="flex:1;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;font-weight:600;">Start</label><input type="datetime-local" id="cal-start" style="width:100%;"/></div>'
+        +'<div style="flex:1;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;font-weight:600;">End</label><input type="datetime-local" id="cal-end" style="width:100%;"/></div>'
+      +'</div>'
+      +'<button class="btn" id="cal-add-shift" style="width:100%;">Add to Calendar</button>'
+      +'<div id="cal-msg" style="font-size:11px;color:var(--c-ok);min-height:14px;"></div>'
+      +'</div></div></div>':'')
+    +'</div>'
+    +'<div style="flex:1;min-width:200px;">'
+    +'<div class="sbox"><div class="stitle">Legend</div><div class="sbody">'
+      +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:11px;color:var(--c-text);">'
+        +'<div style="width:12px;height:12px;background:rgba(9,105,218,0.15);border-left:3px solid var(--c-link);border-radius:2px;flex-shrink:0;"></div> Scheduled Shift'
+      +'</div>'
+      +'<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--c-text);">'
+        +'<div style="width:12px;height:12px;background:rgba(46,160,67,0.12);border-left:3px solid var(--c-ok);border-radius:2px;flex-shrink:0;"></div> Clock-In Record'
+      +'</div>'
+    +'</div></div>'
+    +'<div class="sbox"><div class="stitle">Upcoming Shifts</div><div class="sbody">'
+    +(upcoming.length===0
+      ?'<div style="font-size:11px;color:var(--c-text2);font-style:italic;">No upcoming shifts scheduled.</div>'
+      :upcoming.map(function(s){
+          var start=new Date(s.start);
+          var end=s.end?new Date(s.end):null;
+          var fmt=function(d){ return d.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',hour12:true}); };
+          return '<div style="padding:5px 0;border-bottom:1px solid var(--c-border);">'
+            +'<div style="font-size:11px;font-weight:bold;color:var(--c-text);">'+(s.username||'?')+'</div>'
+            +'<div style="font-size:10px;color:var(--c-text2);">'+fmt(start)+(end?' → '+fmt(end):'')+'</div>'
+            +(s.assignedBy?'<div style="font-size:10px;color:var(--c-text2);">Assigned by '+s.assignedBy+'</div>':'')
+            +'</div>';
+        }).join(''))
+    +'</div></div>'
+    +'</div></div>';
+
+  // Navigation
+  document.getElementById('cal-prev').onclick=function(){
+    c.dataset.calYear=prevYear; c.dataset.calMonth=prevMonth; renderCalendar(c);
+  };
+  document.getElementById('cal-next').onclick=function(){
+    c.dataset.calYear=nextYear; c.dataset.calMonth=nextMonth; renderCalendar(c);
+  };
+  document.getElementById('cal-today').onclick=function(){
+    c.dataset.calYear=now.getFullYear(); c.dataset.calMonth=now.getMonth(); renderCalendar(c);
+  };
+
+  // Add shift
+  var addBtn=document.getElementById('cal-add-shift');
+  if(addBtn) addBtn.onclick=async function(){
+    var staffName=document.getElementById('cal-staff').value;
+    var start=document.getElementById('cal-start').value;
+    var end=document.getElementById('cal-end').value;
+    var msg=document.getElementById('cal-msg');
+    if(!staffName||!start||!end){ msg.style.color='var(--c-ban)'; msg.textContent='Fill all fields.'; return; }
+    if(new Date(end)<=new Date(start)){ msg.style.color='var(--c-ban)'; msg.textContent='End must be after start.'; return; }
+    var staffEntry=Object.entries(STAFF).find(function(e){ return e[1]&&e[1].username===staffName; });
+    var sid=staffEntry?staffEntry[0]:staffName;
+    await push(ref(db,'shiftSlots'),{staffId:sid,username:staffName,start:start,end:end,assignedBy:ME,ts:Date.now()});
+    auditLog('Shift Scheduled',staffName+': '+start+' - '+end+' by '+ME);
+    showToast('Shift added for '+staffName+'.','success');
+    msg.style.color='var(--c-ok)'; msg.textContent='Shift scheduled!';
+    setTimeout(function(){ if(msg) msg.textContent=''; renderCalendar(c); },1000);
+  };
+}
+window.renderCalendar=renderCalendar;
+
 
 // ── LOGS ──
 function renderModLog(c){
@@ -7634,7 +7803,7 @@ function renderShiftSection(){
       :'<div style="font-size:12px;color:var(--c-text2);">&#9675; You are OFF DUTY</div>'
        +'<button class="btn" id="btn-clockin" style="background:#1a7f37;color:#fff;border-color:#106228;">Clock In</button>')
     +'</div>'
-    +'<div style="font-size:11px;font-weight:bold;color:var(--c-text);margin-bottom:4px;">Currently On Duty ('+onDuty.length+')</div>'
+    +'<div style="font-size:11px;font-weight:bold;color:var(--c-ok);margin-bottom:4px;">Currently On Duty ('+onDuty.length+')</div>'
     +(onDuty.length===0
       ?'<div style="font-size:11px;color:var(--c-text2);font-style:italic;">No staff currently on duty.</div>'
       :'<div style="display:flex;flex-wrap:wrap;gap:6px;">'
@@ -11425,11 +11594,13 @@ async function addStaff(){
   }
 
   // Step 3: Fetch avatar while signed in as ME
+  // Default to fetching from Roblox using the username if no explicit avatarUser provided
   let avatarUrl='';
-  if(avatarUser){
+  const avatarLookup=avatarUser||u; // fall back to the staff username itself
+  if(avatarLookup){
     el.textContent='Fetching avatar...';
     try{
-      const info=await fetchRobloxInfo(avatarUser);
+      const info=await fetchRobloxInfo(avatarLookup);
       if(info&&info.avatarUrl) avatarUrl=info.avatarUrl;
     }catch(e){}
   }
@@ -11464,26 +11635,33 @@ async function saveStaffNote(sid){
 
 async function updateStaffLevel(sid){
   const s=STAFF[sid];
+  const el=document.getElementById('spMsg');
   if(s&&s.level==='SOFTWARE MANAGER'){
-    const el=document.getElementById('spMsg');
     el.style.color='var(--c-ban)'; el.textContent='Cannot change SOFTWARE MANAGER level.';
     setTimeout(()=>{ if(el) el.textContent=''; },2500); return;
   }
-  if(s&&s.username===ME&&!isSuperAdmin()){
-    const el=document.getElementById('spMsg');
+  if(s&&s.username===ME){
     el.style.color='var(--c-ban)'; el.textContent='Cannot change your own level.';
     setTimeout(()=>{ if(el) el.textContent=''; },2000); return;
   }
   const l=document.getElementById('slInput').value;
   if(l==='SOFTWARE MANAGER'){
-    const el=document.getElementById('spMsg');
     el.style.color='var(--c-ban)'; el.textContent='Cannot assign SOFTWARE MANAGER via panel.';
+    setTimeout(()=>{ if(el) el.textContent=''; },2500); return;
+  }
+  // Cannot promote someone to your own rank or above (only higher ranks can do that)
+  if(!isSoftwareManager() && rankOf(l) >= rankOf(MY_LEVEL)){
+    el.style.color='var(--c-ban)'; el.textContent='Cannot assign a level equal to or above your own.';
+    setTimeout(()=>{ if(el) el.textContent=''; },2500); return;
+  }
+  // Cannot demote/change someone at or above your rank
+  if(!isSoftwareManager() && s && rankOf(s.level) >= rankOf(MY_LEVEL)){
+    el.style.color='var(--c-ban)'; el.textContent='Cannot change level of someone at or above your rank.';
     setTimeout(()=>{ if(el) el.textContent=''; },2500); return;
   }
   const oldLevel=s?s.level:'?';
   await update(ref(db,`staff/${sid}`),{level:l});
   auditLog('Staff Level Changed',`${s?s.username:sid}: ${oldLevel} -> ${l}`);
-  const el=document.getElementById('spMsg');
   el.style.color='#006600'; el.textContent=`Level set to ${l}.`;
   setTimeout(()=>{ if(el) el.textContent=''; },1500);
 }
@@ -12328,7 +12506,7 @@ function startListeners(){
     const raw=snap.val()||{};
     STAFF=Object.fromEntries(Object.entries(raw).filter(([,v])=>v&&v.username));
     // Only re-render pages that actually show staff data
-    const staffPages=['staff','activity','home','adminlog','accounts','warnlog','staffconfig','evaluations','messaging','suggestions'];
+    const staffPages=['staff','activity','home','adminlog','accounts','warnlog','staffconfig','evaluations','messaging','suggestions','calendar'];
     if(staffPages.includes(page)||document.getElementById('monitor-tiles-wrap')) { safeRender(); if(document.getElementById('monitor-tiles-wrap')) renderMonitorTiles(); }
   });
   onValue(ref(db,'logs/moderation'),snap=>{
@@ -12465,6 +12643,7 @@ function startListeners(){
   onValue(ref(db,'monitorScreenshots'),snap=>{ MONITOR_SCREENSHOTS=snap.val()||{}; });
   onValue(ref(db,'staff'),snap=>{ if(snap.exists()) Object.entries(snap.val()||{}).forEach(([sid,s])=>{ if(s&&s.currentPage) STAFF_PAGES[sid]=s; }); if(document.getElementById('monitor-tiles-wrap')) renderMonitorTiles(); });
   onValue(ref(db,'meta/shiftConfig'),snap=>{ if(snap.exists()) SHIFT_CONFIG=snap.val(); });
+  onValue(ref(db,'shiftSlots'),snap=>{ SHIFT_SLOTS=snap.val()||{}; if(page==='calendar') safeRender(); });
   // Poison listener - real-time check if current user is poisoned
   onValue(ref(db,'contingencies/poison/'+ME),function(snap){
     POISON_DATA[ME]=snap.val()||{};
@@ -13595,7 +13774,7 @@ function openNotifSettings(){
   document.getElementById('notifSettingsOverlay').classList.add('show');
 }
 
-['useradmin','moderate','accounts','reputation','appeals','altdetect','staff','activity','modlog','revokelog','suspendlog','terminatelog','warnlog','loginlog','auditlog','alerts','adminlog','home','messaging','requests','userconfig','siteconfig','suggestions','staffconfig','msganalyze','statuslog','badgemgmt','wipelog','robloxlog','cflog','customfieldlog','gamelogs','gameintegration','information','leakid','clearance','samaritan','samlog','evaluations','blacklist','people','moderation','logs','configuration','machine'].forEach(p=>{
+['useradmin','moderate','accounts','reputation','appeals','altdetect','staff','activity','modlog','revokelog','suspendlog','terminatelog','warnlog','loginlog','auditlog','alerts','adminlog','home','messaging','requests','userconfig','siteconfig','suggestions','staffconfig','msganalyze','statuslog','badgemgmt','wipelog','robloxlog','cflog','customfieldlog','gamelogs','gameintegration','information','leakid','clearance','samaritan','samlog','evaluations','blacklist','people','moderation','logs','configuration','machine','calendar'].forEach(p=>{
   const el=document.getElementById('nav-'+p);
   if(el) el.onclick=()=>nav(p);
 });
