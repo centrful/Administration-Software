@@ -442,7 +442,7 @@ body.sam-active .main{ background:#0d1117; }
 /* ── PAGE TABS ── */
 .page-tabs{display:flex;gap:0;border-bottom:2px solid var(--c-border);margin-bottom:12px;overflow-x:auto;overflow-y:hidden;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain;}
 .page-tabs::-webkit-scrollbar{display:none;}
-.page-tab{padding:7px 14px;font-size:12px;font-weight:500;color:var(--c-text2);cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-2px;transition:color 0.1s,border-color 0.1s;user-select:none;flex-shrink:0;}
+.page-tab{padding:7px 14px;font-size:12px;font-weight:500;color:var(--c-text2);cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-2px;transition:color 0.1s,border-color 0.1s;user-select:none;flex-shrink:0;display:inline-flex;align-items:center;gap:4px;}
 .page-tab:hover{color:var(--c-text);background:var(--bg-sb-hdr-hover);border-radius:6px 6px 0 0;}
 .page-tab.active{color:var(--c-link);border-bottom-color:var(--c-link);font-weight:600;}
 .page-tab.locked{opacity:0.4;cursor:not-allowed;}
@@ -2558,10 +2558,10 @@ function render(){
   // ── MODERATION SECTION ──
   if(SECTION_PAGES.moderation.includes(page)){
     renderSection('Moderation',[
-      {id:'reputation', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><polygon points="7,1 8.8,5.2 13.4,5.6 10,8.6 11,13.1 7,10.6 3,13.1 4,8.6 0.6,5.6 5.2,5.2" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>Reputation', perm:'canViewContentModeration'},
-      {id:'appeals', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><rect x="2" y="2" width="10" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/><line x1="4.5" y1="5" x2="9.5" y2="5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="4.5" y1="7.5" x2="7.5" y2="7.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Appeals', perm:'canViewAppealLog'},
-      {id:'altdetect', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><circle cx="4.5" cy="5" r="2" stroke="currentColor" stroke-width="1.2"/><circle cx="9.5" cy="5" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M1 12c0-2 1.5-3 3.5-3M13 12c0-2-1.5-3-3.5-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="6.5" y1="5" x2="7.5" y2="5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Alt Detection', perm:'canViewContentModeration'},
-      {id:'msganalyze', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><path d="M2 2h10a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H5l-3 2V3a1 1 0 0 1 1-1z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><circle cx="5" cy="6" r="0.8" fill="currentColor"/><circle cx="7" cy="6" r="0.8" fill="currentColor"/><circle cx="9" cy="6" r="0.8" fill="currentColor"/></svg>Msg Analyze', perm:'canViewMessageAnalyze'},
+      {id:'reputation', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><polygon points="7,1 8.8,5.2 13.4,5.6 10,8.6 11,13.1 7,10.6 3,13.1 4,8.6 0.6,5.6 5.2,5.2" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>Reputation', perm:'canViewContentModeration'},
+      {id:'appeals', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><rect x="2" y="2" width="10" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/><line x1="4.5" y1="5" x2="9.5" y2="5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="4.5" y1="7.5" x2="7.5" y2="7.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Appeals', perm:'canViewAppealLog'},
+      {id:'altdetect', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><circle cx="4.5" cy="5" r="2" stroke="currentColor" stroke-width="1.2"/><circle cx="9.5" cy="5" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M1 12c0-2 1.5-3 3.5-3M13 12c0-2-1.5-3-3.5-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="6.5" y1="5" x2="7.5" y2="5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Alt Detection', perm:'canViewContentModeration'},
+      {id:'msganalyze', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><path d="M2 2h10a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H5l-3 2V3a1 1 0 0 1 1-1z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><circle cx="5" cy="6" r="0.8" fill="currentColor"/><circle cx="7" cy="6" r="0.8" fill="currentColor"/><circle cx="9" cy="6" r="0.8" fill="currentColor"/></svg>Msg Analyze', perm:'canViewMessageAnalyze'},
     ], inner=>{
       if(page==='reputation') canDo('canViewContentModeration')?renderReputation(inner):inner.innerHTML=denied;
       else if(page==='appeals') canDo('canViewContentModeration')?renderAppeals(inner):inner.innerHTML=denied;
@@ -2573,14 +2573,14 @@ function render(){
   // ── STAFF SECTION ──
   if(SECTION_PAGES['staff-section'].includes(page)){
     renderSection('Staff',[
-      {id:'staff', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><rect x="2" y="1" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/><circle cx="7" cy="5" r="1.8" stroke="currentColor" stroke-width="1.2"/><line x1="4.5" y1="9" x2="9.5" y2="9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Registry', perm:'canViewStaff'},
-      {id:'activity', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><polyline points="1,7 4,4 6,9 9,3 12,6 13,5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>Activity', perm:'canViewStaffActivity'},
-      {id:'calendar', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><rect x="1" y="2" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.2"/><line x1="1" y1="6" x2="13" y2="6" stroke="currentColor" stroke-width="1.2"/><line x1="4.5" y1="1" x2="4.5" y2="3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="9.5" y1="1" x2="9.5" y2="3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>Calendar', perm:'canViewStaffActivity'},
-      {id:'messaging', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><path d="M2 2h10a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H5l-3 2V3a1 1 0 0 1 1-1z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>Messaging', perm:'canSendStaffMessage'},
-      {id:'suggestions', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><circle cx="7" cy="5.5" r="3.5" stroke="currentColor" stroke-width="1.2"/><line x1="7" y1="9" x2="7" y2="11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="5.5" y1="12" x2="8.5" y2="12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Suggestions', perm:'canViewSuggestions'},
-      {id:'staffconfig', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><circle cx="7" cy="7" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.6 2.6l1 1M10.4 10.4l1 1M2.6 11.4l1-1M10.4 3.6l1-1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Staff Config', perm:'canViewStaffConfig'},
-      {id:'evaluations', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><rect x="2" y="1" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/><line x1="4.5" y1="4.5" x2="9.5" y2="4.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="4.5" y1="7" x2="9.5" y2="7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="4.5" y1="9.5" x2="7" y2="9.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Evaluations', saOnly:true},
-      {id:'staffreports', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><path d="M7 1L12.5 3.2v3.8c0 3-2.2 5-5.5 5.8C3.7 12 1.5 10 1.5 7V3.2L7 1z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><line x1="7" y1="4.5" x2="7" y2="7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="7" cy="9.2" r="0.8" fill="currentColor"/></svg>Reports', perm:'canViewStaff'},
+      {id:'staff', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><rect x="2" y="1" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/><circle cx="7" cy="5" r="1.8" stroke="currentColor" stroke-width="1.2"/><line x1="4.5" y1="9" x2="9.5" y2="9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Registry', perm:'canViewStaff'},
+      {id:'activity', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><polyline points="1,7 4,4 6,9 9,3 12,6 13,5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>Activity', perm:'canViewStaffActivity'},
+      {id:'calendar', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><rect x="1" y="2" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.2"/><line x1="1" y1="6" x2="13" y2="6" stroke="currentColor" stroke-width="1.2"/><line x1="4.5" y1="1" x2="4.5" y2="3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="9.5" y1="1" x2="9.5" y2="3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>Calendar', perm:'canViewStaffActivity'},
+      {id:'messaging', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><path d="M2 2h10a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H5l-3 2V3a1 1 0 0 1 1-1z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>Messaging', perm:'canSendStaffMessage'},
+      {id:'suggestions', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><circle cx="7" cy="5.5" r="3.5" stroke="currentColor" stroke-width="1.2"/><line x1="7" y1="9" x2="7" y2="11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="5.5" y1="12" x2="8.5" y2="12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Suggestions', perm:'canViewSuggestions'},
+      {id:'staffconfig', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><circle cx="7" cy="7" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.6 2.6l1 1M10.4 10.4l1 1M2.6 11.4l1-1M10.4 3.6l1-1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Staff Config', perm:'canViewStaffConfig'},
+      {id:'evaluations', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><rect x="2" y="1" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/><line x1="4.5" y1="4.5" x2="9.5" y2="4.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="4.5" y1="7" x2="9.5" y2="7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="4.5" y1="9.5" x2="7" y2="9.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Evaluations', saOnly:true},
+      {id:'staffreports', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><path d="M7 1L12.5 3.2v3.8c0 3-2.2 5-5.5 5.8C3.7 12 1.5 10 1.5 7V3.2L7 1z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><line x1="7" y1="4.5" x2="7" y2="7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="7" cy="9.2" r="0.8" fill="currentColor"/></svg>Reports', perm:'canViewStaff'},
     ], inner=>{
       if(page==='staff') canDo('canViewStaff')?renderStaff(inner):inner.innerHTML=denied;
       else if(page==='activity') canDo('canViewStaffActivity')?renderActivity(inner):inner.innerHTML=denied;
@@ -2596,13 +2596,13 @@ function render(){
   // ── LOGS SECTION ──
   if(SECTION_PAGES.logs.includes(page)){
     renderSection('Logs',[
-      {id:'modlog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/><line x1="4.5" y1="4.5" x2="9.5" y2="9.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="9.5" y1="4.5" x2="4.5" y2="9.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>Moderation', perm:'canViewModLog'},
-      {id:'revokelog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><path d="M3 7a4 4 0 1 0 1-2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><polyline points="1,4 3,7 6,5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>Revoke', perm:'canViewRevokeLogs'},
-      {id:'suspendlog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/><line x1="5" y1="4.5" x2="5" y2="9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="9" y1="4.5" x2="9" y2="9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Suspension', perm:'canViewSuspendLogs'},
-      {id:'terminatelog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/><line x1="4.5" y1="4.5" x2="9.5" y2="9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="9.5" y1="4.5" x2="4.5" y2="9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Termination', perm:'canViewTerminateLogs'},
-      {id:'warnlog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><path d="M7 1L13 12H1L7 1z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><line x1="7" y1="5.5" x2="7" y2="8.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="7" cy="10" r="0.8" fill="currentColor"/></svg>Staff Warnings', perm:'canViewStaff'},
-      {id:'loginlog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><rect x="2" y="2" width="7" height="10" rx="1" stroke="currentColor" stroke-width="1.2"/><path d="M9 5l3 2-3 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><line x1="6" y1="7" x2="12" y2="7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Login', perm:'canViewLoginLog'},
-      {id:'auditlog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><rect x="2" y="1" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.2"/><line x1="4.5" y1="4.5" x2="9.5" y2="4.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><line x1="4.5" y1="7" x2="9.5" y2="7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><line x1="4.5" y1="9.5" x2="7" y2="9.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>Audit', saOnly:true},
+      {id:'modlog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><path d="M2 12L7 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><rect x="6.5" y="1.5" width="5" height="3" rx="0.8" transform="rotate(45 6.5 1.5)" stroke="currentColor" stroke-width="1.2"/><line x1="8" y1="6" x2="11" y2="3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>Moderation', perm:'canViewModLog'},
+      {id:'revokelog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><path d="M2.5 5.5A5 5 0 1 1 2 8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><polyline points="1,2.5 2.5,5.5 5.5,4.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>Revoke', perm:'canViewRevokeLogs'},
+      {id:'suspendlog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/><line x1="5" y1="4.5" x2="5" y2="9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="9" y1="4.5" x2="9" y2="9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Suspension', perm:'canViewSuspendLogs'},
+      {id:'terminatelog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><circle cx="5.5" cy="4" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M1 11.5c0-2.5 2-4 4.5-4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="9.5" y1="8.5" x2="12.5" y2="11.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="12.5" y1="8.5" x2="9.5" y2="11.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>Termination', perm:'canViewTerminateLogs'},
+      {id:'warnlog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><path d="M7 1L13 12H1L7 1z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><line x1="7" y1="5.5" x2="7" y2="8.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="7" cy="10" r="0.8" fill="currentColor"/></svg>Staff Warnings', perm:'canViewStaff'},
+      {id:'loginlog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><rect x="2" y="2" width="7" height="10" rx="1" stroke="currentColor" stroke-width="1.2"/><path d="M9 5l3 2-3 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><line x1="6" y1="7" x2="12" y2="7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Login', perm:'canViewLoginLog'},
+      {id:'auditlog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><rect x="2" y="1" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.2"/><line x1="4.5" y1="4.5" x2="9.5" y2="4.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><line x1="4.5" y1="7" x2="9.5" y2="7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><line x1="4.5" y1="9.5" x2="7" y2="9.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>Audit', saOnly:true},
     ], inner=>{
       if(page==='modlog') canDo('canViewModLog')?renderModLog(inner):inner.innerHTML=denied;
       else if(page==='revokelog') canDo('canViewRevokeLogs')?renderRevokeLog(inner):inner.innerHTML=denied;
@@ -2630,16 +2630,16 @@ function render(){
   // ── MACHINE MANAGEMENT SECTION ──
   if(SECTION_PAGES.machine.includes(page)){
     renderSection('Machine Management',[
-      {id:'siteconfig', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><circle cx="7" cy="7" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.6 2.6l1 1M10.4 10.4l1 1M2.6 11.4l1-1M10.4 3.6l1-1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Config', smOnly:true},
-      {id:'statuslog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><rect x="1" y="3" width="12" height="8" rx="1.5" stroke="currentColor" stroke-width="1.2"/><circle cx="4" cy="7" r="1" fill="currentColor"/><circle cx="7" cy="7" r="1" fill="currentColor"/><circle cx="10" cy="7" r="1" fill="currentColor"/></svg>Status Log', smOnly:true},
-      {id:'wipelog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><polyline points="3,4 11,4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M5 4V3h4v1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 4l.5 7h2l.5-7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Wipe Log', smOnly:true},
-      {id:'robloxlog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><rect x="2" y="2" width="10" height="10" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="4.5" y="4.5" width="2" height="2" fill="currentColor" rx="0.3"/><rect x="7.5" y="4.5" width="2" height="2" fill="currentColor" rx="0.3"/><rect x="4.5" y="7.5" width="2" height="2" fill="currentColor" rx="0.3"/><rect x="7.5" y="7.5" width="2" height="2" fill="currentColor" rx="0.3"/></svg>Roblox Log', smOnly:true},
-      {id:'badgemgmt', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><polygon points="7,1 8.5,5 13,5 9.5,8 11,12 7,9.5 3,12 4.5,8 1,5 5.5,5" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></svg>Badges', smOnly:true},
-      {id:'leakid', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><circle cx="6" cy="6" r="4" stroke="currentColor" stroke-width="1.2"/><line x1="9" y1="9" x2="13" y2="13" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>Leak ID', smOnly:true},
-      {id:'clearance', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><rect x="3" y="6.5" width="8" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/><path d="M5 6.5V4.5a2 2 0 0 1 4 0v2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="7" cy="9.5" r="1" fill="currentColor"/></svg>Clearance', smOnly:true},
-      {id:'samlog', label:'<svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="margin-right:4px;flex-shrink:0;"><path d="M6 1L11 6L6 11L1 6Z" stroke="currentColor" stroke-width="1.3"/><circle cx="6" cy="6" r="1.5" fill="currentColor"/></svg>SAM Log', smOnly:true},
-      {id:'blacklist', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/><line x1="3" y1="3" x2="11" y2="11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>IP Blacklist', smOnly:true},
-      {id:'discordconfig', label:'<svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="margin-right:4px;flex-shrink:0;"><path d="M6.5 7.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2M9.5 7.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2" fill="currentColor"/><path d="M13.5 1.5A2 2 0 0 0 11.5 0h-7A2 2 0 0 0 2.5 2v8a2 2 0 0 0 2 2h7l-1-3 2.5 2.5V1.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" fill="none"/></svg>Discord Config', smOnly:true},
+      {id:'siteconfig', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><circle cx="7" cy="7" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.6 2.6l1 1M10.4 10.4l1 1M2.6 11.4l1-1M10.4 3.6l1-1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Config', smOnly:true},
+      {id:'statuslog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><rect x="1" y="3" width="12" height="8" rx="1.5" stroke="currentColor" stroke-width="1.2"/><circle cx="4" cy="7" r="1" fill="currentColor"/><circle cx="7" cy="7" r="1" fill="currentColor"/><circle cx="10" cy="7" r="1" fill="currentColor"/></svg>Status Log', smOnly:true},
+      {id:'wipelog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><path d="M2 11h10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M9.5 2.5L12 5 7 10H4.5L2 7.5 7 2.5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><line x1="6" y1="4" x2="10" y2="8" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>Wipe Log', smOnly:true},
+      {id:'robloxlog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><rect x="2" y="2" width="10" height="10" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="4.5" y="4.5" width="2" height="2" fill="currentColor" rx="0.3"/><rect x="7.5" y="4.5" width="2" height="2" fill="currentColor" rx="0.3"/><rect x="4.5" y="7.5" width="2" height="2" fill="currentColor" rx="0.3"/><rect x="7.5" y="7.5" width="2" height="2" fill="currentColor" rx="0.3"/></svg>Roblox Log', smOnly:true},
+      {id:'badgemgmt', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><polygon points="7,1 8.5,5 13,5 9.5,8 11,12 7,9.5 3,12 4.5,8 1,5 5.5,5" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></svg>Badges', smOnly:true},
+      {id:'leakid', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><circle cx="6" cy="6" r="4" stroke="currentColor" stroke-width="1.2"/><line x1="9" y1="9" x2="13" y2="13" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>Leak ID', smOnly:true},
+      {id:'clearance', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><rect x="3" y="6.5" width="8" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/><path d="M5 6.5V4.5a2 2 0 0 1 4 0v2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="7" cy="9.5" r="1" fill="currentColor"/></svg>Clearance', smOnly:true},
+      {id:'samlog', label:'<svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="flex-shrink:0;"><path d="M6 1L11 6L6 11L1 6Z" stroke="currentColor" stroke-width="1.3"/><circle cx="6" cy="6" r="1.5" fill="currentColor"/></svg>SAM Log', smOnly:true},
+      {id:'blacklist', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/><line x1="3" y1="3" x2="11" y2="11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>IP Blacklist', smOnly:true},
+      {id:'discordconfig', label:'<svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;"><path d="M6.5 7.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2M9.5 7.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2" fill="currentColor"/><path d="M13.5 1.5A2 2 0 0 0 11.5 0h-7A2 2 0 0 0 2.5 2v8a2 2 0 0 0 2 2h7l-1-3 2.5 2.5V1.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" fill="none"/></svg>Discord Config', smOnly:true},
     ], inner=>{
       if(!isSoftwareManager()){ inner.innerHTML=denied; return; }
       if(page==='siteconfig') renderSiteConfig(inner);
@@ -2666,8 +2666,8 @@ let STAFF_REPORTS={};
 let _reportsUnredacted=false;
 
 function canViewStaffReports(){
-  // Must be able to view staff (Senior Content Admin+), and you can never see reports about yourself
-  return canDo('canViewStaff');
+  // Content Administrator+ can view the reports page
+  return rankOf(MY_LEVEL)>=rankOf('CONTENT ADMINISTRATOR')||isSoftwareManager();
 }
 
 function reportVisibleToMe(r){
@@ -2705,7 +2705,7 @@ function renderStaffReports(c){
       ?'<div style="text-align:center;padding:24px;color:var(--c-text2);">No reports filed.</div>'
       :entries.map(function(e){
           var rid=e[0], r=e[1];
-          var submitter=(_reportsUnredacted&&isSoftwareManager())?(r.submittedBy||'?'):'[UNAUTHORIZED]';
+          var submitter=(_reportsUnredacted&&isSoftwareManager())?(r.submittedBy||'?'):'[ Redacted ]';
           var statusColor=r.reviewed?(r.outcome==='Dismissed'?'var(--c-text2)':'var(--c-ok)'):'var(--c-sus)';
           var status=r.reviewed?(r.outcome||'Reviewed'):'Pending Review';
           return '<div style="border:1px solid var(--c-border);border-left:3px solid '+statusColor+';border-radius:6px;padding:10px 12px;margin-bottom:8px;background:var(--bg-tbl-odd);">'
@@ -2720,28 +2720,29 @@ function renderStaffReports(c){
             +'<div style="font-size:11px;color:var(--c-text2);margin-bottom:4px;">Reported by <span style="color:var(--c-text);font-style:'+(r.submittedBy===submitter?'normal':'italic')+';">'+submitter+'</span> &bull; '+r.date+'</div>'
             +'<div style="font-size:11px;color:var(--c-text);margin-bottom:3px;"><b>Category:</b> '+(r.category||'-')+'</div>'
             +'<div style="font-size:11px;color:var(--c-text);margin-bottom:6px;line-height:1.5;">'+(r.description||'-')+'</div>'
-            +(r.fileUrl?'<a href="'+r.fileUrl+'" target="_blank" style="font-size:11px;color:var(--c-link);">[Attachment]</a> ':'')
-            +(r.reviewed?'<div style="font-size:10px;color:var(--c-text2);margin-top:4px;border-top:1px solid var(--c-border);padding-top:4px;">Reviewed by '+r.reviewedBy+' &bull; '+r.reviewNote+'</div>':'')
-            +'<div style="display:flex;gap:4px;margin-top:6px;">'
+            +(r.fileUrl?'<div style="margin-bottom:4px;"><a href="'+r.fileUrl+'" target="_blank" style="font-size:11px;color:var(--c-link);text-decoration:none;background:rgba(9,105,218,0.08);border:1px solid var(--c-link);padding:2px 6px;border-radius:4px;">View Evidence</a></div>':'')
+            +(r.reviewed?'<div style="font-size:10px;color:var(--c-text2);margin-top:4px;border-top:1px solid var(--c-border);padding-top:4px;"><b>Reviewed by</b> '+r.reviewedBy+' &bull; '+r.reviewNote+'</div>':'')
+            +'<div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap;">'
             +(!r.reviewed&&isSuperAdmin()?'<button class="btn small review-report-btn" data-rid="'+rid+'" data-outcome="Actioned" style="background:rgba(26,127,55,0.15);border-color:var(--c-ok);color:var(--c-ok);">Action</button>'
               +'<button class="btn small review-report-btn" data-rid="'+rid+'" data-outcome="Dismissed" style="background:rgba(139,148,158,0.1);border-color:var(--c-border);color:var(--c-text2);">Dismiss</button>':'')
+            +(r.reviewed&&isSuperAdmin()?'<button class="btn small reopen-report-btn" data-rid="'+rid+'" style="font-size:10px;background:rgba(227,179,65,0.12);border-color:var(--c-sus);color:var(--c-sus);">Reopen</button>':'')
+            +(isSuperAdmin()?'<button class="btn small delete-report-btn" data-rid="'+rid+'" style="font-size:10px;background:rgba(248,81,73,0.08);border-color:var(--c-ban);color:var(--c-ban);">Delete</button>':'')
             +'</div>'
             +'</div></div></div>';
         }).join(''))
     +'</div></div>'
     +'</div>'
     +'<div style="flex:1;min-width:200px;">'
-    +'<div class="sbox"><div class="stitle">File a Report</div><div class="sbody">'
-    +'<div style="font-size:11px;color:var(--c-text2);margin-bottom:8px;">Search for a staff member to report. Your identity will be kept confidential.</div>'
-    +'<input type="text" id="report-search" placeholder="Search staff by name..." style="width:100%;margin-bottom:8px;" oninput="filterReportSearch(this.value)"/>'
-    +'<div id="report-staff-list" style="max-height:200px;overflow-y:auto;margin-bottom:8px;"></div>'
-    +'<div id="report-form-area"></div>'
+    +'<div class="sbox"><div class="stitle">Staff Directory</div><div class="sbody">'
+    +'<input type="text" id="report-dir-search" placeholder="Search staff..." style="width:100%;margin-bottom:8px;" oninput="filterReportDirectory(this.value)"/>'
+    +'<div id="report-dir-list" style="max-height:340px;overflow-y:auto;"></div>'
     +'</div></div>'
+    +'<div id="report-staff-info-panel"></div>'
     +'</div>'
     +'</div>';
 
-  // Populate staff list
-  filterReportSearch('');
+  // Populate directory
+  window.filterReportDirectory('');
 
   // Unredact button (SM only)
   var unredactBtn=document.getElementById('btn-unredact');
@@ -2758,14 +2759,35 @@ function renderStaffReports(c){
   c.querySelectorAll('.review-report-btn').forEach(function(btn){
     btn.onclick=function(){
       var rid=btn.dataset.rid, outcome=btn.dataset.outcome;
-      openDialog('Review Report','Add a review note for this report:',
+      openDialog('Review Report','Add a review note:',
         '<textarea id="report-review-note" style="width:100%;height:60px;" placeholder="Internal note about this decision..."></textarea>',
         async function(){
           var note=document.getElementById('report-review-note').value.trim()||'No note.';
           await update(ref(db,'staffReports/'+rid),{reviewed:true,outcome:outcome,reviewedBy:ME,reviewNote:note,reviewDate:nowStr()});
           showToast('Report '+outcome.toLowerCase()+'.','success');
-          auditLog('Staff Report Reviewed',STAFF_REPORTS[rid].targetUsername+' - '+outcome);
+          auditLog('Staff Report Reviewed',(STAFF_REPORTS[rid]&&STAFF_REPORTS[rid].targetUsername||rid)+' - '+outcome);
+          renderStaffReports(c);
         });
+    };
+  });
+  // Reopen buttons
+  c.querySelectorAll('.reopen-report-btn').forEach(function(btn){
+    btn.onclick=async function(){
+      await update(ref(db,'staffReports/'+btn.dataset.rid),{reviewed:false,outcome:'',reviewedBy:'',reviewNote:'',reviewDate:''});
+      showToast('Report reopened.','success');
+      auditLog('Staff Report Reopened',(STAFF_REPORTS[btn.dataset.rid]&&STAFF_REPORTS[btn.dataset.rid].targetUsername)||btn.dataset.rid);
+      renderStaffReports(c);
+    };
+  });
+  // Delete buttons
+  c.querySelectorAll('.delete-report-btn').forEach(function(btn){
+    btn.onclick=function(){
+      openOpDialog('Enter your operator code to delete this report.',async function(){
+        await remove(ref(db,'staffReports/'+btn.dataset.rid));
+        showToast('Report deleted.','success');
+        auditLog('Staff Report Deleted',btn.dataset.rid);
+        renderStaffReports(c);
+      });
     };
   });
 }
@@ -3017,18 +3039,31 @@ function renderDiscordConfig(c){
     // Wire channel test
     document.getElementById('dc-send-test').onclick=async function(){
       var key=document.getElementById('dc-test-channel').value;
-      var wh=webhooks[key]&&webhooks[key].url||cfg.defaultWebhook||'';
+      // Always read the live input field value, NOT the stale closure variable
+      var urlInput=document.querySelector('.dc-wh-url[data-key="'+key+'"]');
+      var liveUrl=(urlInput&&urlInput.value.trim())||'';
+      var defaultUrlInput=document.getElementById('dc-default-webhook');
+      var liveDefault=(defaultUrlInput&&defaultUrlInput.value.trim())||cfg.defaultWebhook||'';
+      var wh=liveUrl||liveDefault;
       var msg=document.getElementById('dc-test-ch-msg');
-      if(!wh){ msg.style.color='var(--c-ban)'; msg.textContent='No webhook URL for this channel.'; return; }
-      msg.style.color='var(--c-text2)'; msg.textContent='Sending...';
-      var def=webhookDefs.find(function(w){ return w.key===key; })||{label:key};
+      if(!wh){ msg.style.color='var(--c-ban)'; msg.textContent='No webhook URL set for this channel or default.'; return; }
+      msg.style.color='var(--c-text2)'; msg.textContent='Sending to '+(liveUrl?'channel-specific':'default')+' webhook...';
+      var def=webhookDefs.find(function(w){ return w.key===key; })||{label:key,icon:''};
+      var embedColor=parseInt((document.getElementById('dc-embed-color')?document.getElementById('dc-embed-color').value:'#0969da').replace('#',''),16);
+      var footerText=document.getElementById('dc-footer')?document.getElementById('dc-footer').value.trim():'Samaritan Systems';
       try{
         var resp=await fetch(wh,{method:'POST',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({username:'Samaritan Systems',embeds:[{title:def.icon+' Test: '+def.label,'description':'This is a test message for the **'+def.label+'** webhook channel.','color':parseInt((embeds.embed_color||'#0969da').replace('#',''),16),'footer':{'text':embeds.footer_text||'Samaritan Systems'},'timestamp':new Date().toISOString()}]})});
-        if(resp.ok||resp.status===204){ msg.style.color='var(--c-ok)'; msg.textContent='Test delivered!'; }
+          body:JSON.stringify({username:'Samaritan Systems',embeds:[{
+            title:'Test: '+def.label,
+            description:'This is a test webhook for the **'+def.label+'** channel.\nSent by: '+ME,
+            color:embedColor,
+            footer:{text:footerText||'Samaritan Systems'},
+            timestamp:new Date().toISOString()
+          }]})});
+        if(resp.ok||resp.status===204){ msg.style.color='var(--c-ok)'; msg.textContent='Delivered to '+(liveUrl?def.label+' channel':'default webhook')+'!'; }
         else{ msg.style.color='var(--c-ban)'; msg.textContent='HTTP '+resp.status; }
       }catch(e){ msg.style.color='var(--c-ban)'; msg.textContent='Error: '+e.message; }
-      setTimeout(function(){ if(msg) msg.textContent=''; },3000);
+      setTimeout(function(){ if(msg) msg.textContent=''; },4000);
     };
 
   }).catch(function(e){ c.innerHTML='<div class="ptitle">[DC] Discord Config</div><div style="padding:8px;color:var(--c-ban);">Error loading config.</div>'; });
@@ -3329,8 +3364,105 @@ function openRepScoreTool(){
 }
 
 function openStaffReportFromMenu(){
-  nav('staffreports');
-  showToast('Navigate to the Reports tab to file a report.','info',2500);
+  // Build overlay panel
+  var overlay=document.createElement('div');
+  overlay.id='report-overlay-panel';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(1,4,9,0.7);z-index:9000;display:flex;align-items:center;justify-content:center;';
+  var panel=document.createElement('div');
+  panel.style.cssText='background:var(--bg-sbox);border:1px solid var(--c-border);border-radius:10px;padding:0;width:520px;max-width:95vw;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.5);';
+  panel.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--c-border);">'
+    +'<div style="font-size:13px;font-weight:700;color:var(--c-text);">Report a Staff Member</div>'
+    +'<button id="rpt-overlay-close" style="background:none;border:none;color:var(--c-text2);font-size:16px;cursor:pointer;padding:0;line-height:1;">&#10005;</button>'
+    +'</div>'
+    +'<div style="padding:14px 16px;overflow-y:auto;flex:1;">'
+    +'<div style="font-size:11px;color:var(--c-text2);margin-bottom:10px;">Search for a staff member below. Your identity will be kept confidential — your name will appear as <b>[ Redacted ]</b> to all reviewers.</div>'
+    +'<input type="text" id="rpt-ol-search" placeholder="Search by name..." style="width:100%;margin-bottom:8px;" oninput="filterOverlayReportSearch(this.value)"/>'
+    +'<div id="rpt-ol-list" style="max-height:200px;overflow-y:auto;margin-bottom:8px;border:1px solid var(--c-border);border-radius:6px;padding:4px;"></div>'
+    +'<div id="rpt-ol-form"></div>'
+    +'</div>';
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
+  overlay.onclick=function(e){ if(e.target===overlay) closeReportOverlay(); };
+  document.getElementById('rpt-overlay-close').onclick=closeReportOverlay;
+  window.filterOverlayReportSearch('');
+}
+
+window._resetReportOverlay=function(){
+  var l=document.getElementById('rpt-ol-list');
+  var sr=document.getElementById('rpt-ol-search');
+  if(l) l.style.display='';
+  if(sr) sr.style.display='';
+  var f=document.getElementById('rpt-ol-form');
+  if(f) f.innerHTML='';
+  window.filterOverlayReportSearch('');
+};
+function closeReportOverlay(){
+  var el=document.getElementById('report-overlay-panel');
+  if(el) el.remove();
+}
+
+window.filterOverlayReportSearch=function(q){
+  var list=document.getElementById('rpt-ol-list'); if(!list) return;
+  var staffArr=Object.entries(STAFF).filter(function(e){
+    var s=e[1]; if(!s||!s.username) return false;
+    if(s.username===ME) return false;
+    if(!q) return true;
+    return s.username.toLowerCase().includes(q.toLowerCase());
+  });
+  if(!staffArr.length){ list.innerHTML='<div style="padding:8px;font-size:11px;color:var(--c-text2);">No staff found.</div>'; return; }
+  list.innerHTML=staffArr.map(function(e){
+    var sid=e[0],s=e[1];
+    return '<div class="rpt-ol-card" data-sid="'+sid+'" style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:5px;cursor:pointer;transition:background 0.1s;">'+
+      (s.avatarUrl?'<img src="'+s.avatarUrl+'" width="26" height="26" style="border-radius:50%;object-fit:cover;flex-shrink:0;">':'<div style="width:26px;height:26px;border-radius:50%;background:var(--c-link);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;color:#fff;flex-shrink:0;">'+s.username.charAt(0).toUpperCase()+'</div>')
+      +'<div style="flex:1;min-width:0;"><div style="font-size:11px;font-weight:bold;color:var(--c-text);">'+s.username+'</div><div style="font-size:10px;color:var(--c-text2);">'+s.level+'</div></div>'
+      +'<span style="font-size:11px;color:var(--c-text2);">&rsaquo;</span></div>';
+  }).join('');
+  list.querySelectorAll('.rpt-ol-card').forEach(function(card){
+    card.onmouseenter=function(){ card.style.background='var(--bg-sb-hdr-hover)'; };
+    card.onmouseleave=function(){ card.style.background='transparent'; };
+    card.onclick=function(){ openOverlayReportForm(card.dataset.sid); };
+  });
+};
+
+function openOverlayReportForm(sid){
+  var s=STAFF[sid]; if(!s) return;
+  var form=document.getElementById('rpt-ol-form'); if(!form) return;
+  var listEl=document.getElementById('rpt-ol-list'); if(listEl) listEl.style.display='none';
+  var searchEl=document.getElementById('rpt-ol-search'); if(searchEl) searchEl.style.display='none';
+  form.innerHTML='<div style="border-top:1px solid var(--c-border);padding-top:10px;">'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">'+
+      (s.avatarUrl?'<img src="'+s.avatarUrl+'" width="32" height="32" style="border-radius:50%;object-fit:cover;flex-shrink:0;">':'<div style="width:32px;height:32px;border-radius:50%;background:var(--c-link);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;color:#fff;flex-shrink:0;">'+s.username.charAt(0).toUpperCase()+'</div>')
+    +'<div><div style="font-size:12px;font-weight:bold;color:var(--c-text);">'+s.username+'</div>'
+    +'<div style="font-size:10px;color:var(--c-text2);">'+s.level+'</div></div>'
+    +'<button style="margin-left:auto;background:none;border:none;color:var(--c-text2);font-size:11px;cursor:pointer;" onclick="window._resetReportOverlay&&window._resetReportOverlay()">&#8592; Back</button>'
+    +'</div>'
+    +'<div style="margin-bottom:6px;"><label style="font-size:11px;font-weight:600;color:var(--c-text);display:block;margin-bottom:2px;">Category</label>'
+    +'<select id="rpt-ol-cat" style="width:100%;"><option>Misconduct</option><option>Abuse of Power</option><option>Inappropriate Behavior</option><option>Policy Violation</option><option>Harassment</option><option>Other</option></select></div>'
+    +'<div style="margin-bottom:6px;"><label style="font-size:11px;font-weight:600;color:var(--c-text);display:block;margin-bottom:2px;">Description</label>'
+    +'<textarea id="rpt-ol-desc" style="width:100%;height:80px;" placeholder="Describe what happened in detail. Include dates, times, and any relevant context..."></textarea></div>'
+    +'<div style="margin-bottom:6px;"><label style="font-size:11px;font-weight:600;color:var(--c-text);display:block;margin-bottom:2px;">Evidence Link (optional)</label>'
+    +'<input type="text" id="rpt-ol-file" style="width:100%;" placeholder="Link to screenshot, video, or other evidence"/></div>'
+    +'<div style="background:rgba(248,81,73,0.06);border:1px solid rgba(248,81,73,0.2);border-radius:4px;padding:7px 10px;font-size:10px;color:var(--c-text2);margin-bottom:8px;">Your identity will appear as <b style="color:var(--c-text);">[ Redacted ]</b> to all reviewers. Only a Software Manager with their operator code can view reporter names.</div>'
+    +'<button class="btn" id="rpt-ol-submit" style="width:100%;">Submit Report</button>'
+    +'<div id="rpt-ol-msg" style="font-size:11px;margin-top:5px;color:var(--c-ok);min-height:14px;text-align:center;"></div>'
+    +'</div>';
+  document.getElementById('rpt-ol-submit').onclick=async function(){
+    var desc=(document.getElementById('rpt-ol-desc')||{}).value.trim();
+    var msgEl=document.getElementById('rpt-ol-msg');
+    if(!desc){ msgEl.style.color='var(--c-ban)'; msgEl.textContent='Description is required.'; return; }
+    var cat=(document.getElementById('rpt-ol-cat')||{}).value||'Other';
+    var fileUrl=(document.getElementById('rpt-ol-file')||{}).value.trim();
+    await push(ref(db,'staffReports'),{
+      targetId:sid, targetUsername:s.username, targetLevel:s.level,
+      targetAvatarUrl:s.avatarUrl||'',
+      submittedBy:ME, date:nowStr(), ts:Date.now(),
+      category:cat, description:desc, fileUrl:fileUrl||'',
+      reviewed:false, outcome:'', reviewedBy:'', reviewNote:'', reviewDate:''
+    });
+    auditLog('Staff Report Filed',s.username+' — '+cat);
+    msgEl.style.color='var(--c-ok)'; msgEl.textContent='Report submitted successfully.';
+    setTimeout(function(){ closeReportOverlay(); },1800);
+  };
 }
 window.openRobloxLookupTool=openRobloxLookupTool;
 window.openTimestampTool=openTimestampTool;
