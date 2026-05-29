@@ -2541,11 +2541,11 @@ function render(){
   // ── PEOPLE SECTION ──
   if(SECTION_PAGES.people.includes(page)){
     renderSection('People',[
-      {id:'useradmin', label:'User Admin', perm:'canViewUserAdmin'},
-      {id:'moderate', label:'Moderate', perm:'canModerateUsers'},
-      {id:'accounts', label:'All Accounts'},
-      {id:'requests', label:'Requests', perm:'canViewRequests'},
-      {id:'userconfig', label:'User Config', perm:'canViewUserConfig'},
+      {id:'useradmin', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><circle cx="7" cy="4.5" r="2.5" stroke="currentColor" stroke-width="1.2"/><path d="M2 12c0-3 2-4.5 5-4.5s5 1.5 5 4.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>User Admin', perm:'canViewUserAdmin'},
+      {id:'moderate', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/><line x1="4.5" y1="7" x2="9.5" y2="7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Moderate', perm:'canModerateUsers'},
+      {id:'accounts', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><rect x="2" y="2" width="4" height="4" rx="0.8" stroke="currentColor" stroke-width="1.1"/><rect x="8" y="2" width="4" height="4" rx="0.8" stroke="currentColor" stroke-width="1.1"/><rect x="2" y="8" width="4" height="4" rx="0.8" stroke="currentColor" stroke-width="1.1"/><rect x="8" y="8" width="4" height="4" rx="0.8" stroke="currentColor" stroke-width="1.1"/></svg>All Accounts'},
+      {id:'requests', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><rect x="2" y="2" width="10" height="10" rx="1.5" stroke="currentColor" stroke-width="1.2"/><line x1="4.5" y1="5" x2="9.5" y2="5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><line x1="4.5" y1="7.5" x2="9.5" y2="7.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><line x1="4.5" y1="10" x2="7" y2="10" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>Requests', perm:'canViewRequests'},
+      {id:'userconfig', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><circle cx="7" cy="4" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M3 12c0-2 1.8-3.5 4-3.5s4 1.5 4 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="11" cy="10" r="1.5" stroke="currentColor" stroke-width="1.1"/><line x1="11" y1="8" x2="11" y2="8.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><line x1="11" y1="11.5" x2="11" y2="12" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>User Config', perm:'canViewUserConfig'},
     ], inner=>{
       if(page==='useradmin') canDo('canViewUserAdmin')?renderUA(inner):inner.innerHTML=denied;
       else if(page==='moderate') canDo('canModerateUsers')?renderMod(inner):inner.innerHTML=denied;
@@ -2596,8 +2596,8 @@ function render(){
   // ── LOGS SECTION ──
   if(SECTION_PAGES.logs.includes(page)){
     renderSection('Logs',[
-      {id:'modlog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><path d="M2 12L7 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><rect x="6.5" y="1.5" width="5" height="3" rx="0.8" transform="rotate(45 6.5 1.5)" stroke="currentColor" stroke-width="1.2"/><line x1="8" y1="6" x2="11" y2="3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>Moderation', perm:'canViewModLog'},
-      {id:'revokelog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><path d="M2.5 5.5A5 5 0 1 1 2 8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><polyline points="1,2.5 2.5,5.5 5.5,4.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>Revoke', perm:'canViewRevokeLogs'},
+      {id:'modlog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><rect x="1.5" y="8" width="11" height="2.5" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="5" y="2" width="6" height="4" rx="0.8" transform="rotate(45 5 2)" stroke="currentColor" stroke-width="1.2"/><line x1="3.5" y1="10" x2="2" y2="12.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>Moderation', perm:'canViewModLog'},
+      {id:'revokelog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><path d="M11 7A4.5 4.5 0 1 1 9.5 3.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><polyline points="9.5,1.5 9.5,4 12,4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>Revoke', perm:'canViewRevokeLogs'},
       {id:'suspendlog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/><line x1="5" y1="4.5" x2="5" y2="9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="9" y1="4.5" x2="9" y2="9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Suspension', perm:'canViewSuspendLogs'},
       {id:'terminatelog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><circle cx="5.5" cy="4" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M1 11.5c0-2.5 2-4 4.5-4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="9.5" y1="8.5" x2="12.5" y2="11.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="12.5" y1="8.5" x2="9.5" y2="11.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>Termination', perm:'canViewTerminateLogs'},
       {id:'warnlog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><path d="M7 1L13 12H1L7 1z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><line x1="7" y1="5.5" x2="7" y2="8.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="7" cy="10" r="0.8" fill="currentColor"/></svg>Staff Warnings', perm:'canViewStaff'},
@@ -2617,9 +2617,9 @@ function render(){
   // ── CONFIGURATION SECTION ──
   if(SECTION_PAGES.configuration.includes(page)){
     renderSection('Configuration',[
-      {id:'alerts', label:'Site Alerts', perm:'canManageStaff'},
-      {id:'adminlog', label:'Administrator', saOnly:true},
-      {id:'cflog', label:'Custom Fields Log', saOnly:true},
+      {id:'alerts', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><path d="M7 2L12.5 11H1.5L7 2z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><line x1="7" y1="6" x2="7" y2="8.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="7" cy="10" r="0.7" fill="currentColor"/></svg>Site Alerts', perm:'canManageStaff'},
+      {id:'adminlog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><rect x="2" y="2" width="10" height="10" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M5 7l1.5 1.5L9.5 5.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>Administrator', saOnly:true},
+      {id:'cflog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><rect x="2" y="1" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.2"/><line x1="4.5" y1="4.5" x2="9.5" y2="4.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><line x1="4.5" y1="7" x2="9.5" y2="7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><line x1="4.5" y1="9.5" x2="9.5" y2="9.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>Custom Fields Log', saOnly:true},
     ], inner=>{
       if(page==='alerts') (canDo('canManageStaff')||isSuperAdmin())?renderAlerts(inner):inner.innerHTML=denied;
       else if(page==='adminlog') isSuperAdmin()?renderAdminLog(inner):inner.innerHTML=denied;
@@ -3134,6 +3134,11 @@ function buildModEmbed(staffName, action, targetUser, reason, expiryStr, expiryT
 window.fireDiscordWebhook=fireDiscordWebhook;
 window.buildModEmbed=buildModEmbed;
 
+function buildGenericEmbed(title, description, colorHex){
+  var ts='Time || '+new Date().toLocaleDateString(undefined,{weekday:'long',year:'numeric',month:'long',day:'numeric'})+' '+new Date().toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',hour12:true});
+  return {title:title, description:description+'\n'+ts, color:parseInt((colorHex||'#0969da').replace('#',''),16)};
+}
+
 // ══════════════════════════════════════════════════════
 // PREFERENCES OVERLAY
 // ══════════════════════════════════════════════════════
@@ -3285,26 +3290,197 @@ window.generateReportCard=generateReportCard;
 // TOOLS MENU FUNCTIONS
 // ══════════════════════════════════════════════════════
 function openRobloxLookupTool(){
-  openDialog('Roblox Lookup','Enter a Roblox username to fetch their profile data:',
-    '<input type="text" id="tool-rblx-user" style="width:100%;" placeholder="Roblox username"/>'
-    +'<div id="tool-rblx-result" style="margin-top:8px;font-size:11px;color:var(--c-text);min-height:40px;"></div>',
-    async function(){
-      var u=document.getElementById('tool-rblx-user').value.trim();
-      var res=document.getElementById('tool-rblx-result');
-      if(!u) return;
-      res.textContent='Looking up...';
-      try{
-        var info=await fetchRobloxInfo(u);
-        if(!info){ res.style.color='var(--c-ban)'; res.textContent='Not found.'; return; }
-        res.style.color='var(--c-ok)';
-        res.innerHTML='<div><b>ID:</b> '+(info.robloxId||'-')+'</div>'
-          +'<div><b>Display Name:</b> '+(info.displayName||'-')+'</div>'
-          +'<div><b>Account Created:</b> '+(info.accountCreated||'-')+'</div>'
-          +(info.avatarUrl?'<div style="margin-top:4px;"><img src="'+info.avatarUrl+'" width="40" height="40" style="border-radius:6px;object-fit:cover;"></div>':'');
-      }catch(e){ res.style.color='var(--c-ban)'; res.textContent='Error: '+e.message; }
+  // Build a full-screen overlay panel
+  var ov=document.createElement('div');
+  ov.id='rblx-lookup-overlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(1,4,9,0.82);z-index:9100;display:flex;align-items:center;justify-content:center;';
+  var box=document.createElement('div');
+  box.style.cssText='background:var(--bg-sbox);border:1px solid var(--c-border);border-radius:10px;width:740px;max-width:96vw;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 12px 60px rgba(0,0,0,0.6);';
+  box.innerHTML=
+    '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--c-border);flex-shrink:0;">'
+    +'<span style="font-size:13px;font-weight:700;color:var(--c-text);">Roblox Player Lookup</span>'
+    +'<button id="rblx-close-btn" style="background:none;border:none;color:var(--c-text2);font-size:16px;cursor:pointer;padding:0;line-height:1;">&#10005;</button>'
+    +'</div>'
+    +'<div style="padding:12px 16px;border-bottom:1px solid var(--c-border);flex-shrink:0;display:flex;gap:6px;">'
+    +'<input type="text" id="rblx-lookup-input" style="flex:1;" placeholder="Enter Roblox username…"/>'
+    +'<button class="btn" id="rblx-lookup-btn">Look Up</button>'
+    +'</div>'
+    +'<div id="rblx-lookup-body" style="flex:1;overflow-y:auto;padding:14px 16px;">'
+    +'<div style="text-align:center;padding:40px;color:var(--c-text2);font-size:12px;">Enter a username above to search.</div>'
+    +'</div>';
+  ov.appendChild(box);
+  document.body.appendChild(ov);
+  ov.onclick=function(e){ if(e.target===ov) ov.remove(); };
+  document.getElementById('rblx-close-btn').onclick=function(){ ov.remove(); };
+
+  var inp=document.getElementById('rblx-lookup-input');
+  inp.focus();
+  inp.onkeydown=function(e){ if(e.key==='Enter') doLookup(); };
+  document.getElementById('rblx-lookup-btn').onclick=doLookup;
+
+  async function doLookup(){
+    var username=inp.value.trim();
+    if(!username) return;
+    var body=document.getElementById('rblx-lookup-body');
+    body.innerHTML='<div style="text-align:center;padding:40px;color:var(--c-text2);">Fetching profile data…<br><span style="font-size:10px;opacity:0.6;">This may take a few seconds while we pull from multiple Roblox endpoints.</span></div>';
+
+    try{
+      // Core info
+      var info=await fetchRobloxInfo(username);
+      if(!info||!info.robloxId){ body.innerHTML='<div style="text-align:center;padding:40px;color:var(--c-ban);">User not found.</div>'; return; }
+      var uid=info.robloxId;
+
+      // Parallel fetch everything
+      var [friendsData, groupsData, followersData, followingData, badgesData, gamesData, favData, descData, prevNamesData] = await Promise.all([
+        robloxGet('https://friends.roproxy.com/v1/users/'+uid+'/friends?limit=50').catch(()=>null),
+        robloxGet('https://groups.roproxy.com/v1/users/'+uid+'/groups/roles').catch(()=>null),
+        robloxGet('https://friends.roproxy.com/v1/users/'+uid+'/followers/count').catch(()=>null),
+        robloxGet('https://friends.roproxy.com/v1/users/'+uid+'/followings/count').catch(()=>null),
+        robloxGet('https://badges.roproxy.com/v1/users/'+uid+'/badges?limit=10&sortOrder=Desc').catch(()=>null),
+        robloxGet('https://games.roproxy.com/v2/users/'+uid+'/games?accessFilter=Public&limit=10&sortOrder=Desc').catch(()=>null),
+        robloxGet('https://catalog.roproxy.com/v1/favorites/users/'+uid+'/assets?assetType=Place&limit=6').catch(()=>null),
+        robloxGet('https://users.roproxy.com/v1/users/'+uid).catch(()=>null),
+        robloxGet('https://users.roproxy.com/v1/users/'+uid+'/username-history?limit=10').catch(()=>null),
+      ]);
+
+      var friends=(friendsData&&friendsData.data)||[];
+      var groups=(groupsData&&groupsData.data)||[];
+      var followers=(followersData&&followersData.count)||0;
+      var following=(followingData&&followingData.count)||0;
+      var badges=(badgesData&&badgesData.data)||[];
+      var games=(gamesData&&gamesData.data)||[];
+      var prevNames=(prevNamesData&&prevNamesData.data)||[];
+      var desc=(descData&&descData.description)||'';
+      var isBanned=(descData&&descData.isBanned)||false;
+
+      // Full avatar + thumbnail
+      var avatarFullData=await robloxGet('https://thumbnails.roproxy.com/v1/users/avatar?userIds='+uid+'&size=420x420&format=Png').catch(()=>null);
+      var avatarFull=(avatarFullData&&avatarFullData.data&&avatarFullData.data[0]&&avatarFullData.data[0].imageUrl)||info.avatarUrl||'';
+
+      // Build UI
+      var accountAge='';
+      if(info.accountCreated){
+        var created=new Date(info.accountCreated);
+        var ageDays=Math.floor((Date.now()-created.getTime())/86400000);
+        var ageYears=Math.floor(ageDays/365);
+        var ageMonths=Math.floor((ageDays%365)/30);
+        accountAge=ageYears>0?(ageYears+'y '+ageMonths+'m old'):(ageMonths+'m old');
+      }
+
+      var html='<div style="display:flex;gap:14px;margin-bottom:14px;flex-wrap:wrap;">'
+        // Left: avatar + core stats
+        +'<div style="flex-shrink:0;text-align:center;">'
+        +(avatarFull?'<img src="'+avatarFull+'" width="100" height="100" style="border-radius:10px;object-fit:cover;display:block;margin-bottom:6px;" onerror="this.style.display=\'none\'">':'')
+        +'<div style="font-size:14px;font-weight:800;color:var(--c-text);">'+info.displayName+'</div>'
+        +'<div style="font-size:11px;color:var(--c-text2);">@'+username+'</div>'
+        +(isBanned?'<div style="margin-top:4px;background:var(--c-ban);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;display:inline-block;">BANNED</div>':'')
+        +'</div>'
+        // Right: key stats grid
+        +'<div style="flex:1;min-width:200px;">'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:8px;">'
+        +[
+          {l:'Roblox ID',v:uid},
+          {l:'Account Created',v:(info.accountCreated?info.accountCreated.split('T')[0]:'-')+' ('+accountAge+')'},
+          {l:'Followers',v:followers.toLocaleString()},
+          {l:'Following',v:following.toLocaleString()},
+          {l:'Friends',v:friends.length.toLocaleString()},
+          {l:'Groups',v:groups.length.toLocaleString()},
+          {l:'Badges (shown)',v:badges.length},
+          {l:'Games (public)',v:games.length},
+        ].map(function(s){
+          return '<div style="background:var(--bg-tbl-odd);border:1px solid var(--c-border);border-radius:4px;padding:5px 8px;">'
+            +'<div style="font-size:9px;color:var(--c-text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:1px;">'+s.l+'</div>'
+            +'<div style="font-size:11px;font-weight:600;color:var(--c-text);">'+s.v+'</div>'
+            +'</div>';
+        }).join('')
+        +'</div>'
+        +(desc?'<div style="font-size:11px;color:var(--c-text2);border:1px solid var(--c-border);border-radius:4px;padding:6px 8px;line-height:1.5;word-break:break-word;"><b style="color:var(--c-text);">Bio:</b> '+desc.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div>':'')
+        +'</div>'
+        +'</div>'
+
+        // Panel row: previous usernames
+        +(prevNames.length?'<div class="sbox" style="margin-bottom:8px;"><div class="stitle">Previous Usernames ('+prevNames.length+')</div><div class="sbody" style="display:flex;gap:4px;flex-wrap:wrap;">'
+          +prevNames.map(function(n){ return '<span style="font-size:11px;background:var(--bg-tbl-odd);border:1px solid var(--c-border);padding:2px 8px;border-radius:10px;color:var(--c-text2);">'+n.name+'</span>'; }).join('')
+          +'</div></div>':'')
+
+        // Friends list
+        +(friends.length?'<div class="sbox" style="margin-bottom:8px;"><div class="stitle">Friends ('+friends.length+')</div><div class="sbody" style="display:flex;gap:6px;flex-wrap:wrap;">'
+          +friends.slice(0,20).map(function(f){
+            return '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;width:54px;">'
+              +'<div style="width:36px;height:36px;border-radius:50%;background:var(--bg-sb-hdr);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;color:var(--c-text2);">'+(f.name||'?').charAt(0).toUpperCase()+'</div>'
+              +'<div style="font-size:9px;color:var(--c-text2);text-align:center;word-break:break-all;overflow:hidden;max-height:28px;">'+f.name+'</div>'
+              +'</div>';
+          }).join('')
+          +(friends.length>20?'<div style="font-size:10px;color:var(--c-text2);align-self:center;">+'+( friends.length-20)+' more</div>':'')
+          +'</div></div>':'')
+
+        // Groups
+        +(groups.length?'<div class="sbox" style="margin-bottom:8px;"><div class="stitle">Groups ('+groups.length+')</div><div class="sbody">'
+          +'<div class="tbl-wrap"><table class="tbl" style="font-size:11px;">'
+          +'<tr><th>Group</th><th>Role</th><th>ID</th></tr>'
+          +groups.map(function(g){
+            return '<tr><td style="font-weight:600;">'+g.group.name+'</td><td style="color:var(--c-text2);">'+g.role.name+'</td><td style="color:var(--c-text2);font-size:10px;">'+g.group.id+'</td></tr>';
+          }).join('')
+          +'</table></div></div></div>':'')
+
+        // Badges
+        +(badges.length?'<div class="sbox" style="margin-bottom:8px;"><div class="stitle">Recent Badges ('+badges.length+' shown)</div><div class="sbody" style="display:flex;gap:6px;flex-wrap:wrap;">'
+          +badges.map(function(b){
+            return '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;width:68px;text-align:center;">'
+              +(b.displayIconImageId?'<img src="https://tr.rbxcdn.com/'+b.displayIconImageId+'/150/150/Image/Png" width="40" height="40" style="border-radius:6px;" onerror="this.style.display=\'none\'">':'<div style="width:40px;height:40px;border-radius:6px;background:var(--bg-sb-hdr);"></div>')
+              +'<div style="font-size:9px;color:var(--c-text2);overflow:hidden;max-height:28px;word-break:break-word;">'+b.name+'</div>'
+              +'</div>';
+          }).join('')
+          +'</div></div>':'')
+
+        // Games
+        +(games.length?'<div class="sbox" style="margin-bottom:8px;"><div class="stitle">Public Games ('+games.length+')</div><div class="sbody">'
+          +'<div class="tbl-wrap"><table class="tbl" style="font-size:11px;">'
+          +'<tr><th>Name</th><th>Visits</th><th>Favorites</th><th>Created</th></tr>'
+          +games.map(function(g){
+            return '<tr><td style="font-weight:600;max-width:160px;white-space:normal;">'+g.name+'</td>'
+              +'<td>'+(g.placeVisits||0).toLocaleString()+'</td>'
+              +'<td>'+(g.favoritedCount||0).toLocaleString()+'</td>'
+              +'<td style="font-size:10px;color:var(--c-text2);">'+(g.created?g.created.split('T')[0]:'')+'</td></tr>';
+          }).join('')
+          +'</table></div></div></div>':'')
+
+        // In-panel record
+        +'<div class="sbox"><div class="stitle">Samaritan Panel Record</div><div class="sbody">';
+
+      var panelUser=Object.values(USERS||{}).find(function(u){ return u.username&&u.username.toLowerCase()===username.toLowerCase(); });
+      if(panelUser){
+        var punishments=Object.values(panelUser.punishments||{});
+        html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">'
+          +['Status','Rep Score','Punishments'].map(function(k,i){
+            var v=i===0?(panelUser.status||'active'):i===1?calcReputation(panelUser):punishments.length;
+            var c=i===0&&panelUser.status==='banned'?'var(--c-ban)':i===0&&panelUser.status==='suspended'?'var(--c-sus)':'var(--c-ok)';
+            return '<div style="background:var(--bg-tbl-odd);border:1px solid var(--c-border);border-radius:4px;padding:5px 10px;text-align:center;">'
+              +'<div style="font-size:9px;color:var(--c-text2);text-transform:uppercase;letter-spacing:0.5px;">'+k+'</div>'
+              +'<div style="font-size:13px;font-weight:800;color:'+c+';">'+v+'</div>'
+              +'</div>';
+          }).join('')
+          +'</div>';
+        if(punishments.length){
+          html+='<div style="font-size:11px;font-weight:600;color:var(--c-text);margin-bottom:4px;">Punishment History</div>'
+            +'<div class="tbl-wrap"><table class="tbl" style="font-size:10px;">'
+            +'<tr><th>Action</th><th>By</th><th>Date</th><th>Expiry</th><th>Note</th></tr>'
+            +punishments.map(function(p){
+              return '<tr><td>'+p.action+'</td><td>'+p.mod+'</td><td>'+p.created+'</td><td>'+(p.expiry||'—')+'</td><td style="max-width:100px;white-space:normal;">'+((p.note||p.reason)||'')+'</td></tr>';
+            }).join('')
+            +'</table></div>';
+        }
+      } else {
+        html+='<div style="font-size:11px;color:var(--c-text2);font-style:italic;">This player is not in the Samaritan database.</div>'
+          +'<button class="btn small" style="margin-top:6px;" onclick="nav(\'useradmin\');document.getElementById(\'rblx-lookup-overlay\')&&document.getElementById(\'rblx-lookup-overlay\').remove();">Add to Panel →</button>';
+      }
+      html+='</div></div>';
+
+      body.innerHTML=html;
+    }catch(e){
+      body.innerHTML='<div style="text-align:center;padding:40px;color:var(--c-ban);">Error fetching data: '+e.message+'</div>';
     }
-  );
-  document.getElementById('dlgOK').textContent='Look Up';
+  }
 }
 
 function openTimestampTool(){
@@ -3350,17 +3526,34 @@ function openBanDurationTool(){
 
 function openRepScoreTool(){
   var pts=Object.entries(REP_POINTS).map(function(e){
-    return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">'
-      +'<input type="number" class="rsc-val" data-action="'+e[0]+'" style="width:50px;" value="'+e[1]+'"/>'
-      +'<label style="font-size:11px;color:var(--c-text);">'+e[0]+'</label></div>';
+    return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
+      +'<input type="number" class="rsc-val" data-action="'+e[0]+'" data-pts="'+e[1]+'" style="width:55px;" value="0" min="0"/>'
+      +'<span style="font-size:11px;color:var(--c-text);flex:1;">'+e[0]+'</span>'
+      +'<span style="font-size:10px;color:var(--c-text2);">×'+e[1]+' pts</span>'
+      +'</div>';
   }).join('');
-  openDialog('Rep Score Calculator','Enter action counts to calculate total reputation score:',
-    pts+'<hr style="border:none;border-top:1px solid var(--c-border);margin:8px 0;">'
-    +'<button class="btn" onclick="var t=0;document.querySelectorAll(\'.rsc-val\').forEach(function(el){t+=parseInt(el.value||0)*('+JSON.stringify(REP_POINTS)+')[el.dataset.action]||0;});document.getElementById(\'rsc-total\').textContent=\'Total Rep Score: \'+t+\' pts\';document.getElementById(\'rsc-total\').style.color=t>15?\'var(--c-ban)\':t>5?\'var(--c-sus)\":\'var(--c-ok)\';">Calculate</button>'
-    +'<div id="rsc-total" style="font-size:13px;font-weight:bold;margin-top:6px;min-height:18px;"></div>',
+  openDialog('Rep Score Calculator','Enter how many times each action was taken:',
+    pts
+    +'<hr style="border:none;border-top:1px solid var(--c-border);margin:8px 0;">'
+    +'<button class="btn" id="rsc-calc-btn" style="width:100%;">Calculate Total</button>'
+    +'<div id="rsc-total" style="font-size:14px;font-weight:bold;margin-top:8px;min-height:20px;text-align:center;"></div>',
     null);
   document.getElementById('dlgOK').style.display='none';
   document.getElementById('dlgCancel').textContent='Close';
+  var calcBtn=document.getElementById('rsc-calc-btn');
+  if(calcBtn) calcBtn.onclick=function(){
+    var total=0;
+    document.querySelectorAll('.rsc-val').forEach(function(el){
+      var count=parseInt(el.value)||0;
+      var pts=parseInt(el.dataset.pts)||0;
+      total+=count*pts;
+    });
+    var el=document.getElementById('rsc-total');
+    if(el){
+      el.textContent='Total Rep Score: '+total+' pts';
+      el.style.color=total>15?'var(--c-ban)':total>5?'var(--c-sus)':'var(--c-ok)';
+    }
+  };
 }
 
 function openStaffReportFromMenu(){
@@ -4921,6 +5114,7 @@ function openReviewPanel(lid){
     }
     auditLog('Appeal Approved',`${r.user} by ${ME}: ${note}`);
     pushNotif('appealReviewed',`Appeal approved: ${r.user} by ${ME}`);
+    fireDiscordWebhook('appeals',buildGenericEmbed('Appeal Approved',ME+' approved the appeal for **'+r.user+'**.\nReview note: '+note,'#1a7f37')).catch(()=>{});
     document.getElementById('reviewResult').style.color='#006600';
     document.getElementById('reviewResult').textContent='Appeal approved and punishment revoked!';
     setTimeout(()=>closeDialog(),1200);
@@ -4933,6 +5127,7 @@ function openReviewPanel(lid){
     if(r.uid) await update(ref(db,`users/${r.uid}`),{appealStatus:'Denied'});
     auditLog('Appeal Denied',`${r.user} by ${ME}: ${note}`);
     pushNotif('appealReviewed',`Appeal denied: ${r.user} by ${ME}`);
+    fireDiscordWebhook('appeals',buildGenericEmbed('Appeal Denied',ME+' denied the appeal for **'+r.user+'**.\nReview note: '+note,'#cf222e')).catch(()=>{});
     document.getElementById('reviewResult').style.color='var(--c-ban)';
     document.getElementById('reviewResult').textContent='Appeal denied.';
     setTimeout(()=>closeDialog(),1200);
@@ -12682,6 +12877,7 @@ async function addStaff(){
   }
 
   auditLog('Staff Added',`${u} as ${l}`);
+  fireDiscordWebhook('staff_events',buildGenericEmbed('Staff Hired',ME+' added **'+u+'** as '+l+'.','#0969da')).catch(()=>{});
   el.style.color='#006600';
   el.textContent=`${u} added as ${l}${avatarUrl?' (avatar loaded)':avatarUser?' (avatar unavailable - set via profile)':''}.`;
   setTimeout(()=>{ el.textContent=''; },3500);
@@ -12723,6 +12919,7 @@ async function updateStaffLevel(sid){
   const oldLevel=s?s.level:'?';
   await update(ref(db,`staff/${sid}`),{level:l});
   auditLog('Staff Level Changed',`${s?s.username:sid}: ${oldLevel} -> ${l}`);
+  fireDiscordWebhook('staff_events',buildGenericEmbed('Rank Changed',ME+' changed **'+(s?s.username:sid)+'** from '+oldLevel+' to **'+l+'**.','#9a6700')).catch(()=>{});
   el.style.color='#006600'; el.textContent=`Level set to ${l}.`;
   setTimeout(()=>{ if(el) el.textContent=''; },1500);
 }
@@ -12789,6 +12986,7 @@ function promptSuspendStaff(sid, isCurrentlySuspended){
         await update(ref(db,`staff/${sid}`),{suspended:true,suspendInfo:suspInfo,forceLogout:true});
         await push(ref(db,'logs/suspend'),{username:s.username,action:'Suspend',by:ME,date:nowStr(),reason,modNote,offensiveItem});
         auditLog('Staff Suspended',`${s.username}: ${reason}`);
+        fireDiscordWebhook('staff_events',buildGenericEmbed('Staff Suspended',ME+' suspended **'+s.username+'** for: '+reason+'.','#9a6700')).catch(()=>{});
         showToast(`${s.username} has been suspended.`,'warning');
       }
     );
@@ -12871,6 +13069,7 @@ function promptTerminateStaff(sid){  const s=STAFF[sid]; if(!s) return;
       const offensiveItem=document.getElementById('termOffItemIn').value.trim();
       await push(ref(db,'logs/terminate'),{username:s.username,type:'Staff',by:ME,date:nowStr(),reason,modNote,offensiveItem});
       auditLog('Staff Terminated',`${s.username}: ${reason}`);
+      fireDiscordWebhook('staff_events',buildGenericEmbed('Staff Terminated',ME+' terminated **'+s.username+'** for: '+reason+'.','#cf222e')).catch(()=>{});
       // Force logout before removing - gives them a kick message
       await update(ref(db,`staff/${sid}`),{forceLogout:true}).catch(()=>{});
       await new Promise(r=>setTimeout(r,300));
@@ -14959,7 +15158,10 @@ if(navStaffSection) navStaffSection.onclick=()=>nav('staff-section');
 <script>
 // ── LOGIN BACKGROUND ANIMATION ──
 (function(){
+  let _loginAnimId=null;
   window.initLoginBgFn = function initLoginBg(){
+    // Cancel any previous loop before starting a new one
+    if(_loginAnimId){ cancelAnimationFrame(_loginAnimId); _loginAnimId=null; }
     const canvas=document.getElementById('loginBg');
     if(!canvas) return;
     const ctx=canvas.getContext('2d');
@@ -14967,7 +15169,6 @@ if(navStaffSection) navStaffSection.onclick=()=>nav('staff-section');
     let H=canvas.height=window.innerHeight;
     window.addEventListener('resize',()=>{W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;});
     let t=0;
-    let animId=null;
 
     // Larger glowing orbs
     const orbs=[
@@ -15049,9 +15250,8 @@ if(navStaffSection) navStaffSection.onclick=()=>nav('staff-section');
       }
 
       t+=0.012;
-      animId=requestAnimationFrame(draw);
+      _loginAnimId=requestAnimationFrame(draw);
     }
-    if(animId) cancelAnimationFrame(animId);
     draw();
   };
   document.addEventListener('DOMContentLoaded', window.initLoginBgFn);
