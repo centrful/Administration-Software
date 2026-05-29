@@ -609,7 +609,7 @@ body.sam-active .main{ background:#0d1117; }
     </div>
     <div class="menubar" id="menubar">
       <div style="position:relative;display:inline-block;">
-        <span id="menu-export" class="menu-item">&#x1F4E4; Export</span>
+        <span id="menu-export" class="menu-item">Export</span>
         <div class="dropdown" id="drop-export">
           <div class="drop-item" id="menu-export-snapshot">Full Panel Snapshot (JSON)</div>
           <div class="drop-item" id="menu-export-modlog">Moderation Log (JSON)</div>
@@ -619,13 +619,13 @@ body.sam-active .main{ background:#0d1117; }
         </div>
       </div>
       <div style="position:relative;display:inline-block;">
-        <span id="menu-prefs" class="menu-item">&#9881; Preferences</span>
+        <span id="menu-prefs" class="menu-item">Preferences</span>
         <div class="dropdown" id="drop-prefs" style="min-width:220px;">
           <div class="drop-item" id="menu-prefs-open">Open Preferences...</div>
         </div>
       </div>
       <div style="position:relative;display:inline-block;">
-        <span id="menu-tools" class="menu-item">&#128295; Tools</span>
+        <span id="menu-tools" class="menu-item">Tools</span>
         <div class="dropdown" id="drop-tools">
           <div class="drop-item" id="menu-tool-roblox">Roblox Lookup</div>
           <div class="drop-item" id="menu-tool-timestamp">Timestamp Converter</div>
@@ -636,7 +636,7 @@ body.sam-active .main{ background:#0d1117; }
         </div>
       </div>
       <div style="position:relative;display:inline-block;">
-        <span id="menu-help" class="menu-item">&#10067; Help</span>
+        <span id="menu-help" class="menu-item">Help</span>
         <div class="dropdown" id="drop-help">
           <div class="drop-item" id="menu-about">About Samaritan</div>
           <div class="drop-item" id="menu-shortcuts">Keyboard Shortcuts</div>
@@ -1167,11 +1167,11 @@ function glasgowPageBlocked(p){
   };
   // Category-level blocks: if the category key is blocked, all pages in it are blocked
   var catMap={
-    People:['accounts','useradmin','moderate','requests'],
+    People:['accounts','useradmin','moderate','requests','userconfig'],
     Moderation:['reputation','appeals','altdetect','msganalyze'],
     Staff:['staff','activity','messaging','suggestions','staffconfig'],
     Logs:['modlog','revokelog','suspendlog','terminatelog','warnlog','loginlog'],
-    Configuration:['userconfig','auditlog','alerts','adminlog'],
+    Configuration:['auditlog','alerts','adminlog'],
   };
   for(var cat in catMap){
     if(blocked.indexOf(cat)!==-1 && catMap[cat].indexOf(p)!==-1) return true;
@@ -2348,11 +2348,11 @@ function updateSidebar(){
 
   // Highlight active section
   const sectionMap={
-    people:['useradmin','moderate','accounts','requests'],
+    people:['useradmin','moderate','accounts','requests','userconfig'],
     moderation:['reputation','appeals','altdetect','msganalyze'],
     'staff-section':['staff','activity','messaging','suggestions','staffconfig','evaluations','calendar','staffreports'],
     logs:['modlog','revokelog','suspendlog','terminatelog','warnlog','loginlog','auditlog'],
-    configuration:['userconfig','alerts','adminlog','cflog'],
+    configuration:['alerts','adminlog','cflog'],
     machine:['siteconfig','statuslog','wipelog','robloxlog','badgemgmt','leakid','clearance','samlog','blacklist','discordconfig'],
   };
   document.querySelectorAll('.sb-section-link').forEach(el=>el.classList.remove('active'));
@@ -2376,11 +2376,11 @@ var SECTION_TABS={
 
 // Section → list of valid tab pages
 var SECTION_PAGES={
-  people:['useradmin','moderate','accounts','requests'],
+  people:['useradmin','moderate','accounts','requests','userconfig'],
   moderation:['reputation','appeals','altdetect','msganalyze'],
   'staff-section':['staff','activity','messaging','suggestions','staffconfig','evaluations','calendar','staffreports'],
   logs:['modlog','revokelog','suspendlog','terminatelog','warnlog','loginlog','auditlog'],
-  configuration:['alerts','userconfig','adminlog','cflog'],
+  configuration:['alerts','adminlog','cflog'],
   machine:['siteconfig','statuslog','wipelog','robloxlog','badgemgmt','leakid','clearance','samlog','blacklist','discordconfig'],
 };
 
@@ -2541,15 +2541,17 @@ function render(){
   // ── PEOPLE SECTION ──
   if(SECTION_PAGES.people.includes(page)){
     renderSection('People',[
-      {id:'useradmin', label:'👤 User Admin', perm:'canViewUserAdmin'},
-      {id:'moderate', label:'⚖️ Moderate', perm:'canModerateUsers'},
-      {id:'accounts', label:'📋 All Accounts'},
-      {id:'requests', label:'📬 Requests', perm:'canViewRequests'},
+      {id:'useradmin', label:'User Admin', perm:'canViewUserAdmin'},
+      {id:'moderate', label:'Moderate', perm:'canModerateUsers'},
+      {id:'accounts', label:'All Accounts'},
+      {id:'requests', label:'Requests', perm:'canViewRequests'},
+      {id:'userconfig', label:'User Config', perm:'canViewUserConfig'},
     ], inner=>{
       if(page==='useradmin') canDo('canViewUserAdmin')?renderUA(inner):inner.innerHTML=denied;
       else if(page==='moderate') canDo('canModerateUsers')?renderMod(inner):inner.innerHTML=denied;
       else if(page==='accounts') renderAccounts(inner);
       else if(page==='requests') canDo('canViewRequests')?renderRequests(inner):inner.innerHTML=denied;
+      else if(page==='userconfig') canDo('canViewUserConfig')?renderUserConfig(inner):inner.innerHTML=denied;
     }); return;
   }
 
@@ -2571,14 +2573,14 @@ function render(){
   // ── STAFF SECTION ──
   if(SECTION_PAGES['staff-section'].includes(page)){
     renderSection('Staff',[
-      {id:'staff', label:'[S] Registry', perm:'canViewStaff'},
+      {id:'staff', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><rect x="2" y="1" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/><circle cx="7" cy="5" r="1.8" stroke="currentColor" stroke-width="1.2"/><line x1="4.5" y1="9" x2="9.5" y2="9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Registry', perm:'canViewStaff'},
       {id:'activity', label:'📊 Activity', perm:'canViewStaffActivity'},
       {id:'calendar', label:'📅 Calendar', perm:'canViewStaffActivity'},
       {id:'messaging', label:'💬 Messaging', perm:'canSendStaffMessage'},
       {id:'suggestions', label:'💡 Suggestions', perm:'canViewSuggestions'},
       {id:'staffconfig', label:'⚙️ Staff Config', perm:'canViewStaffConfig'},
-      {id:'evaluations', label:'[EV] Evaluations', saOnly:true},
-      {id:'staffreports', label:'[!] Reports', perm:'canViewStaff'},
+      {id:'evaluations', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><rect x="2" y="1" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/><line x1="4.5" y1="4.5" x2="9.5" y2="4.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="4.5" y1="7" x2="9.5" y2="7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="4.5" y1="9.5" x2="7" y2="9.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Evaluations', saOnly:true},
+      {id:'staffreports', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><path d="M7 1L12.5 3.2v3.8c0 3-2.2 5-5.5 5.8C3.7 12 1.5 10 1.5 7V3.2L7 1z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><line x1="7" y1="4.5" x2="7" y2="7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="7" cy="9.2" r="0.8" fill="currentColor"/></svg>Reports', perm:'canViewStaff'},
     ], inner=>{
       if(page==='staff') canDo('canViewStaff')?renderStaff(inner):inner.innerHTML=denied;
       else if(page==='activity') canDo('canViewStaffActivity')?renderActivity(inner):inner.innerHTML=denied;
@@ -2615,13 +2617,11 @@ function render(){
   // ── CONFIGURATION SECTION ──
   if(SECTION_PAGES.configuration.includes(page)){
     renderSection('Configuration',[
-      {id:'alerts', label:'🔔 Site Alerts', perm:'canManageStaff'},
-      {id:'userconfig', label:'👤 User Config', perm:'canViewUserConfig'},
-      {id:'adminlog', label:'⚙️ Administrator', saOnly:true},
-      {id:'cflog', label:'🏷 Custom Fields Log', saOnly:true},
+      {id:'alerts', label:'Site Alerts', perm:'canManageStaff'},
+      {id:'adminlog', label:'Administrator', saOnly:true},
+      {id:'cflog', label:'Custom Fields Log', saOnly:true},
     ], inner=>{
       if(page==='alerts') (canDo('canManageStaff')||isSuperAdmin())?renderAlerts(inner):inner.innerHTML=denied;
-      else if(page==='userconfig') canDo('canViewUserConfig')?renderUserConfig(inner):inner.innerHTML=denied;
       else if(page==='adminlog') isSuperAdmin()?renderAdminLog(inner):inner.innerHTML=denied;
       else if(page==='cflog') isSuperAdmin()?renderCFLog(inner):inner.innerHTML=denied;
     }); return;
@@ -2632,14 +2632,14 @@ function render(){
     renderSection('Machine Management',[
       {id:'siteconfig', label:'⚙️ Config', smOnly:true},
       {id:'statuslog', label:'📶 Status Log', smOnly:true},
-      {id:'wipelog', label:'[W] Wipe Log', smOnly:true},
+      {id:'wipelog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><polyline points="3,4 11,4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M5 4V3h4v1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 4l.5 7h2l.5-7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Wipe Log', smOnly:true},
       {id:'robloxlog', label:'🎮 Roblox Log', smOnly:true},
       {id:'badgemgmt', label:'🏅 Badges', smOnly:true},
       {id:'leakid', label:'🔍 Leak ID', smOnly:true},
       {id:'clearance', label:'🔐 Clearance', smOnly:true},
-      {id:'samlog', label:'SAM Log', smOnly:true},
+      {id:'samlog', label:'<svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="margin-right:4px;flex-shrink:0;"><path d="M6 1L11 6L6 11L1 6Z" stroke="currentColor" stroke-width="1.3"/><circle cx="6" cy="6" r="1.5" fill="currentColor"/></svg>SAM Log', smOnly:true},
       {id:'blacklist', label:'🚫 IP Blacklist', smOnly:true},
-      {id:'discordconfig', label:'[DC] Discord Config', smOnly:true},
+      {id:'discordconfig', label:'<svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="margin-right:4px;flex-shrink:0;"><path d="M6.5 7.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2M9.5 7.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2" fill="currentColor"/><path d="M13.5 1.5A2 2 0 0 0 11.5 0h-7A2 2 0 0 0 2.5 2v8a2 2 0 0 0 2 2h7l-1-3 2.5 2.5V1.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" fill="none"/></svg>Discord Config', smOnly:true},
     ], inner=>{
       if(!isSoftwareManager()){ inner.innerHTML=denied; return; }
       if(page==='siteconfig') renderSiteConfig(inner);
@@ -3042,26 +3042,57 @@ async function fireDiscordWebhook(eventKey, embedData){
     if(!snap.exists()) return;
     var cfg=snap.val()||{};
     if(!cfg.enabled) return;
-    var wh=cfg.webhooks&&cfg.webhooks[eventKey]&&cfg.webhooks[eventKey].enabled!==false&&cfg.webhooks[eventKey].url
-      ?cfg.webhooks[eventKey].url
-      :cfg.defaultWebhook||'';
+    // Pick the correct webhook URL: channel-specific if set and enabled, else default
+    var whCfg=cfg.webhooks&&cfg.webhooks[eventKey];
+    var whEnabled=!whCfg||(whCfg.enabled!==false);
+    if(!whEnabled) return; // channel explicitly disabled
+    var wh=(whCfg&&whCfg.url&&whCfg.url.trim())||(cfg.defaultWebhook&&cfg.defaultWebhook.trim())||'';
     if(!wh) return;
     var embeds=cfg.embeds||{};
     var color=parseInt((embeds.embed_color||'#0969da').replace('#',''),16);
     var roles=cfg.roles||{};
     var pingMap={mod_actions:'ping_mod',appeals:'ping_appeals',alerts:'ping_alerts',staffReports:'ping_reports',beehive:'ping_beehive'};
     var roleId=roles[pingMap[eventKey]||''];
+    var staffMember=STAFF[ME]||{};
+    var staffAvatar=staffMember.avatarUrl||'';
+    var staffName=staffMember.username||ME||'Samaritan';
     var embed={...embedData,color:color};
     if(embeds.show_timestamp!==false) embed.timestamp=new Date().toISOString();
     if(embeds.footer_text) embed.footer={text:embeds.footer_text};
-    var body={username:'Samaritan Systems',content:roleId?'<@&'+roleId+'>':'',embeds:[embed]};
-    var resp=await fetch(wh,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var webhookBody={
+      username:staffName,
+      content:roleId?'<@&'+roleId+'>':'',
+      embeds:[embed]
+    };
+    if(embeds.show_avatar!==false&&staffAvatar){
+      webhookBody.avatar_url=staffAvatar;
+    }
+    var resp=await fetch(wh,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(webhookBody)});
     var ok=resp.ok||resp.status===204;
-    // Log delivery
     await push(ref(db,'meta/discordConfig/deliveryLog'),{event:eventKey,ok:ok,date:nowStr(),ts:Date.now()}).catch(function(){});
   }catch(e){}
 }
+
+// Build a Discord embed in the Watchcat style (matches image)
+function buildModEmbed(staffName, action, targetUser, reason, expiryStr, expiryTs){
+  var isBan=action.startsWith('Ban');
+  var isSusp=action==='Suspend';
+  var isTemp=expiryTs>0;
+  var actionVerb=isBan?'banned':isSusp?'suspended':action.toLowerCase()+'d';
+  var desc=staffName+' has **'+actionVerb+'** '+targetUser+' for reason '+reason;
+  if(isTemp&&expiryStr){
+    desc+='.\nThis punishment lasts until **'+expiryStr+'**!';
+  }
+  var now=new Date();
+  var tsStr='Time || '+now.toLocaleDateString(undefined,{weekday:'long',year:'numeric',month:'long',day:'numeric'})+' '+now.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',hour12:true});
+  desc+='\n'+tsStr;
+  return {
+    description:desc,
+    color:isBan?0xcf222e:isSusp?0x9a6700:0x0969da,
+  };
+}
 window.fireDiscordWebhook=fireDiscordWebhook;
+window.buildModEmbed=buildModEmbed;
 
 // ══════════════════════════════════════════════════════
 // PREFERENCES OVERLAY
@@ -5354,26 +5385,66 @@ function renderModLog(c){
 }
 
 function renderRevokeLog(c){
-  const entries=Object.entries(REVOKE_LOG).sort((a,b)=>a[1].date>b[1].date?-1:1);
-  const tbl=entries.length===0?'<i style="color:var(--c-text2);">No revocations on record.</i>':`
-  <div class="tbl-wrap"><table class="tbl" id="revoke-tbl">
-    <tr><th>User</th><th>Action</th><th>Orig. Mod</th><th>Revoked By</th><th>Date</th><th>Note</th>${isSuperAdmin()?'<th>Admin</th>':''}</tr>
-    ${entries.map(([lid,r])=>`<tr data-search="${[(r.user||''),(r.origMod||''),(r.revokedBy||''),(r.action||''),(r.note||'')].join(' ').toLowerCase()}">
-      <td>${r.user==='[WIPED]'?'<span class="wiped">[WIPED]</span>':tinyAvatar(r.user,avatarUrlFor(r.user))}</td>
-      <td>${r.action}</td><td>${tinyAvatar(r.origMod,avatarUrlFor(r.origMod))}</td><td>${tinyAvatar(r.revokedBy,avatarUrlFor(r.revokedBy))}</td><td style="font-size:10px;">${r.date}</td><td>${r.note||''}</td>
-      ${isSuperAdmin()?`<td>${deleteLogBtn('logs/revoke',lid)}</td>`:''}
-    </tr>`).join('')}
-  </table></div>`;
+  const allEntries=Object.entries(REVOKE_LOG).sort((a,b)=>a[1].date>b[1].date?-1:1);
+  const uniqueMods=[...new Set(allEntries.flatMap(([,r])=>[r.origMod,r.revokedBy]).filter(Boolean))];
+  const uniqueActions=[...new Set(allEntries.map(([,r])=>r.action).filter(Boolean))];
   c.innerHTML=`<div class="ptitle">Revoke Log</div>
-  <div class="page-search">
-    <div class="search-wrap">
-      <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-      <input type="text" id="revoke-search" placeholder="Search user, moderator, action…" oninput="filterTableById('revoke-tbl','revoke-count',this.value)"/>
+  <div class="sbox"><div class="stitle">Filters</div><div class="sbody">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+      <div style="font-size:11px;color:var(--c-text);">Action:</div>
+      <select id="rv-flt-action" style="width:110px;"><option value="">All</option>${uniqueActions.map(a=>`<option>${a}</option>`).join('')}</select>
+      <div style="font-size:11px;color:var(--c-text);">Revoked By:</div>
+      <select id="rv-flt-mod" style="width:110px;"><option value="">All</option>${uniqueMods.map(m=>`<option>${m}</option>`).join('')}</select>
+      <div style="font-size:11px;color:var(--c-text);">User:</div>
+      <input type="text" id="rv-flt-user" style="width:90px;" placeholder="username"/>
+      <div style="font-size:11px;color:var(--c-text);">From:</div>
+      <input type="date" id="rv-flt-from" style="width:110px;"/>
+      <div style="font-size:11px;color:var(--c-text);">To:</div>
+      <input type="date" id="rv-flt-to" style="width:110px;"/>
+      <button class="btn small" id="rv-btn-apply">Apply</button>
+      <button class="btn small" id="rv-btn-clear">Clear</button>
     </div>
-    <span class="search-count" id="revoke-count">${entries.length} entries</span>
-  </div>
-  <div class="sbox"><div class="stitle">Revoked Punishments</div><div class="sbody">${tbl}</div></div>`;
-  bindDeleteLogBtns(c);
+    <div id="rv-flt-count" style="font-size:10px;color:var(--c-text2);margin-top:3px;"></div>
+  </div></div>
+  <div class="sbox"><div class="stitle">Revoked Punishments</div><div class="sbody" id="revoke-tbl-body"></div></div>`;
+
+  function applyRevokeFilters(){
+    const fAction=(document.getElementById('rv-flt-action')||{}).value||'';
+    const fMod=(document.getElementById('rv-flt-mod')||{}).value||'';
+    const fUser=((document.getElementById('rv-flt-user')||{}).value||'').trim().toLowerCase();
+    const fFrom=(document.getElementById('rv-flt-from')||{}).value||'';
+    const fTo=(document.getElementById('rv-flt-to')||{}).value||'';
+    let entries=allEntries.filter(([,r])=>{
+      if(fAction&&r.action!==fAction) return false;
+      if(fMod&&r.revokedBy!==fMod&&r.origMod!==fMod) return false;
+      if(fUser&&!(r.user||'').toLowerCase().includes(fUser)) return false;
+      if(fFrom&&(r.date||'').substring(0,10)<fFrom) return false;
+      if(fTo&&(r.date||'').substring(0,10)>fTo) return false;
+      return true;
+    });
+    const countEl=document.getElementById('rv-flt-count');
+    if(countEl) countEl.textContent=`Showing ${entries.length} of ${allEntries.length} entries`;
+    const body=document.getElementById('revoke-tbl-body');
+    if(!body) return;
+    body.innerHTML=entries.length===0?`<div style="text-align:center;padding:16px 0;color:var(--c-text2);">No entries match your filters.</div>`:`
+    <div class="tbl-wrap"><table class="tbl">
+      <tr><th>User</th><th>Action</th><th>Orig. Mod</th><th>Revoked By</th><th>Date</th><th>Note</th>${isSuperAdmin()?'<th>Admin</th>':''}</tr>
+      ${entries.map(([lid,r])=>`<tr>
+        <td>${r.user==='[WIPED]'?'<span class="wiped">[WIPED]</span>':tinyAvatar(r.user,avatarUrlFor(r.user))}</td>
+        <td>${r.action}</td><td>${tinyAvatar(r.origMod,avatarUrlFor(r.origMod))}</td>
+        <td>${tinyAvatar(r.revokedBy,avatarUrlFor(r.revokedBy))}</td>
+        <td style="font-size:10px;">${r.date}</td><td>${r.note||''}</td>
+        ${isSuperAdmin()?`<td>${deleteLogBtn('logs/revoke',lid)}</td>`:''}
+      </tr>`).join('')}
+    </table></div>`;
+    bindDeleteLogBtns(body);
+  }
+  applyRevokeFilters();
+  document.getElementById('rv-btn-apply').onclick=applyRevokeFilters;
+  document.getElementById('rv-btn-clear').onclick=()=>{
+    ['rv-flt-action','rv-flt-mod','rv-flt-user','rv-flt-from','rv-flt-to'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+    applyRevokeFilters();
+  };
 }
 
 function renderSuspendLog(c){
@@ -5388,17 +5459,69 @@ function renderSuspendLog(c){
       ${isSuperAdmin()?`<td>${deleteLogBtn('logs/suspend',lid)}</td>`:''}
     </tr>`).join('')}
   </table></div>`;
+  const uniqueByArr=[...new Set(entries.map(([,r])=>r.by).filter(Boolean))];
+  const uniqueReasonsArr=[...new Set(entries.map(([,r])=>r.reason).filter(Boolean))];
   c.innerHTML=`<div class="ptitle">Suspension Log</div>
-  <div class="page-search">
-    <div class="search-wrap">
-      <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-      <input type="text" id="suspend-search" placeholder="Search username, moderator, reason…" oninput="filterTableById('suspend-tbl','suspend-count',this.value)"/>
+  <div class="sbox"><div class="stitle">Filters</div><div class="sbody">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+      <div style="font-size:11px;color:var(--c-text);">By:</div>
+      <select id="sp-flt-by" style="width:110px;"><option value="">All</option>${uniqueByArr.map(m=>`<option>${m}</option>`).join('')}</select>
+      <div style="font-size:11px;color:var(--c-text);">Reason:</div>
+      <select id="sp-flt-reason" style="width:130px;"><option value="">All</option>${uniqueReasonsArr.map(a=>`<option>${a}</option>`).join('')}</select>
+      <div style="font-size:11px;color:var(--c-text);">Staff:</div>
+      <input type="text" id="sp-flt-user" style="width:90px;" placeholder="username"/>
+      <div style="font-size:11px;color:var(--c-text);">From:</div>
+      <input type="date" id="sp-flt-from" style="width:110px;"/>
+      <div style="font-size:11px;color:var(--c-text);">To:</div>
+      <input type="date" id="sp-flt-to" style="width:110px;"/>
+      <button class="btn small" id="sp-btn-apply">Apply</button>
+      <button class="btn small" id="sp-btn-clear">Clear</button>
     </div>
-    <span class="search-count" id="suspend-count">${entries.length} entries</span>
-  </div>
-  <div class="sbox"><div class="stitle">Staff Suspensions</div><div class="sbody">${tbl}</div></div>`;
+    <div id="sp-flt-count" style="font-size:10px;color:var(--c-text2);margin-top:3px;"></div>
+  </div></div>
+  <div class="sbox"><div class="stitle">Staff Suspensions</div><div class="sbody" id="suspend-tbl-body">${tbl}</div></div>`;
   c.querySelectorAll('.edit-susp-btn').forEach(btn=>{btn.onclick=()=>openEditSuspend(btn.dataset.lid);});
   bindDeleteLogBtns(c);
+
+  function applySuspendFilters(){
+    const fBy=(document.getElementById('sp-flt-by')||{}).value||'';
+    const fReason=(document.getElementById('sp-flt-reason')||{}).value||'';
+    const fUser=((document.getElementById('sp-flt-user')||{}).value||'').trim().toLowerCase();
+    const fFrom=(document.getElementById('sp-flt-from')||{}).value||'';
+    const fTo=(document.getElementById('sp-flt-to')||{}).value||'';
+    let filtered=entries.filter(([,r])=>{
+      if(fBy&&r.by!==fBy) return false;
+      if(fReason&&r.reason!==fReason) return false;
+      if(fUser&&!(r.username||'').toLowerCase().includes(fUser)) return false;
+      if(fFrom&&(r.date||'').substring(0,10)<fFrom) return false;
+      if(fTo&&(r.date||'').substring(0,10)>fTo) return false;
+      return true;
+    });
+    const countEl=document.getElementById('sp-flt-count');
+    if(countEl) countEl.textContent=`Showing ${filtered.length} of ${entries.length} entries`;
+    const body=document.getElementById('suspend-tbl-body');
+    if(!body) return;
+    if(!filtered.length){ body.innerHTML='<div style="text-align:center;padding:16px 0;color:var(--c-text2);">No entries match your filters.</div>'; return; }
+    body.innerHTML=`<div class="tbl-wrap"><table class="tbl" id="suspend-tbl">
+      <tr><th>Username</th><th>Action</th><th>By</th><th>Date</th><th>Reason</th><th>Mod Note</th><th>Offensive Item</th><th>Edit</th>${isSuperAdmin()?'<th>Admin</th>':''}</tr>
+      ${filtered.map(([lid,r])=>`<tr>
+        <td>${tinyAvatar(r.username,avatarUrlFor(r.username))}</td><td>${r.action}</td><td>${tinyAvatar(r.by,avatarUrlFor(r.by))}</td>
+        <td style="font-size:10px;">${r.date}</td>
+        <td style="max-width:80px;white-space:normal;">${r.reason||''}</td>
+        <td style="max-width:80px;white-space:normal;">${r.modNote||''}</td>
+        <td>${r.offensiveItem||''}</td>
+        <td><button class="btn small edit-susp-btn" data-lid="${lid}">Edit</button></td>
+        ${isSuperAdmin()?`<td>${deleteLogBtn('logs/suspend',lid)}</td>`:''}
+      </tr>`).join('')}
+    </table></div>`;
+    body.querySelectorAll('.edit-susp-btn').forEach(btn=>{btn.onclick=()=>openEditSuspend(btn.dataset.lid);});
+    if(isSuperAdmin()) bindDeleteLogBtns(body);
+  }
+  document.getElementById('sp-btn-apply').onclick=applySuspendFilters;
+  document.getElementById('sp-btn-clear').onclick=()=>{
+    ['sp-flt-by','sp-flt-reason','sp-flt-user','sp-flt-from','sp-flt-to'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+    applySuspendFilters();
+  };
 }
 
 function renderTerminateLog(c){
@@ -5412,16 +5535,66 @@ function renderTerminateLog(c){
       ${isSuperAdmin()?`<td>${deleteLogBtn('logs/terminate',lid)}</td>`:''}
     </tr>`).join('')}
   </table></div>`;
+  const uniqueTermBy=[...new Set(entries.map(([,r])=>r.by).filter(Boolean))];
+  const uniqueTermReasons=[...new Set(entries.map(([,r])=>r.reason).filter(Boolean))];
   c.innerHTML=`<div class="ptitle">Termination Log</div>
-  <div class="page-search">
-    <div class="search-wrap">
-      <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-      <input type="text" id="terminate-search" placeholder="Search username, moderator, reason…" oninput="filterTableById('terminate-tbl','terminate-count',this.value)"/>
+  <div class="sbox"><div class="stitle">Filters</div><div class="sbody">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+      <div style="font-size:11px;color:var(--c-text);">By:</div>
+      <select id="tm-flt-by" style="width:110px;"><option value="">All</option>${uniqueTermBy.map(m=>`<option>${m}</option>`).join('')}</select>
+      <div style="font-size:11px;color:var(--c-text);">Reason:</div>
+      <select id="tm-flt-reason" style="width:130px;"><option value="">All</option>${uniqueTermReasons.map(a=>`<option>${a}</option>`).join('')}</select>
+      <div style="font-size:11px;color:var(--c-text);">Username:</div>
+      <input type="text" id="tm-flt-user" style="width:90px;" placeholder="username"/>
+      <div style="font-size:11px;color:var(--c-text);">From:</div>
+      <input type="date" id="tm-flt-from" style="width:110px;"/>
+      <div style="font-size:11px;color:var(--c-text);">To:</div>
+      <input type="date" id="tm-flt-to" style="width:110px;"/>
+      <button class="btn small" id="tm-btn-apply">Apply</button>
+      <button class="btn small" id="tm-btn-clear">Clear</button>
     </div>
-    <span class="search-count" id="terminate-count">${entries.length} entries</span>
-  </div>
-  <div class="sbox"><div class="stitle">Terminated Accounts</div><div class="sbody">${tbl}</div></div>`;
+    <div id="tm-flt-count" style="font-size:10px;color:var(--c-text2);margin-top:3px;"></div>
+  </div></div>
+  <div class="sbox"><div class="stitle">Terminated Accounts</div><div class="sbody" id="terminate-tbl-body">${tbl}</div></div>`;
   bindDeleteLogBtns(c);
+
+  function applyTerminateFilters(){
+    const fBy=(document.getElementById('tm-flt-by')||{}).value||'';
+    const fReason=(document.getElementById('tm-flt-reason')||{}).value||'';
+    const fUser=((document.getElementById('tm-flt-user')||{}).value||'').trim().toLowerCase();
+    const fFrom=(document.getElementById('tm-flt-from')||{}).value||'';
+    const fTo=(document.getElementById('tm-flt-to')||{}).value||'';
+    let filtered=entries.filter(([,r])=>{
+      if(fBy&&r.by!==fBy) return false;
+      if(fReason&&r.reason!==fReason) return false;
+      if(fUser&&!(r.username||'').toLowerCase().includes(fUser)) return false;
+      if(fFrom&&(r.date||'').substring(0,10)<fFrom) return false;
+      if(fTo&&(r.date||'').substring(0,10)>fTo) return false;
+      return true;
+    });
+    const countEl=document.getElementById('tm-flt-count');
+    if(countEl) countEl.textContent=`Showing ${filtered.length} of ${entries.length} entries`;
+    const body=document.getElementById('terminate-tbl-body');
+    if(!body) return;
+    if(!filtered.length){ body.innerHTML='<div style="text-align:center;padding:16px 0;color:var(--c-text2);">No entries match your filters.</div>'; return; }
+    body.innerHTML=`<div class="tbl-wrap"><table class="tbl">
+      <tr><th>Username</th><th>Type</th><th>By</th><th>Date</th><th>Reason</th><th>Mod Note</th><th>Offensive Item</th>${isSuperAdmin()?'<th>Admin</th>':''}</tr>
+      ${filtered.map(([lid,r])=>`<tr>
+        <td>${tinyAvatar(r.username,avatarUrlFor(r.username))}</td><td>${r.type||'Staff'}</td>
+        <td>${tinyAvatar(r.by,avatarUrlFor(r.by))}</td><td style="font-size:10px;">${r.date}</td>
+        <td style="max-width:80px;white-space:normal;">${r.reason||''}</td>
+        <td style="max-width:80px;white-space:normal;">${r.modNote||''}</td>
+        <td>${r.offensiveItem||''}</td>
+        ${isSuperAdmin()?`<td>${deleteLogBtn('logs/terminate',lid)}</td>`:''}
+      </tr>`).join('')}
+    </table></div>`;
+    if(isSuperAdmin()) bindDeleteLogBtns(body);
+  }
+  document.getElementById('tm-btn-apply').onclick=applyTerminateFilters;
+  document.getElementById('tm-btn-clear').onclick=()=>{
+    ['tm-flt-by','tm-flt-reason','tm-flt-user','tm-flt-from','tm-flt-to'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+    applyTerminateFilters();
+  };
 }
 
 function renderLoginLog(c){
@@ -5746,25 +5919,64 @@ function showIPComparison(ip, entries){
 
 
 function renderAuditLog(c){
-  const entries=Object.entries(AUDIT_LOG).sort((a,b)=>a[1].date>b[1].date?-1:1).slice(0,200);
-  const tbl=entries.length===0?'<i style="color:var(--c-text2);">No audit entries yet.</i>':`
-  <div class="tbl-wrap"><table class="tbl" id="audit-tbl">
-    <tr><th>Action</th><th>Detail</th><th>By</th><th>Date</th>${isSuperAdmin()?'<th>Admin</th>':''}</tr>
-    ${entries.map(([lid,r])=>`<tr data-search="${[(r.action||''),(r.detail||''),(r.by||'')].join(' ').toLowerCase()}">
-      <td>${r.action}</td><td>${r.detail||''}</td><td>${tinyAvatar(r.by,avatarUrlFor(r.by))}</td><td style="font-size:10px;">${r.date}</td>
-      ${isSuperAdmin()?`<td>${deleteLogBtn('logs/audit',lid)}</td>`:''}
-    </tr>`).join('')}
-  </table></div>`;
+  const allEntries=Object.entries(AUDIT_LOG).sort((a,b)=>a[1].date>b[1].date?-1:1).slice(0,500);
+  const uniqueBy=[...new Set(allEntries.map(([,r])=>r.by).filter(Boolean))];
+  const uniqueActions=[...new Set(allEntries.map(([,r])=>r.action).filter(Boolean))];
   c.innerHTML=`<div class="ptitle">Audit Log</div>
-  <div class="page-search">
-    <div class="search-wrap">
-      <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-      <input type="text" id="audit-search" placeholder="Search action, detail, staff…" oninput="filterTableById('audit-tbl','audit-count',this.value)"/>
+  <div class="sbox"><div class="stitle">Filters</div><div class="sbody">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+      <div style="font-size:11px;color:var(--c-text);">By:</div>
+      <select id="au-flt-by" style="width:110px;"><option value="">All</option>${uniqueBy.map(m=>`<option>${m}</option>`).join('')}</select>
+      <div style="font-size:11px;color:var(--c-text);">Action:</div>
+      <select id="au-flt-action" style="width:160px;"><option value="">All</option>${uniqueActions.map(a=>`<option>${a}</option>`).join('')}</select>
+      <div style="font-size:11px;color:var(--c-text);">Keyword:</div>
+      <input type="text" id="au-flt-kw" style="width:90px;" placeholder="search detail"/>
+      <div style="font-size:11px;color:var(--c-text);">From:</div>
+      <input type="date" id="au-flt-from" style="width:110px;"/>
+      <div style="font-size:11px;color:var(--c-text);">To:</div>
+      <input type="date" id="au-flt-to" style="width:110px;"/>
+      <button class="btn small" id="au-btn-apply">Apply</button>
+      <button class="btn small" id="au-btn-clear">Clear</button>
     </div>
-    <span class="search-count" id="audit-count">${entries.length} entries</span>
-  </div>
-  <div class="sbox"><div class="stitle">All Admin Actions</div><div class="sbody">${tbl}</div></div>`;
-  bindDeleteLogBtns(c);
+    <div id="au-flt-count" style="font-size:10px;color:var(--c-text2);margin-top:3px;"></div>
+  </div></div>
+  <div class="sbox"><div class="stitle">All Admin Actions</div><div class="sbody" id="audit-tbl-body"></div></div>`;
+
+  function applyAuditFilters(){
+    const fBy=(document.getElementById('au-flt-by')||{}).value||'';
+    const fAction=(document.getElementById('au-flt-action')||{}).value||'';
+    const fKw=((document.getElementById('au-flt-kw')||{}).value||'').trim().toLowerCase();
+    const fFrom=(document.getElementById('au-flt-from')||{}).value||'';
+    const fTo=(document.getElementById('au-flt-to')||{}).value||'';
+    let entries=allEntries.filter(([,r])=>{
+      if(fBy&&r.by!==fBy) return false;
+      if(fAction&&r.action!==fAction) return false;
+      if(fKw&&!(r.detail||'').toLowerCase().includes(fKw)&&!(r.action||'').toLowerCase().includes(fKw)) return false;
+      if(fFrom&&(r.date||'').substring(0,10)<fFrom) return false;
+      if(fTo&&(r.date||'').substring(0,10)>fTo) return false;
+      return true;
+    });
+    const countEl=document.getElementById('au-flt-count');
+    if(countEl) countEl.textContent=`Showing ${entries.length} of ${allEntries.length} entries`;
+    const body=document.getElementById('audit-tbl-body');
+    if(!body) return;
+    body.innerHTML=entries.length===0?`<div style="text-align:center;padding:16px 0;color:var(--c-text2);">No entries match.</div>`:`
+    <div class="tbl-wrap"><table class="tbl">
+      <tr><th>Action</th><th>Detail</th><th>By</th><th>Date</th>${isSuperAdmin()?'<th>Admin</th>':''}</tr>
+      ${entries.map(([lid,r])=>`<tr>
+        <td style="font-size:11px;">${r.action}</td><td style="max-width:200px;white-space:normal;font-size:11px;">${r.detail||''}</td>
+        <td>${tinyAvatar(r.by,avatarUrlFor(r.by))}</td><td style="font-size:10px;">${r.date}</td>
+        ${isSuperAdmin()?`<td>${deleteLogBtn('logs/audit',lid)}</td>`:''}
+      </tr>`).join('')}
+    </table></div>`;
+    bindDeleteLogBtns(body);
+  }
+  applyAuditFilters();
+  document.getElementById('au-btn-apply').onclick=applyAuditFilters;
+  document.getElementById('au-btn-clear').onclick=()=>{
+    ['au-flt-by','au-flt-action','au-flt-kw','au-flt-from','au-flt-to'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+    applyAuditFilters();
+  };
 }
 
 function openEditSuspend(lid){
@@ -8382,6 +8594,66 @@ function renderWarnLog(c){
       }).join('')
       +'</table></div>')
     +'</div></div>';
+
+  // Add search/filter bar above history
+  var histBox=c.querySelector('.stitle');
+  // inject search UI before history table
+  var histDiv=c.querySelectorAll('.sbox')[1];
+  if(histDiv){
+    var filterDiv=document.createElement('div');
+    filterDiv.className='sbox';
+    filterDiv.innerHTML='<div class="stitle">Filters</div><div class="sbody"><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">'
+      +'<div style="font-size:11px;color:var(--c-text);">Staff:</div><input type="text" id="wl-flt-user" style="width:90px;" placeholder="username"/>'
+      +'<div style="font-size:11px;color:var(--c-text);">Severity:</div><select id="wl-flt-sev" style="width:110px;"><option value="">All</option><option value="NOTE">Note</option><option value="WARNING">Warning</option><option value="FINAL WARNING">Final Warning</option></select>'
+      +'<div style="font-size:11px;color:var(--c-text);">Issued By:</div><input type="text" id="wl-flt-by" style="width:90px;" placeholder="username"/>'
+      +'<div style="font-size:11px;color:var(--c-text);">From:</div><input type="date" id="wl-flt-from" style="width:110px;"/>'
+      +'<div style="font-size:11px;color:var(--c-text);">To:</div><input type="date" id="wl-flt-to" style="width:110px;"/>'
+      +'<button class="btn small" id="wl-btn-apply">Apply</button>'
+      +'<button class="btn small" id="wl-btn-clear">Clear</button>'
+      +'</div><div id="wl-flt-count" style="font-size:10px;color:var(--c-text2);margin-top:3px;"></div></div>';
+    histDiv.parentNode.insertBefore(filterDiv, histDiv);
+  }
+
+  function applyWarnFilters(){
+    const fUser=((document.getElementById('wl-flt-user')||{}).value||'').trim().toLowerCase();
+    const fSev=(document.getElementById('wl-flt-sev')||{}).value||'';
+    const fBy=((document.getElementById('wl-flt-by')||{}).value||'').trim().toLowerCase();
+    const fFrom=(document.getElementById('wl-flt-from')||{}).value||'';
+    const fTo=(document.getElementById('wl-flt-to')||{}).value||'';
+    let filtered=entries.filter(([,r])=>{
+      if(fUser&&!(r.username||'').toLowerCase().includes(fUser)) return false;
+      if(fSev&&r.severity!==fSev) return false;
+      if(fBy&&!(r.by||r.issuedBy||r.from||r.mod||r.reviewer||''  ).toLowerCase().includes(fBy)) return false;
+      if(fFrom&&(r.date||r.ts&&new Date(r.ts).toISOString()||'').substring(0,10)<fFrom) return false;
+      if(fTo&&(r.date||r.ts&&new Date(r.ts).toISOString()||'').substring(0,10)>fTo) return false;
+      return true;
+    });
+    const countEl=document.getElementById('wl-flt-count');
+    if(countEl) countEl.textContent=`Showing ${filtered.length} of ${entries.length} entries`;
+    var histBody=c.querySelectorAll('.sbox').length>1?c.querySelectorAll('.sbox')[c.querySelectorAll('.sbox').length-1].querySelector('.sbody'):null;
+    if(!histBody) return;
+    if(!filtered.length){ histBody.innerHTML='<i style="color:var(--c-text2);">No entries match your filters.</i>'; return; }
+    histBody.innerHTML='<div class="tbl-wrap"><table class="tbl">'
+      +'<tr><th>Staff</th><th>Severity</th><th>Reason</th><th>Issued By</th><th>Date</th>'+(isSuperAdmin()?'<th>Admin</th>':'')+'</tr>'
+      +filtered.map(function(e){
+        var lid=e[0],r=e[1];
+        var sevColor=r.severity==='FINAL WARNING'?'#cf222e':r.severity==='WARNING'?'#9a6700':'#1a7f37';
+        return '<tr>'
+          +'<td>'+tinyAvatar(r.username,avatarUrlFor(r.username))+'</td>'
+          +'<td><span style="font-size:10px;font-weight:bold;color:'+sevColor+';">'+r.severity+'</span></td>'
+          +'<td style="max-width:200px;white-space:normal;">'+r.reason+'</td>'
+          +'<td>'+tinyAvatar(r.by,avatarUrlFor(r.by))+'</td>'
+          +'<td style="font-size:10px;">'+r.date+'</td>'
+          +(isSuperAdmin()?'<td>'+deleteLogBtn('logs/staffWarnings',lid)+'</td>':'')+'</tr>';
+      }).join('')
+      +'</table></div>';
+    if(isSuperAdmin()) bindDeleteLogBtns(histBody);
+  }
+  const wlApply=document.getElementById('wl-btn-apply'); if(wlApply) wlApply.onclick=applyWarnFilters;
+  const wlClear=document.getElementById('wl-btn-clear'); if(wlClear) wlClear.onclick=()=>{
+    ['wl-flt-user','wl-flt-sev','wl-flt-by','wl-flt-from','wl-flt-to'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+    applyWarnFilters();
+  };
 
   var submitBtn=c.querySelector('#warn-submit');
   if(submitBtn) submitBtn.onclick=async function(){
@@ -12165,6 +12437,13 @@ async function executeModAction(uid, u, action, reason, note){
   await push(ref(db,'logs/moderation'),{user:u.username,action,mod:ME,date:nowStr(),reason:reason||'',note:(note||'')+watchTag});
   auditLog('Player Moderated',`${u.username}: ${action}${watchTag}`);
 
+  // ── Fire Discord webhook for mod action ──
+  try{
+    var _staffName=(STAFF[ME]&&STAFF[ME].username)||ME;
+    var _embed=buildModEmbed(_staffName,action,u.username,reason||'No reason',_exStr,_exTs);
+    fireDiscordWebhook('mod_actions',_embed).catch(function(){});
+  }catch(e){}
+
   // ── Push in-game notification/kick command ──
   const gameAction=buildGameAction(action,u.username,reason,note,_exStr,_exTs,ME);
   if(gameAction){
@@ -14239,7 +14518,7 @@ function runAdvancedSearch(){
 }
 
 function setupMenus(){
-  const menus=[['file','drop-file'],['view','drop-view'],['tools','drop-tools'],['help','drop-help']];
+  const menus=[['file','drop-file'],['view','drop-view'],['export','drop-export'],['prefs','drop-prefs'],['tools','drop-tools'],['help','drop-help']];
   menus.forEach(([name,dropId])=>{
     const trigger=document.getElementById('menu-'+name);
     const drop=document.getElementById(dropId);
