@@ -2558,10 +2558,10 @@ function render(){
   // ── MODERATION SECTION ──
   if(SECTION_PAGES.moderation.includes(page)){
     renderSection('Moderation',[
-      {id:'reputation', label:'⭐ Reputation', perm:'canViewContentModeration'},
-      {id:'appeals', label:'⚖️ Appeals', perm:'canViewAppealLog'},
-      {id:'altdetect', label:'🔗 Alt Detection', perm:'canViewContentModeration'},
-      {id:'msganalyze', label:'💬 Msg Analyze', perm:'canViewMessageAnalyze'},
+      {id:'reputation', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><polygon points="7,1 8.8,5.2 13.4,5.6 10,8.6 11,13.1 7,10.6 3,13.1 4,8.6 0.6,5.6 5.2,5.2" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>Reputation', perm:'canViewContentModeration'},
+      {id:'appeals', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><rect x="2" y="2" width="10" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/><line x1="4.5" y1="5" x2="9.5" y2="5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="4.5" y1="7.5" x2="7.5" y2="7.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Appeals', perm:'canViewAppealLog'},
+      {id:'altdetect', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><circle cx="4.5" cy="5" r="2" stroke="currentColor" stroke-width="1.2"/><circle cx="9.5" cy="5" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M1 12c0-2 1.5-3 3.5-3M13 12c0-2-1.5-3-3.5-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="6.5" y1="5" x2="7.5" y2="5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Alt Detection', perm:'canViewContentModeration'},
+      {id:'msganalyze', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><path d="M2 2h10a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H5l-3 2V3a1 1 0 0 1 1-1z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><circle cx="5" cy="6" r="0.8" fill="currentColor"/><circle cx="7" cy="6" r="0.8" fill="currentColor"/><circle cx="9" cy="6" r="0.8" fill="currentColor"/></svg>Msg Analyze', perm:'canViewMessageAnalyze'},
     ], inner=>{
       if(page==='reputation') canDo('canViewContentModeration')?renderReputation(inner):inner.innerHTML=denied;
       else if(page==='appeals') canDo('canViewContentModeration')?renderAppeals(inner):inner.innerHTML=denied;
@@ -2574,11 +2574,11 @@ function render(){
   if(SECTION_PAGES['staff-section'].includes(page)){
     renderSection('Staff',[
       {id:'staff', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><rect x="2" y="1" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/><circle cx="7" cy="5" r="1.8" stroke="currentColor" stroke-width="1.2"/><line x1="4.5" y1="9" x2="9.5" y2="9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Registry', perm:'canViewStaff'},
-      {id:'activity', label:'📊 Activity', perm:'canViewStaffActivity'},
-      {id:'calendar', label:'📅 Calendar', perm:'canViewStaffActivity'},
-      {id:'messaging', label:'💬 Messaging', perm:'canSendStaffMessage'},
-      {id:'suggestions', label:'💡 Suggestions', perm:'canViewSuggestions'},
-      {id:'staffconfig', label:'⚙️ Staff Config', perm:'canViewStaffConfig'},
+      {id:'activity', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><polyline points="1,7 4,4 6,9 9,3 12,6 13,5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>Activity', perm:'canViewStaffActivity'},
+      {id:'calendar', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><rect x="1" y="2" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.2"/><line x1="1" y1="6" x2="13" y2="6" stroke="currentColor" stroke-width="1.2"/><line x1="4.5" y1="1" x2="4.5" y2="3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="9.5" y1="1" x2="9.5" y2="3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>Calendar', perm:'canViewStaffActivity'},
+      {id:'messaging', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><path d="M2 2h10a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H5l-3 2V3a1 1 0 0 1 1-1z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>Messaging', perm:'canSendStaffMessage'},
+      {id:'suggestions', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><circle cx="7" cy="5.5" r="3.5" stroke="currentColor" stroke-width="1.2"/><line x1="7" y1="9" x2="7" y2="11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="5.5" y1="12" x2="8.5" y2="12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Suggestions', perm:'canViewSuggestions'},
+      {id:'staffconfig', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><circle cx="7" cy="7" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.6 2.6l1 1M10.4 10.4l1 1M2.6 11.4l1-1M10.4 3.6l1-1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Staff Config', perm:'canViewStaffConfig'},
       {id:'evaluations', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><rect x="2" y="1" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/><line x1="4.5" y1="4.5" x2="9.5" y2="4.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="4.5" y1="7" x2="9.5" y2="7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="4.5" y1="9.5" x2="7" y2="9.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Evaluations', saOnly:true},
       {id:'staffreports', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><path d="M7 1L12.5 3.2v3.8c0 3-2.2 5-5.5 5.8C3.7 12 1.5 10 1.5 7V3.2L7 1z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><line x1="7" y1="4.5" x2="7" y2="7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="7" cy="9.2" r="0.8" fill="currentColor"/></svg>Reports', perm:'canViewStaff'},
     ], inner=>{
@@ -2596,13 +2596,13 @@ function render(){
   // ── LOGS SECTION ──
   if(SECTION_PAGES.logs.includes(page)){
     renderSection('Logs',[
-      {id:'modlog', label:'⚖️ Moderation', perm:'canViewModLog'},
-      {id:'revokelog', label:'↩ Revoke', perm:'canViewRevokeLogs'},
-      {id:'suspendlog', label:'⏸ Suspension', perm:'canViewSuspendLogs'},
-      {id:'terminatelog', label:'🚫 Termination', perm:'canViewTerminateLogs'},
-      {id:'warnlog', label:'⚠ Staff Warnings', perm:'canViewStaff'},
-      {id:'loginlog', label:'🔑 Login', perm:'canViewLoginLog'},
-      {id:'auditlog', label:'📝 Audit', saOnly:true},
+      {id:'modlog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/><line x1="4.5" y1="4.5" x2="9.5" y2="9.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="9.5" y1="4.5" x2="4.5" y2="9.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>Moderation', perm:'canViewModLog'},
+      {id:'revokelog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><path d="M3 7a4 4 0 1 0 1-2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><polyline points="1,4 3,7 6,5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>Revoke', perm:'canViewRevokeLogs'},
+      {id:'suspendlog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/><line x1="5" y1="4.5" x2="5" y2="9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="9" y1="4.5" x2="9" y2="9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Suspension', perm:'canViewSuspendLogs'},
+      {id:'terminatelog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/><line x1="4.5" y1="4.5" x2="9.5" y2="9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="9.5" y1="4.5" x2="4.5" y2="9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Termination', perm:'canViewTerminateLogs'},
+      {id:'warnlog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><path d="M7 1L13 12H1L7 1z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><line x1="7" y1="5.5" x2="7" y2="8.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="7" cy="10" r="0.8" fill="currentColor"/></svg>Staff Warnings', perm:'canViewStaff'},
+      {id:'loginlog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><rect x="2" y="2" width="7" height="10" rx="1" stroke="currentColor" stroke-width="1.2"/><path d="M9 5l3 2-3 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><line x1="6" y1="7" x2="12" y2="7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Login', perm:'canViewLoginLog'},
+      {id:'auditlog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><rect x="2" y="1" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.2"/><line x1="4.5" y1="4.5" x2="9.5" y2="4.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><line x1="4.5" y1="7" x2="9.5" y2="7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><line x1="4.5" y1="9.5" x2="7" y2="9.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>Audit', saOnly:true},
     ], inner=>{
       if(page==='modlog') canDo('canViewModLog')?renderModLog(inner):inner.innerHTML=denied;
       else if(page==='revokelog') canDo('canViewRevokeLogs')?renderRevokeLog(inner):inner.innerHTML=denied;
@@ -2630,15 +2630,15 @@ function render(){
   // ── MACHINE MANAGEMENT SECTION ──
   if(SECTION_PAGES.machine.includes(page)){
     renderSection('Machine Management',[
-      {id:'siteconfig', label:'⚙️ Config', smOnly:true},
-      {id:'statuslog', label:'📶 Status Log', smOnly:true},
+      {id:'siteconfig', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><circle cx="7" cy="7" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.6 2.6l1 1M10.4 10.4l1 1M2.6 11.4l1-1M10.4 3.6l1-1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Config', smOnly:true},
+      {id:'statuslog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><rect x="1" y="3" width="12" height="8" rx="1.5" stroke="currentColor" stroke-width="1.2"/><circle cx="4" cy="7" r="1" fill="currentColor"/><circle cx="7" cy="7" r="1" fill="currentColor"/><circle cx="10" cy="7" r="1" fill="currentColor"/></svg>Status Log', smOnly:true},
       {id:'wipelog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><polyline points="3,4 11,4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M5 4V3h4v1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 4l.5 7h2l.5-7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Wipe Log', smOnly:true},
-      {id:'robloxlog', label:'🎮 Roblox Log', smOnly:true},
-      {id:'badgemgmt', label:'🏅 Badges', smOnly:true},
-      {id:'leakid', label:'🔍 Leak ID', smOnly:true},
-      {id:'clearance', label:'🔐 Clearance', smOnly:true},
+      {id:'robloxlog', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><rect x="2" y="2" width="10" height="10" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="4.5" y="4.5" width="2" height="2" fill="currentColor" rx="0.3"/><rect x="7.5" y="4.5" width="2" height="2" fill="currentColor" rx="0.3"/><rect x="4.5" y="7.5" width="2" height="2" fill="currentColor" rx="0.3"/><rect x="7.5" y="7.5" width="2" height="2" fill="currentColor" rx="0.3"/></svg>Roblox Log', smOnly:true},
+      {id:'badgemgmt', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><polygon points="7,1 8.5,5 13,5 9.5,8 11,12 7,9.5 3,12 4.5,8 1,5 5.5,5" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></svg>Badges', smOnly:true},
+      {id:'leakid', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><circle cx="6" cy="6" r="4" stroke="currentColor" stroke-width="1.2"/><line x1="9" y1="9" x2="13" y2="13" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>Leak ID', smOnly:true},
+      {id:'clearance', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><rect x="3" y="6.5" width="8" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/><path d="M5 6.5V4.5a2 2 0 0 1 4 0v2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="7" cy="9.5" r="1" fill="currentColor"/></svg>Clearance', smOnly:true},
       {id:'samlog', label:'<svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="margin-right:4px;flex-shrink:0;"><path d="M6 1L11 6L6 11L1 6Z" stroke="currentColor" stroke-width="1.3"/><circle cx="6" cy="6" r="1.5" fill="currentColor"/></svg>SAM Log', smOnly:true},
-      {id:'blacklist', label:'🚫 IP Blacklist', smOnly:true},
+      {id:'blacklist', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="margin-right:4px;flex-shrink:0;"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/><line x1="3" y1="3" x2="11" y2="11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>IP Blacklist', smOnly:true},
       {id:'discordconfig', label:'<svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="margin-right:4px;flex-shrink:0;"><path d="M6.5 7.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2M9.5 7.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2" fill="currentColor"/><path d="M13.5 1.5A2 2 0 0 0 11.5 0h-7A2 2 0 0 0 2.5 2v8a2 2 0 0 0 2 2h7l-1-3 2.5 2.5V1.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" fill="none"/></svg>Discord Config', smOnly:true},
     ], inner=>{
       if(!isSoftwareManager()){ inner.innerHTML=denied; return; }
@@ -3059,14 +3059,19 @@ async function fireDiscordWebhook(eventKey, embedData){
     var embed={...embedData,color:color};
     if(embeds.show_timestamp!==false) embed.timestamp=new Date().toISOString();
     if(embeds.footer_text) embed.footer={text:embeds.footer_text};
-    var webhookBody={
-      username:staffName,
-      content:roleId?'<@&'+roleId+'>':'',
-      embeds:[embed]
-    };
+    // Use "Samaritan Systems" as the webhook bot name.
+    // Staff identity goes in the embed author field.
+    var embedWithAuthor={...embed};
     if(embeds.show_avatar!==false&&staffAvatar){
-      webhookBody.avatar_url=staffAvatar;
+      embedWithAuthor.author={name:staffName,icon_url:staffAvatar};
+    } else {
+      embedWithAuthor.author={name:staffName};
     }
+    var webhookBody={
+      username:'Samaritan Systems',
+      content:roleId?'<@&'+roleId+'>':'',
+      embeds:[embedWithAuthor]
+    };
     var resp=await fetch(wh,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(webhookBody)});
     var ok=resp.ok||resp.status===204;
     await push(ref(db,'meta/discordConfig/deliveryLog'),{event:eventKey,ok:ok,date:nowStr(),ts:Date.now()}).catch(function(){});
