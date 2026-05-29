@@ -440,7 +440,8 @@ body.sam-active .main{ background:#0d1117; }
 .pinned-note .pn-del:hover{color:var(--c-ban);}
 
 /* ── PAGE TABS ── */
-.page-tabs{display:flex;gap:0;border-bottom:2px solid var(--c-border);margin-bottom:12px;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;}
+.page-tabs{display:flex;gap:0;border-bottom:2px solid var(--c-border);margin-bottom:12px;overflow-x:auto;overflow-y:hidden;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain;}
+.page-tabs::-webkit-scrollbar{display:none;}
 .page-tab{padding:7px 14px;font-size:12px;font-weight:500;color:var(--c-text2);cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-2px;transition:color 0.1s,border-color 0.1s;user-select:none;flex-shrink:0;}
 .page-tab:hover{color:var(--c-text);background:var(--bg-sb-hdr-hover);border-radius:6px 6px 0 0;}
 .page-tab.active{color:var(--c-link);border-bottom-color:var(--c-link);font-weight:600;}
@@ -608,38 +609,39 @@ body.sam-active .main{ background:#0d1117; }
     </div>
     <div class="menubar" id="menubar">
       <div style="position:relative;display:inline-block;">
-        <span id="menu-file" class="menu-item">File</span>
-        <div class="dropdown" id="drop-file">
-          <div class="drop-item" id="menu-logout">Log Out</div>
+        <span id="menu-export" class="menu-item">&#x1F4E4; Export</span>
+        <div class="dropdown" id="drop-export">
+          <div class="drop-item" id="menu-export-snapshot">Full Panel Snapshot (JSON)</div>
+          <div class="drop-item" id="menu-export-modlog">Moderation Log (JSON)</div>
+          <div class="drop-item" id="menu-export-staff">Staff Roster (JSON)</div>
           <div class="drop-sep"></div>
-          <div class="drop-item" id="menu-printlog">Print Log (Export)</div>
+          <div class="drop-item" id="menu-export-report">Generate Report Card</div>
         </div>
       </div>
       <div style="position:relative;display:inline-block;">
-        <span id="menu-view" class="menu-item">View</span>
-        <div class="dropdown" id="drop-view">
-          <div class="drop-item" id="menu-view-useradmin">User Admin</div>
-          <div class="drop-item" id="menu-view-accounts">All Accounts</div>
-          <div class="drop-item" id="menu-view-staff">Staff Registry</div>
-          <div class="drop-sep"></div>
-          <div class="drop-item" id="menu-view-modlog">Moderation Log</div>
-          <div class="drop-item" id="menu-view-adminlog">Administrator</div>
+        <span id="menu-prefs" class="menu-item">&#9881; Preferences</span>
+        <div class="dropdown" id="drop-prefs" style="min-width:220px;">
+          <div class="drop-item" id="menu-prefs-open">Open Preferences...</div>
         </div>
       </div>
       <div style="position:relative;display:inline-block;">
-        <span id="menu-tools" class="menu-item">Tools</span>
+        <span id="menu-tools" class="menu-item">&#128295; Tools</span>
         <div class="dropdown" id="drop-tools">
-          <div class="drop-item" id="menu-altdetect">Alt Detection</div>
-          <div class="drop-item" id="menu-reputation">Reputation System</div>
+          <div class="drop-item" id="menu-tool-roblox">Roblox Lookup</div>
+          <div class="drop-item" id="menu-tool-timestamp">Timestamp Converter</div>
+          <div class="drop-item" id="menu-tool-banduration">Ban Duration Calculator</div>
+          <div class="drop-item" id="menu-tool-repscore">Rep Score Calculator</div>
           <div class="drop-sep"></div>
-          <div class="drop-item" id="menu-announcements">Announcements</div>
+          <div class="drop-item" id="menu-tool-report">Report a Staff Member</div>
         </div>
       </div>
       <div style="position:relative;display:inline-block;">
-        <span id="menu-help" class="menu-item">Help</span>
+        <span id="menu-help" class="menu-item">&#10067; Help</span>
         <div class="dropdown" id="drop-help">
-          <div class="drop-item" id="menu-about">About</div>
+          <div class="drop-item" id="menu-about">About Samaritan</div>
           <div class="drop-item" id="menu-shortcuts">Keyboard Shortcuts</div>
+          <div class="drop-sep"></div>
+          <div class="drop-item" id="menu-updatelog">Update Log</div>
         </div>
       </div>
     </div>
@@ -1254,7 +1256,7 @@ function buildCmdItems(q){
     {icon:'👤', label:'User Admin', desc:'Look up a player', action:function(){nav('useradmin');}},
     {icon:'⚖️', label:'Moderate User', desc:'Apply mod action', action:function(){nav('moderate');}},
     {icon:'📋', label:'All Accounts', desc:'View all players', action:function(){nav('accounts');}},
-    {icon:'🛡', label:'Staff Registry', desc:'View staff', action:function(){nav('staff');}},
+    {icon:'[S]', label:'Staff Registry', desc:'View staff', action:function(){nav('staff');}},
     {icon:'📊', label:'Staff Activity', desc:'Who is online', action:function(){nav('activity');}},
     {icon:'📝', label:'Moderation Log', desc:'All mod actions', action:function(){nav('modlog');}},
     {icon:'⚖️', label:'Appeals', desc:'Review appeals', action:function(){nav('appeals');}},
@@ -2348,10 +2350,10 @@ function updateSidebar(){
   const sectionMap={
     people:['useradmin','moderate','accounts','requests'],
     moderation:['reputation','appeals','altdetect','msganalyze'],
-    'staff-section':['staff','activity','messaging','suggestions','staffconfig','evaluations','calendar'],
+    'staff-section':['staff','activity','messaging','suggestions','staffconfig','evaluations','calendar','staffreports'],
     logs:['modlog','revokelog','suspendlog','terminatelog','warnlog','loginlog','auditlog'],
     configuration:['userconfig','alerts','adminlog','cflog'],
-    machine:['siteconfig','statuslog','wipelog','robloxlog','badgemgmt','leakid','loginlog','clearance','samlog','blacklist','gameintegration','gamelogs'],
+    machine:['siteconfig','statuslog','wipelog','robloxlog','badgemgmt','leakid','clearance','samlog','blacklist','discordconfig'],
   };
   document.querySelectorAll('.sb-section-link').forEach(el=>el.classList.remove('active'));
   for(const [section, pages] of Object.entries(sectionMap)){
@@ -2376,10 +2378,10 @@ var SECTION_TABS={
 var SECTION_PAGES={
   people:['useradmin','moderate','accounts','requests'],
   moderation:['reputation','appeals','altdetect','msganalyze'],
-  'staff-section':['staff','activity','messaging','suggestions','staffconfig','evaluations','calendar'],
+  'staff-section':['staff','activity','messaging','suggestions','staffconfig','evaluations','calendar','staffreports'],
   logs:['modlog','revokelog','suspendlog','terminatelog','warnlog','loginlog','auditlog'],
   configuration:['alerts','userconfig','adminlog','cflog'],
-  machine:['siteconfig','statuslog','wipelog','robloxlog','badgemgmt','leakid','clearance','samlog','blacklist','gameintegration','gamelogs'],
+  machine:['siteconfig','statuslog','wipelog','robloxlog','badgemgmt','leakid','clearance','samlog','blacklist','discordconfig'],
 };
 
 // Which section a page belongs to
@@ -2569,13 +2571,14 @@ function render(){
   // ── STAFF SECTION ──
   if(SECTION_PAGES['staff-section'].includes(page)){
     renderSection('Staff',[
-      {id:'staff', label:'🛡 Registry', perm:'canViewStaff'},
+      {id:'staff', label:'[S] Registry', perm:'canViewStaff'},
       {id:'activity', label:'📊 Activity', perm:'canViewStaffActivity'},
       {id:'calendar', label:'📅 Calendar', perm:'canViewStaffActivity'},
       {id:'messaging', label:'💬 Messaging', perm:'canSendStaffMessage'},
       {id:'suggestions', label:'💡 Suggestions', perm:'canViewSuggestions'},
       {id:'staffconfig', label:'⚙️ Staff Config', perm:'canViewStaffConfig'},
-      {id:'evaluations', label:'📝 Evaluations', saOnly:true},
+      {id:'evaluations', label:'[EV] Evaluations', saOnly:true},
+      {id:'staffreports', label:'[!] Reports', perm:'canViewStaff'},
     ], inner=>{
       if(page==='staff') canDo('canViewStaff')?renderStaff(inner):inner.innerHTML=denied;
       else if(page==='activity') canDo('canViewStaffActivity')?renderActivity(inner):inner.innerHTML=denied;
@@ -2584,6 +2587,7 @@ function render(){
       else if(page==='suggestions') canDo('canViewSuggestions')?renderSuggestions(inner):inner.innerHTML=denied;
       else if(page==='staffconfig') canDo('canViewStaffConfig')?renderStaffConfig(inner):inner.innerHTML=denied;
       else if(page==='evaluations') isSuperAdmin()?renderStaffEvaluations(inner):inner.innerHTML=denied;
+      else if(page==='staffreports') renderStaffReports(inner);
     }); return;
   }
 
@@ -2628,15 +2632,14 @@ function render(){
     renderSection('Machine Management',[
       {id:'siteconfig', label:'⚙️ Config', smOnly:true},
       {id:'statuslog', label:'📶 Status Log', smOnly:true},
-      {id:'wipelog', label:'🗑 Wipe Log', smOnly:true},
+      {id:'wipelog', label:'[W] Wipe Log', smOnly:true},
       {id:'robloxlog', label:'🎮 Roblox Log', smOnly:true},
       {id:'badgemgmt', label:'🏅 Badges', smOnly:true},
       {id:'leakid', label:'🔍 Leak ID', smOnly:true},
       {id:'clearance', label:'🔐 Clearance', smOnly:true},
-      {id:'samlog', label:'◆ Sam Log', smOnly:true},
+      {id:'samlog', label:'SAM Log', smOnly:true},
       {id:'blacklist', label:'🚫 IP Blacklist', smOnly:true},
-      {id:'gameintegration', label:'🎮 Game Integration', smOnly:true},
-      {id:'gamelogs', label:'📋 Game Logs', smOnly:true},
+      {id:'discordconfig', label:'[DC] Discord Config', smOnly:true},
     ], inner=>{
       if(!isSoftwareManager()){ inner.innerHTML=denied; return; }
       if(page==='siteconfig') renderSiteConfig(inner);
@@ -2648,14 +2651,656 @@ function render(){
       else if(page==='clearance') renderClearanceManager(inner);
       else if(page==='samlog') renderSamLog(inner);
       else if(page==='blacklist') renderBlacklist(inner);
-      else if(page==='gameintegration') renderGameIntegration(inner);
-      else if(page==='gamelogs') renderGameLogs(inner);
+      else if(page==='discordconfig') renderDiscordConfig(inner);
     }); return;
   }
 
   // Fallback
   c.innerHTML=denied;
 }
+
+// ══════════════════════════════════════════════════════
+// STAFF REPORTS
+// ══════════════════════════════════════════════════════
+let STAFF_REPORTS={};
+let _reportsUnredacted=false;
+
+function canViewStaffReports(){
+  // Must be able to view staff (Senior Content Admin+), and you can never see reports about yourself
+  return canDo('canViewStaff');
+}
+
+function reportVisibleToMe(r){
+  // Software Manager sees everything
+  if(isSoftwareManager()) return true;
+  // Cannot see reports where you are the target
+  if(r.targetId===ME||r.targetUsername===ME) return false;
+  // Visibility: rank of target + 1 required to view
+  var targetRank=rankOf(r.targetLevel||'CONTENT REVIEWER');
+  var myRank=rankOf(MY_LEVEL);
+  return myRank>targetRank;
+}
+
+function renderStaffReports(c){
+  if(!canViewStaffReports()&&!isSoftwareManager()){
+    c.innerHTML='<div class="ptitle">Staff Reports</div><i style="padding:8px;display:block;color:var(--c-ban);">Access denied.</i>';
+    return;
+  }
+
+  var entries=Object.entries(STAFF_REPORTS||{}).sort(function(a,b){
+    return (b[1].ts||0)-(a[1].ts||0);
+  }).filter(function(e){ return reportVisibleToMe(e[1]); });
+
+  var pending=entries.filter(function(e){ return !e[1].reviewed; });
+
+  c.innerHTML='<div class="ptitle">[!] Staff Reports</div>'
+    +(isSuperAdmin()&&canDo('canViewStaff')?'<div style="display:flex;justify-content:flex-end;margin-bottom:8px;">'
+      +(isSoftwareManager()?'<button class="btn small" id="btn-unredact" style="background:rgba(248,81,73,0.15);border-color:var(--c-ban);color:var(--c-ban);font-size:10px;">'
+        +(_reportsUnredacted?'[SM] Redact Names':'[SM] Unredact Names')+'</button>':'')
+    +'</div>':'')
+    +'<div style="display:flex;gap:6px;flex-wrap:wrap;">'
+    +'<div style="flex:2;min-width:280px;">'
+    +'<div class="sbox"><div class="stitle">Incoming Reports '+(pending.length>0?'<span style="background:var(--c-ban);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;margin-left:6px;">'+pending.length+' pending</span>':'')+'</div><div class="sbody">'
+    +(entries.length===0
+      ?'<div style="text-align:center;padding:24px;color:var(--c-text2);">No reports filed.</div>'
+      :entries.map(function(e){
+          var rid=e[0], r=e[1];
+          var submitter=(_reportsUnredacted&&isSoftwareManager())?(r.submittedBy||'?'):'[UNAUTHORIZED]';
+          var statusColor=r.reviewed?(r.outcome==='Dismissed'?'var(--c-text2)':'var(--c-ok)'):'var(--c-sus)';
+          var status=r.reviewed?(r.outcome||'Reviewed'):'Pending Review';
+          return '<div style="border:1px solid var(--c-border);border-left:3px solid '+statusColor+';border-radius:6px;padding:10px 12px;margin-bottom:8px;background:var(--bg-tbl-odd);">'
+            +'<div style="display:flex;align-items:flex-start;gap:10px;">'
+            +(r.targetAvatarUrl?'<img src="'+r.targetAvatarUrl+'" width="36" height="36" style="border-radius:6px;object-fit:cover;flex-shrink:0;">':'<div style="width:36px;height:36px;border-radius:6px;background:var(--bg-sb-hdr);display:flex;align-items:center;justify-content:center;font-weight:bold;color:var(--c-text2);flex-shrink:0;">'+(r.targetUsername||'?').charAt(0).toUpperCase()+'</div>')
+            +'<div style="flex:1;min-width:0;">'
+            +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">'
+            +'<span style="font-size:12px;font-weight:bold;color:var(--c-text);">'+r.targetUsername+'</span>'
+            +(r.targetLevel?'<span class="badge '+(r.targetLevel==='CONTENT REVIEWER'?'intern':r.targetLevel==='CONTENT MODERATOR'?'moderator':r.targetLevel==='CONTENT ADMINISTRATOR'?'administrator':r.targetLevel==='SENIOR CONTENT ADMINISTRATOR'?'senioradmin':'superadmin')+'" style="font-size:9px;">'+r.targetLevel+'</span>':'')
+            +'<span style="margin-left:auto;font-size:10px;font-weight:600;color:'+statusColor+';">'+status+'</span>'
+            +'</div>'
+            +'<div style="font-size:11px;color:var(--c-text2);margin-bottom:4px;">Reported by <span style="color:var(--c-text);font-style:'+(r.submittedBy===submitter?'normal':'italic')+';">'+submitter+'</span> &bull; '+r.date+'</div>'
+            +'<div style="font-size:11px;color:var(--c-text);margin-bottom:3px;"><b>Category:</b> '+(r.category||'-')+'</div>'
+            +'<div style="font-size:11px;color:var(--c-text);margin-bottom:6px;line-height:1.5;">'+(r.description||'-')+'</div>'
+            +(r.fileUrl?'<a href="'+r.fileUrl+'" target="_blank" style="font-size:11px;color:var(--c-link);">[Attachment]</a> ':'')
+            +(r.reviewed?'<div style="font-size:10px;color:var(--c-text2);margin-top:4px;border-top:1px solid var(--c-border);padding-top:4px;">Reviewed by '+r.reviewedBy+' &bull; '+r.reviewNote+'</div>':'')
+            +'<div style="display:flex;gap:4px;margin-top:6px;">'
+            +(!r.reviewed&&isSuperAdmin()?'<button class="btn small review-report-btn" data-rid="'+rid+'" data-outcome="Actioned" style="background:rgba(26,127,55,0.15);border-color:var(--c-ok);color:var(--c-ok);">Action</button>'
+              +'<button class="btn small review-report-btn" data-rid="'+rid+'" data-outcome="Dismissed" style="background:rgba(139,148,158,0.1);border-color:var(--c-border);color:var(--c-text2);">Dismiss</button>':'')
+            +'</div>'
+            +'</div></div></div>';
+        }).join(''))
+    +'</div></div>'
+    +'</div>'
+    +'<div style="flex:1;min-width:200px;">'
+    +'<div class="sbox"><div class="stitle">File a Report</div><div class="sbody">'
+    +'<div style="font-size:11px;color:var(--c-text2);margin-bottom:8px;">Search for a staff member to report. Your identity will be kept confidential.</div>'
+    +'<input type="text" id="report-search" placeholder="Search staff by name..." style="width:100%;margin-bottom:8px;" oninput="filterReportSearch(this.value)"/>'
+    +'<div id="report-staff-list" style="max-height:200px;overflow-y:auto;margin-bottom:8px;"></div>'
+    +'<div id="report-form-area"></div>'
+    +'</div></div>'
+    +'</div>'
+    +'</div>';
+
+  // Populate staff list
+  filterReportSearch('');
+
+  // Unredact button (SM only)
+  var unredactBtn=document.getElementById('btn-unredact');
+  if(unredactBtn) unredactBtn.onclick=function(){
+    if(!isSoftwareManager()) return;
+    if(_reportsUnredacted){ _reportsUnredacted=false; renderStaffReports(c); return; }
+    openOpDialog('Enter your operator code to temporarily unredact reporter identities.',function(){
+      _reportsUnredacted=true;
+      renderStaffReports(c);
+    });
+  };
+
+  // Review buttons
+  c.querySelectorAll('.review-report-btn').forEach(function(btn){
+    btn.onclick=function(){
+      var rid=btn.dataset.rid, outcome=btn.dataset.outcome;
+      openDialog('Review Report','Add a review note for this report:',
+        '<textarea id="report-review-note" style="width:100%;height:60px;" placeholder="Internal note about this decision..."></textarea>',
+        async function(){
+          var note=document.getElementById('report-review-note').value.trim()||'No note.';
+          await update(ref(db,'staffReports/'+rid),{reviewed:true,outcome:outcome,reviewedBy:ME,reviewNote:note,reviewDate:nowStr()});
+          showToast('Report '+outcome.toLowerCase()+'.','success');
+          auditLog('Staff Report Reviewed',STAFF_REPORTS[rid].targetUsername+' - '+outcome);
+        });
+    };
+  });
+}
+window.renderStaffReports=renderStaffReports;
+
+window.filterReportSearch=function(q){
+  var list=document.getElementById('report-staff-list');
+  if(!list) return;
+  var staffArr=Object.entries(STAFF).filter(function(e){
+    var s=e[1]; if(!s||!s.username) return false;
+    if(s.username===ME) return false; // can't report yourself
+    if(!q) return true;
+    return s.username.toLowerCase().includes(q.toLowerCase());
+  });
+  if(staffArr.length===0){ list.innerHTML='<div style="font-size:11px;color:var(--c-text2);">No staff found.</div>'; return; }
+  list.innerHTML=staffArr.map(function(e){
+    var sid=e[0], s=e[1];
+    return '<div class="report-staff-card" data-sid="'+sid+'" style="display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--c-border);border-radius:6px;margin-bottom:4px;cursor:pointer;background:var(--bg-tbl-odd);transition:background 0.1s;">'
+      +(s.avatarUrl?'<img src="'+s.avatarUrl+'" width="28" height="28" style="border-radius:50%;object-fit:cover;flex-shrink:0;">'
+        :'<div style="width:28px;height:28px;border-radius:50%;background:var(--c-link);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;color:#fff;flex-shrink:0;">'+s.username.charAt(0).toUpperCase()+'</div>')
+      +'<div style="flex:1;min-width:0;">'
+      +'<div style="font-size:11px;font-weight:bold;color:var(--c-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+s.username+'</div>'
+      +'<div style="font-size:10px;color:var(--c-text2);">'+s.level+'</div>'
+      +'</div>'
+      +'<span style="font-size:10px;color:var(--c-text2);">&rsaquo;</span>'
+      +'</div>';
+  }).join('');
+  list.querySelectorAll('.report-staff-card').forEach(function(card){
+    card.onmouseenter=function(){ card.style.background='var(--bg-sb-hdr-hover)'; };
+    card.onmouseleave=function(){ card.style.background='var(--bg-tbl-odd)'; };
+    card.onclick=function(){ openReportForm(card.dataset.sid); };
+  });
+};
+
+function openReportForm(sid){
+  var s=STAFF[sid]; if(!s) return;
+  var formArea=document.getElementById('report-form-area');
+  if(!formArea) return;
+  formArea.innerHTML='<div style="border-top:1px solid var(--c-border);padding-top:8px;margin-top:4px;">'
+    +'<div style="font-size:11px;font-weight:bold;color:var(--c-text);margin-bottom:6px;">Reporting: '+s.username+'</div>'
+    +'<div style="margin-bottom:5px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;font-weight:600;">Category</label>'
+    +'<select id="rpt-cat" style="width:100%;">'
+    +'<option>Misconduct</option><option>Abuse of Power</option><option>Inappropriate Behavior</option>'
+    +'<option>Policy Violation</option><option>Harassment</option><option>Other</option>'
+    +'</select></div>'
+    +'<div style="margin-bottom:5px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;font-weight:600;">Description</label>'
+    +'<textarea id="rpt-desc" style="width:100%;height:70px;" placeholder="Describe what happened in detail..."></textarea></div>'
+    +'<div style="margin-bottom:5px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;font-weight:600;">Evidence URL (optional)</label>'
+    +'<input type="text" id="rpt-file" style="width:100%;" placeholder="Link to screenshot, video, etc."/></div>'
+    +'<button class="btn" id="rpt-submit" style="width:100%;">Submit Report</button>'
+    +'<div id="rpt-msg" style="font-size:11px;margin-top:4px;color:var(--c-ok);min-height:14px;"></div>'
+    +'</div>';
+  document.getElementById('rpt-submit').onclick=async function(){
+    var desc=document.getElementById('rpt-desc').value.trim();
+    var msg=document.getElementById('rpt-msg');
+    if(!desc){ msg.style.color='var(--c-ban)'; msg.textContent='Description required.'; return; }
+    var cat=document.getElementById('rpt-cat').value;
+    var fileUrl=document.getElementById('rpt-file').value.trim();
+    await push(ref(db,'staffReports'),{
+      targetId:sid, targetUsername:s.username, targetLevel:s.level,
+      targetAvatarUrl:s.avatarUrl||'',
+      submittedBy:ME, date:nowStr(), ts:Date.now(),
+      category:cat, description:desc, fileUrl:fileUrl||'',
+      reviewed:false, outcome:'', reviewedBy:'', reviewNote:'', reviewDate:''
+    });
+    auditLog('Staff Report Filed',s.username+' - '+cat);
+    msg.style.color='var(--c-ok)'; msg.textContent='Report submitted. Your identity is kept confidential.';
+    document.getElementById('rpt-desc').value='';
+    document.getElementById('rpt-file').value='';
+    setTimeout(function(){ if(msg) msg.textContent=''; if(formArea) formArea.innerHTML=''; },2500);
+  };
+}
+
+// Reset unredact state on nav change
+var _origNav=window.nav;
+window.nav=function(p){
+  _reportsUnredacted=false;
+  return _origNav(p);
+};
+
+// ── STAFF REPORTS listener ──
+// (added in startListeners via a patch below)
+
+// ══════════════════════════════════════════════════════
+// DISCORD CONFIGURATION
+// ══════════════════════════════════════════════════════
+function renderDiscordConfig(c){
+  get(ref(db,'meta/discordConfig')).then(function(snap){
+    var cfg=snap.exists()?snap.val():{};
+    var webhooks=cfg.webhooks||{};
+    var roles=cfg.roles||{};
+    var embeds=cfg.embeds||{embed_color:'#0969da',show_avatar:true,show_timestamp:true,footer_text:'Samaritan Systems'};
+    var enabled=cfg.enabled!==false;
+
+    var webhookDefs=[
+      {key:'mod_actions',label:'Moderation Actions',desc:'Fires when a player is warned, banned, or suspended',icon:'⚖️'},
+      {key:'staff_events',label:'Staff Events',desc:'Fires on staff hire, terminate, suspend, or level change',icon:'👥'},
+      {key:'appeals',label:'Appeals',desc:'New appeal submitted or reviewed',icon:'📬'},
+      {key:'alerts',label:'Site Alerts',desc:'When a site-wide alert is posted or cleared',icon:'🔔'},
+      {key:'logins',label:'Staff Logins',desc:'Every staff login attempt (success and failure)',icon:'🔑'},
+      {key:'failed_logins',label:'Failed Logins Only',desc:'Only failed login attempts — less noisy',icon:'🚫'},
+      {key:'reports',label:'Staff Reports',desc:'When a new staff report is submitted',icon:'[!]'},
+      {key:'beehive',label:'Beehive Alerts',desc:'Beehive contingency activations and deactivations',icon:'🐝'},
+    ];
+
+    c.innerHTML='<div class="ptitle">[DC] Discord Configuration</div>'
+      +'<div style="display:flex;gap:6px;flex-wrap:wrap;">'
+
+      // LEFT: Global toggle + webhook config
+      +'<div style="flex:2;min-width:300px;">'
+
+      +'<div class="sbox"><div class="stitle">Global Settings</div><div class="sbody">'
+      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">'
+      +'<label style="font-size:12px;font-weight:bold;color:var(--c-text);">Discord Integration</label>'
+      +'<label style="display:flex;align-items:center;gap:6px;cursor:pointer;">'
+      +'<input type="checkbox" id="dc-enabled" '+(enabled?'checked':'')+' style="width:14px;height:14px;"/>'
+      +'<span style="font-size:11px;color:var(--c-text2);">'+(enabled?'Enabled':'Disabled')+'</span>'
+      +'</label></div>'
+      +'<div style="margin-bottom:5px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;font-weight:600;">Default Webhook URL</label>'
+      +'<input type="text" id="dc-default-webhook" style="width:100%;" value="'+(cfg.defaultWebhook||'')+'" placeholder="https://discord.com/api/webhooks/..."/></div>'
+      +'<div style="display:flex;gap:6px;"><button class="btn" id="dc-test-default">Test Default Webhook</button><div id="dc-test-msg" style="font-size:11px;color:var(--c-ok);line-height:28px;"></div></div>'
+      +'</div></div>'
+
+      +'<div class="sbox"><div class="stitle">Webhook Channels</div><div class="sbody">'
+      +'<div style="font-size:11px;color:var(--c-text2);margin-bottom:8px;">Override the default webhook for specific event types. Leave blank to use the default.</div>'
+      +webhookDefs.map(function(w){
+        return '<div style="border:1px solid var(--c-border);border-radius:6px;padding:8px 10px;margin-bottom:6px;background:var(--bg-tbl-odd);">'
+          +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">'
+          +'<span style="font-size:13px;">'+w.icon+'</span>'
+          +'<div><div style="font-size:12px;font-weight:600;color:var(--c-text);">'+w.label+'</div>'
+          +'<div style="font-size:10px;color:var(--c-text2);">'+w.desc+'</div></div>'
+          +'<label style="margin-left:auto;display:flex;align-items:center;gap:4px;cursor:pointer;">'
+          +'<input type="checkbox" class="dc-wh-enabled" data-key="'+w.key+'" '+(webhooks[w.key]&&webhooks[w.key].enabled!==false?'checked':'')+'/>'
+          +'<span style="font-size:10px;color:var(--c-text2);">Active</span></label>'
+          +'</div>'
+          +'<input type="text" class="dc-wh-url" data-key="'+w.key+'" style="width:100%;font-size:11px;" value="'+(webhooks[w.key]&&webhooks[w.key].url||'')+'" placeholder="Webhook URL (or leave blank for default)"/>'
+          +'</div>';
+      }).join('')
+      +'<button class="btn" id="dc-save-webhooks" style="margin-top:4px;">Save Webhook Config</button>'
+      +'<div id="dc-wh-msg" style="font-size:11px;margin-top:3px;color:var(--c-ok);min-height:14px;"></div>'
+      +'</div></div>'
+
+      +'<div class="sbox"><div class="stitle">Embed Appearance</div><div class="sbody">'
+      +'<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">'
+      +'<div><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;font-weight:600;">Embed Color</label>'
+      +'<input type="color" id="dc-embed-color" value="'+(embeds.embed_color||'#0969da')+'" style="width:60px;height:28px;border:1px solid var(--c-border);border-radius:4px;cursor:pointer;background:var(--bg-input);padding:2px;"/></div>'
+      +'<div style="display:flex;align-items:center;gap:5px;margin-bottom:2px;">'
+      +'<input type="checkbox" id="dc-show-avatar" '+(embeds.show_avatar!==false?'checked':'')+' style="width:13px;height:13px;"/>'
+      +'<label for="dc-show-avatar" style="font-size:11px;color:var(--c-text);">Show staff avatar in embeds</label></div>'
+      +'<div style="display:flex;align-items:center;gap:5px;margin-bottom:2px;">'
+      +'<input type="checkbox" id="dc-show-ts" '+(embeds.show_timestamp!==false?'checked':'')+' style="width:13px;height:13px;"/>'
+      +'<label for="dc-show-ts" style="font-size:11px;color:var(--c-text);">Include timestamp in embeds</label></div>'
+      +'</div>'
+      +'<div style="margin-top:6px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;font-weight:600;">Footer Text</label>'
+      +'<input type="text" id="dc-footer" style="width:100%;" value="'+(embeds.footer_text||'Samaritan Systems')+'" placeholder="Footer text in embeds"/></div>'
+      +'<button class="btn" id="dc-save-embeds" style="margin-top:6px;">Save Appearance</button>'
+      +'<div id="dc-emb-msg" style="font-size:11px;margin-top:3px;color:var(--c-ok);min-height:14px;"></div>'
+      +'</div></div>'
+      +'</div>'
+
+      // RIGHT: Role pings + quick test
+      +'<div style="flex:1;min-width:220px;">'
+      +'<div class="sbox"><div class="stitle">Role Pings</div><div class="sbody">'
+      +'<div style="font-size:11px;color:var(--c-text2);margin-bottom:6px;">Discord role IDs to ping for specific events.</div>'
+      +[{key:'ping_mod',label:'Mod Actions'},{key:'ping_appeals',label:'Appeals'},{key:'ping_alerts',label:'Site Alerts'},{key:'ping_reports',label:'Staff Reports'},{key:'ping_beehive',label:'Beehive Alerts'}].map(function(r){
+        return '<div style="margin-bottom:5px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:1px;font-weight:600;">'+r.label+'</label>'
+          +'<input type="text" class="dc-role-id" data-key="'+r.key+'" style="width:100%;font-size:11px;" value="'+(roles[r.key]||'')+'" placeholder="Role ID (e.g. 123456789...)"/></div>';
+      }).join('')
+      +'<button class="btn" id="dc-save-roles" style="margin-top:4px;">Save Role Pings</button>'
+      +'<div id="dc-role-msg" style="font-size:11px;margin-top:3px;color:var(--c-ok);min-height:14px;"></div>'
+      +'</div></div>'
+
+      +'<div class="sbox"><div class="stitle">Quick Test</div><div class="sbody">'
+      +'<div style="font-size:11px;color:var(--c-text2);margin-bottom:6px;">Send a test message to verify your webhooks are working.</div>'
+      +'<select id="dc-test-channel" style="width:100%;margin-bottom:6px;">'
+      +webhookDefs.map(function(w){ return '<option value="'+w.key+'">'+w.label+'</option>'; }).join('')
+      +'</select>'
+      +'<button class="btn" id="dc-send-test" style="width:100%;">Send Test Message</button>'
+      +'<div id="dc-test-ch-msg" style="font-size:11px;margin-top:3px;color:var(--c-ok);min-height:14px;"></div>'
+      +'</div></div>'
+
+      +'<div class="sbox"><div class="stitle">Delivery Log</div><div class="sbody">'
+      +'<div style="font-size:11px;color:var(--c-text2);">Recent webhook deliveries:</div>'
+      +'<div id="dc-delivery-log" style="margin-top:6px;max-height:140px;overflow-y:auto;">'
+      +(cfg.deliveryLog?Object.values(cfg.deliveryLog).slice(-10).reverse().map(function(d){
+        return '<div style="font-size:10px;padding:3px 0;border-bottom:1px solid var(--c-border);color:'+(d.ok?'var(--c-ok)':'var(--c-ban)')+';">'
+          +(d.ok?'✓':'✗')+' '+d.event+' &bull; '+d.date+'</div>';
+      }).join(''):'<div style="font-size:11px;color:var(--c-text2);font-style:italic;">No deliveries yet.</div>')
+      +'</div></div></div>'
+
+      +'</div>'
+      +'</div>';
+
+    // Wire save webhooks
+    document.getElementById('dc-save-webhooks').onclick=async function(){
+      var newWH={};
+      document.querySelectorAll('.dc-wh-url').forEach(function(el){
+        var key=el.dataset.key;
+        var enEl=document.querySelector('.dc-wh-enabled[data-key="'+key+'"]');
+        newWH[key]={url:el.value.trim(),enabled:enEl?enEl.checked:true};
+      });
+      var en=document.getElementById('dc-enabled').checked;
+      var defWH=document.getElementById('dc-default-webhook').value.trim();
+      await update(ref(db,'meta/discordConfig'),{webhooks:newWH,enabled:en,defaultWebhook:defWH});
+      auditLog('Discord Webhooks Updated','Config saved by '+ME);
+      var msg=document.getElementById('dc-wh-msg');
+      msg.textContent='Webhook config saved!'; setTimeout(function(){ if(msg) msg.textContent=''; },2000);
+    };
+
+    // Wire save embeds
+    document.getElementById('dc-save-embeds').onclick=async function(){
+      var newEmb={
+        embed_color:document.getElementById('dc-embed-color').value,
+        show_avatar:document.getElementById('dc-show-avatar').checked,
+        show_timestamp:document.getElementById('dc-show-ts').checked,
+        footer_text:document.getElementById('dc-footer').value.trim()||'Samaritan Systems',
+      };
+      await update(ref(db,'meta/discordConfig'),{embeds:newEmb});
+      auditLog('Discord Embeds Updated','Appearance config saved');
+      var msg=document.getElementById('dc-emb-msg');
+      msg.textContent='Appearance saved!'; setTimeout(function(){ if(msg) msg.textContent=''; },2000);
+    };
+
+    // Wire save roles
+    document.getElementById('dc-save-roles').onclick=async function(){
+      var newRoles={};
+      document.querySelectorAll('.dc-role-id').forEach(function(el){ newRoles[el.dataset.key]=el.value.trim(); });
+      await update(ref(db,'meta/discordConfig'),{roles:newRoles});
+      auditLog('Discord Role Pings Updated','Role IDs saved');
+      var msg=document.getElementById('dc-role-msg');
+      msg.textContent='Role pings saved!'; setTimeout(function(){ if(msg) msg.textContent=''; },2000);
+    };
+
+    // Wire test default
+    document.getElementById('dc-test-default').onclick=async function(){
+      var url=document.getElementById('dc-default-webhook').value.trim();
+      var msg=document.getElementById('dc-test-msg');
+      if(!url){ msg.style.color='var(--c-ban)'; msg.textContent='No URL set.'; return; }
+      msg.style.color='var(--c-text2)'; msg.textContent='Sending...';
+      try{
+        var resp=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({username:'Samaritan Systems',content:'',embeds:[{title:'Test Webhook','description':'Connection successful! Samaritan is connected.','color':parseInt((embeds.embed_color||'#0969da').replace('#',''),16),'footer':{'text':embeds.footer_text||'Samaritan Systems'},'timestamp':new Date().toISOString()}]})});
+        if(resp.ok||resp.status===204){ msg.style.color='var(--c-ok)'; msg.textContent='Delivered!'; }
+        else{ msg.style.color='var(--c-ban)'; msg.textContent='HTTP '+resp.status; }
+      }catch(e){ msg.style.color='var(--c-ban)'; msg.textContent='Failed: '+e.message; }
+      setTimeout(function(){ if(msg) msg.textContent=''; },3000);
+    };
+
+    // Wire channel test
+    document.getElementById('dc-send-test').onclick=async function(){
+      var key=document.getElementById('dc-test-channel').value;
+      var wh=webhooks[key]&&webhooks[key].url||cfg.defaultWebhook||'';
+      var msg=document.getElementById('dc-test-ch-msg');
+      if(!wh){ msg.style.color='var(--c-ban)'; msg.textContent='No webhook URL for this channel.'; return; }
+      msg.style.color='var(--c-text2)'; msg.textContent='Sending...';
+      var def=webhookDefs.find(function(w){ return w.key===key; })||{label:key};
+      try{
+        var resp=await fetch(wh,{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({username:'Samaritan Systems',embeds:[{title:def.icon+' Test: '+def.label,'description':'This is a test message for the **'+def.label+'** webhook channel.','color':parseInt((embeds.embed_color||'#0969da').replace('#',''),16),'footer':{'text':embeds.footer_text||'Samaritan Systems'},'timestamp':new Date().toISOString()}]})});
+        if(resp.ok||resp.status===204){ msg.style.color='var(--c-ok)'; msg.textContent='Test delivered!'; }
+        else{ msg.style.color='var(--c-ban)'; msg.textContent='HTTP '+resp.status; }
+      }catch(e){ msg.style.color='var(--c-ban)'; msg.textContent='Error: '+e.message; }
+      setTimeout(function(){ if(msg) msg.textContent=''; },3000);
+    };
+
+  }).catch(function(e){ c.innerHTML='<div class="ptitle">[DC] Discord Config</div><div style="padding:8px;color:var(--c-ban);">Error loading config.</div>'; });
+}
+window.renderDiscordConfig=renderDiscordConfig;
+
+// Helper to fire a discord webhook for a given event
+async function fireDiscordWebhook(eventKey, embedData){
+  try{
+    var snap=await get(ref(db,'meta/discordConfig'));
+    if(!snap.exists()) return;
+    var cfg=snap.val()||{};
+    if(!cfg.enabled) return;
+    var wh=cfg.webhooks&&cfg.webhooks[eventKey]&&cfg.webhooks[eventKey].enabled!==false&&cfg.webhooks[eventKey].url
+      ?cfg.webhooks[eventKey].url
+      :cfg.defaultWebhook||'';
+    if(!wh) return;
+    var embeds=cfg.embeds||{};
+    var color=parseInt((embeds.embed_color||'#0969da').replace('#',''),16);
+    var roles=cfg.roles||{};
+    var pingMap={mod_actions:'ping_mod',appeals:'ping_appeals',alerts:'ping_alerts',staffReports:'ping_reports',beehive:'ping_beehive'};
+    var roleId=roles[pingMap[eventKey]||''];
+    var embed={...embedData,color:color};
+    if(embeds.show_timestamp!==false) embed.timestamp=new Date().toISOString();
+    if(embeds.footer_text) embed.footer={text:embeds.footer_text};
+    var body={username:'Samaritan Systems',content:roleId?'<@&'+roleId+'>':'',embeds:[embed]};
+    var resp=await fetch(wh,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var ok=resp.ok||resp.status===204;
+    // Log delivery
+    await push(ref(db,'meta/discordConfig/deliveryLog'),{event:eventKey,ok:ok,date:nowStr(),ts:Date.now()}).catch(function(){});
+  }catch(e){}
+}
+window.fireDiscordWebhook=fireDiscordWebhook;
+
+// ══════════════════════════════════════════════════════
+// PREFERENCES OVERLAY
+// ══════════════════════════════════════════════════════
+var USER_PREFS={};
+function loadUserPrefs(){
+  try{
+    var saved=localStorage.getItem('userPrefs_'+(ME||''));
+    USER_PREFS=saved?JSON.parse(saved):{};
+  }catch(e){ USER_PREFS={}; }
+}
+function saveUserPrefs(){
+  try{ localStorage.setItem('userPrefs_'+(ME||''),JSON.stringify(USER_PREFS)); }catch(e){}
+}
+
+function openPreferences(){
+  loadUserPrefs();
+  var defaultPages=[
+    {value:'home',label:'Dashboard'},
+    {value:'useradmin',label:'User Admin'},
+    {value:'accounts',label:'All Accounts'},
+    {value:'modlog',label:'Moderation Log'},
+    {value:'staff',label:'Staff Registry'},
+    {value:'appeals',label:'Appeals'},
+  ];
+  var densities=[{value:'comfortable',label:'Comfortable'},{value:'compact',label:'Compact'}];
+  var html='<div style="display:flex;flex-direction:column;gap:12px;font-size:12px;">'
+    +'<div><div style="font-size:11px;font-weight:700;color:var(--c-text);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Navigation</div>'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'
+    +'<label style="width:130px;color:var(--c-text2);">Default landing page</label>'
+    +'<select id="pref-landing" style="flex:1;">'
+    +defaultPages.map(function(p){ return '<option value="'+p.value+'"'+(USER_PREFS.landingPage===p.value?' selected':'')+'>'+p.label+'</option>'; }).join('')
+    +'</select></div></div>'
+    +'<div><div style="font-size:11px;font-weight:700;color:var(--c-text);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Display</div>'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'
+    +'<label style="width:130px;color:var(--c-text2);">Row density</label>'
+    +'<select id="pref-density" style="flex:1;">'
+    +densities.map(function(d){ return '<option value="'+d.value+'"'+(USER_PREFS.density===d.value?' selected':'')+'>'+d.label+'</option>'; }).join('')
+    +'</select></div>'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'
+    +'<label style="width:130px;color:var(--c-text2);">Sidebar collapsed by default</label>'
+    +'<input type="checkbox" id="pref-sidebar-compact" '+(USER_PREFS.sidebarCompact?'checked':'')+' style="width:14px;height:14px;"/></div>'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'
+    +'<label style="width:130px;color:var(--c-text2);">Animate stat counters</label>'
+    +'<input type="checkbox" id="pref-animate-stats" '+(USER_PREFS.animateStats!==false?'checked':'')+' style="width:14px;height:14px;"/></div>'
+    +'</div>'
+    +'<div><div style="font-size:11px;font-weight:700;color:var(--c-text);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Dashboard Widgets</div>'
+    +'<div style="font-size:11px;color:var(--c-text2);margin-bottom:5px;">Choose which stat cards appear on your dashboard.</div>'
+    +[{key:'sc_players',label:'Total Players'},{key:'sc_staff',label:'Staff Online'},{key:'sc_appeals',label:'Open Appeals'},{key:'sc_risk',label:'High Risk Players'},{key:'sc_modcount',label:'Mod Actions'}].map(function(w){
+      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">'
+        +'<input type="checkbox" class="pref-widget" data-key="'+w.key+'" '+(USER_PREFS['widget_'+w.key]!==false?'checked':'')+' style="width:13px;height:13px;"/>'
+        +'<label style="font-size:11px;color:var(--c-text);cursor:pointer;">'+w.label+'</label></div>';
+    }).join('')
+    +'</div>'
+    +'</div>';
+
+  openDialog('Preferences', '', html, function(){
+    USER_PREFS.landingPage=document.getElementById('pref-landing').value;
+    USER_PREFS.density=document.getElementById('pref-density').value;
+    USER_PREFS.sidebarCompact=document.getElementById('pref-sidebar-compact').checked;
+    USER_PREFS.animateStats=document.getElementById('pref-animate-stats').checked;
+    document.querySelectorAll('.pref-widget').forEach(function(el){
+      USER_PREFS['widget_'+el.dataset.key]=el.checked;
+    });
+    saveUserPrefs();
+    applyUserPrefs();
+    showToast('Preferences saved.','success');
+  });
+  document.getElementById('dlgOK').textContent='Save';
+}
+
+function applyUserPrefs(){
+  // Density
+  if(USER_PREFS.density==='compact'){
+    document.documentElement.style.setProperty('--tbl-row-padding','3px 8px');
+  } else {
+    document.documentElement.style.setProperty('--tbl-row-padding','6px 10px');
+  }
+}
+window.openPreferences=openPreferences;
+window.loadUserPrefs=loadUserPrefs;
+window.applyUserPrefs=applyUserPrefs;
+
+// ══════════════════════════════════════════════════════
+// EXPORT / REPORT CARD MENU FUNCTIONS
+// ══════════════════════════════════════════════════════
+function exportSnapshot(){
+  if(!canDo('canExportLogs')&&!isSoftwareManager()){ showToast('Insufficient permissions to export.','error'); return; }
+  var data={
+    exported:nowStr(), exportedBy:ME,
+    users:USERS, staff:STAFF,
+    modLog:MOD_LOG, revokeLog:REVOKE_LOG,
+    suspendLog:SUSPEND_LOG, terminateLog:TERMINATE_LOG,
+    loginLog:LOGIN_LOG, auditLog:AUDIT_LOG,
+    appealLog:APPEAL_LOG,
+  };
+  var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='samaritan-snapshot-'+nowStr().replace(/[/:, ]/g,'-')+'.json';
+  a.click();
+  auditLog('Full Snapshot Exported','By '+ME);
+  showToast('Snapshot exported.','success');
+}
+
+function exportLog(logName, data){
+  if(!canDo('canExportLogs')&&!isSoftwareManager()){ showToast('Insufficient permissions.','error'); return; }
+  var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='samaritan-'+logName+'-'+nowStr().replace(/[/:, ]/g,'-')+'.json';
+  a.click();
+  auditLog(logName+' Exported','By '+ME);
+  showToast(logName+' exported.','success');
+}
+
+function generateReportCard(){
+  var ua=Object.values(USERS);
+  var sa=Object.values(STAFF);
+  var totalActions=Object.keys(MOD_LOG).length;
+  var openAppeals=Object.values(APPEAL_LOG).filter(function(a){ return a.status==='Pending'; }).length;
+  var topMod=Object.entries(Object.values(MOD_LOG).reduce(function(acc,r){ if(r.mod) acc[r.mod]=(acc[r.mod]||0)+1; return acc; },{})).sort(function(a,b){ return b[1]-a[1]; })[0];
+
+  var html='<div style="font-size:11px;color:var(--c-text);line-height:2;">'
+    +'<div style="font-size:14px;font-weight:800;color:var(--c-link);margin-bottom:8px;">Samaritan Systems — Panel Report</div>'
+    +'<div><b>Generated:</b> '+nowStr()+'</div>'
+    +'<div><b>Generated by:</b> '+ME+' ['+MY_LEVEL+']</div>'
+    +'<hr style="border:none;border-top:1px solid var(--c-border);margin:8px 0;">'
+    +'<div><b>Total Players:</b> '+ua.length+'</div>'
+    +'<div><b>Active Players:</b> '+ua.filter(function(u){ return u.status==='active'; }).length+'</div>'
+    +'<div><b>Banned Players:</b> '+ua.filter(function(u){ return u.status==='banned'; }).length+'</div>'
+    +'<div><b>Suspended Players:</b> '+ua.filter(function(u){ return u.status==='suspended'; }).length+'</div>'
+    +'<hr style="border:none;border-top:1px solid var(--c-border);margin:8px 0;">'
+    +'<div><b>Total Staff:</b> '+sa.length+'</div>'
+    +'<div><b>Suspended Staff:</b> '+sa.filter(function(s){ return s.suspended; }).length+'</div>'
+    +'<div><b>Total Mod Actions:</b> '+totalActions+'</div>'
+    +'<div><b>Open Appeals:</b> '+openAppeals+'</div>'
+    +(topMod?'<div><b>Top Moderator:</b> '+topMod[0]+' ('+topMod[1]+' actions)</div>':'')
+    +'</div>';
+
+  openDialog('Panel Report Card','',html,null);
+  document.getElementById('dlgOK').style.display='none';
+  document.getElementById('dlgCancel').textContent='Close';
+}
+window.exportSnapshot=exportSnapshot;
+window.exportLog=exportLog;
+window.generateReportCard=generateReportCard;
+
+// ══════════════════════════════════════════════════════
+// TOOLS MENU FUNCTIONS
+// ══════════════════════════════════════════════════════
+function openRobloxLookupTool(){
+  openDialog('Roblox Lookup','Enter a Roblox username to fetch their profile data:',
+    '<input type="text" id="tool-rblx-user" style="width:100%;" placeholder="Roblox username"/>'
+    +'<div id="tool-rblx-result" style="margin-top:8px;font-size:11px;color:var(--c-text);min-height:40px;"></div>',
+    async function(){
+      var u=document.getElementById('tool-rblx-user').value.trim();
+      var res=document.getElementById('tool-rblx-result');
+      if(!u) return;
+      res.textContent='Looking up...';
+      try{
+        var info=await fetchRobloxInfo(u);
+        if(!info){ res.style.color='var(--c-ban)'; res.textContent='Not found.'; return; }
+        res.style.color='var(--c-ok)';
+        res.innerHTML='<div><b>ID:</b> '+(info.robloxId||'-')+'</div>'
+          +'<div><b>Display Name:</b> '+(info.displayName||'-')+'</div>'
+          +'<div><b>Account Created:</b> '+(info.accountCreated||'-')+'</div>'
+          +(info.avatarUrl?'<div style="margin-top:4px;"><img src="'+info.avatarUrl+'" width="40" height="40" style="border-radius:6px;object-fit:cover;"></div>':'');
+      }catch(e){ res.style.color='var(--c-ban)'; res.textContent='Error: '+e.message; }
+    }
+  );
+  document.getElementById('dlgOK').textContent='Look Up';
+}
+
+function openTimestampTool(){
+  openDialog('Timestamp Converter','Convert between timestamps and readable dates:',
+    '<div style="margin-bottom:5px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;font-weight:600;">Unix Timestamp (ms) to Date</label>'
+    +'<div style="display:flex;gap:4px;"><input type="number" id="tool-ts-in" style="flex:1;" placeholder="e.g. 1716000000000"/>'
+    +'<button class="btn small" onclick="var v=document.getElementById(\'tool-ts-in\').value;document.getElementById(\'tool-ts-out\').textContent=v?new Date(parseInt(v)).toLocaleString():\'Enter a timestamp\';">Convert</button></div>'
+    +'<div id="tool-ts-out" style="font-size:11px;color:var(--c-ok);margin-top:3px;min-height:14px;"></div></div>'
+    +'<div><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;font-weight:600;">Current Timestamp</label>'
+    +'<div style="font-size:12px;font-family:monospace;color:var(--c-link);padding:4px 8px;background:var(--bg-tbl-odd);border-radius:4px;">'+Date.now()+'</div></div>',
+    null);
+  document.getElementById('dlgOK').style.display='none';
+  document.getElementById('dlgCancel').textContent='Close';
+}
+
+function openBanDurationTool(){
+  openDialog('Ban Duration Calculator','Calculate exact ban expiry from a start date and duration:',
+    '<div style="display:flex;flex-direction:column;gap:5px;">'
+    +'<div><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;font-weight:600;">Start Date/Time</label>'
+    +'<input type="datetime-local" id="tool-ban-start" style="width:100%;"/></div>'
+    +'<div style="display:flex;gap:5px;">'
+    +'<div><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;font-weight:600;">Days</label><input type="number" id="tool-ban-days" style="width:70px;" value="0" min="0"/></div>'
+    +'<div><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;font-weight:600;">Hours</label><input type="number" id="tool-ban-hours" style="width:70px;" value="0" min="0" max="23"/></div>'
+    +'</div>'
+    +'<button class="btn" onclick="'
+    +'var start=new Date(document.getElementById(\'tool-ban-start\').value);'
+    +'var d=parseInt(document.getElementById(\'tool-ban-days\').value)||0;'
+    +'var h=parseInt(document.getElementById(\'tool-ban-hours\').value)||0;'
+    +'if(isNaN(start)){document.getElementById(\'tool-ban-result\').textContent=\'Enter a start date.\';return;}'
+    +'var exp=new Date(start.getTime()+d*86400000+h*3600000);'
+    +'document.getElementById(\'tool-ban-result\').textContent=\'Expires: \'+exp.toLocaleString();'
+    +'">Calculate</button>'
+    +'<div id="tool-ban-result" style="font-size:12px;font-weight:bold;color:var(--c-ok);min-height:16px;"></div>'
+    +'</div>',
+    null);
+  document.getElementById('dlgOK').style.display='none';
+  document.getElementById('dlgCancel').textContent='Close';
+  // Set start to now
+  var now=new Date(); now.setSeconds(0,0);
+  var el=document.getElementById('tool-ban-start');
+  if(el) el.value=now.toISOString().slice(0,16);
+}
+
+function openRepScoreTool(){
+  var pts=Object.entries(REP_POINTS).map(function(e){
+    return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">'
+      +'<input type="number" class="rsc-val" data-action="'+e[0]+'" style="width:50px;" value="'+e[1]+'"/>'
+      +'<label style="font-size:11px;color:var(--c-text);">'+e[0]+'</label></div>';
+  }).join('');
+  openDialog('Rep Score Calculator','Enter action counts to calculate total reputation score:',
+    pts+'<hr style="border:none;border-top:1px solid var(--c-border);margin:8px 0;">'
+    +'<button class="btn" onclick="var t=0;document.querySelectorAll(\'.rsc-val\').forEach(function(el){t+=parseInt(el.value||0)*('+JSON.stringify(REP_POINTS)+')[el.dataset.action]||0;});document.getElementById(\'rsc-total\').textContent=\'Total Rep Score: \'+t+\' pts\';document.getElementById(\'rsc-total\').style.color=t>15?\'var(--c-ban)\':t>5?\'var(--c-sus)\":\'var(--c-ok)\';">Calculate</button>'
+    +'<div id="rsc-total" style="font-size:13px;font-weight:bold;margin-top:6px;min-height:18px;"></div>',
+    null);
+  document.getElementById('dlgOK').style.display='none';
+  document.getElementById('dlgCancel').textContent='Close';
+}
+
+function openStaffReportFromMenu(){
+  nav('staffreports');
+  showToast('Navigate to the Reports tab to file a report.','info',2500);
+}
+window.openRobloxLookupTool=openRobloxLookupTool;
+window.openTimestampTool=openTimestampTool;
+window.openBanDurationTool=openBanDurationTool;
+window.openRepScoreTool=openRepScoreTool;
+
 
 // ── OPERATOR CODE ──
 function openOpDialog(warningMsg, cb){
@@ -12090,7 +12735,8 @@ async function doLogin(){
         };
       }
     }
-    nav('home');
+    loadUserPrefs(); applyUserPrefs();
+    nav(USER_PREFS.landingPage||'home');
     // Load theme from Firebase
     await loadThemeFromFirebase();
     // Start punishment expiry countdowns (visual)
@@ -12506,7 +13152,7 @@ function startListeners(){
     const raw=snap.val()||{};
     STAFF=Object.fromEntries(Object.entries(raw).filter(([,v])=>v&&v.username));
     // Only re-render pages that actually show staff data
-    const staffPages=['staff','activity','home','adminlog','accounts','warnlog','staffconfig','evaluations','messaging','suggestions','calendar'];
+    const staffPages=['staff','activity','home','adminlog','accounts','warnlog','staffconfig','evaluations','messaging','suggestions','calendar','staffreports'];
     if(staffPages.includes(page)||document.getElementById('monitor-tiles-wrap')) { safeRender(); if(document.getElementById('monitor-tiles-wrap')) renderMonitorTiles(); }
   });
   onValue(ref(db,'logs/moderation'),snap=>{
@@ -12643,6 +13289,7 @@ function startListeners(){
   onValue(ref(db,'monitorScreenshots'),snap=>{ MONITOR_SCREENSHOTS=snap.val()||{}; });
   onValue(ref(db,'staff'),snap=>{ if(snap.exists()) Object.entries(snap.val()||{}).forEach(([sid,s])=>{ if(s&&s.currentPage) STAFF_PAGES[sid]=s; }); if(document.getElementById('monitor-tiles-wrap')) renderMonitorTiles(); });
   onValue(ref(db,'meta/shiftConfig'),snap=>{ if(snap.exists()) SHIFT_CONFIG=snap.val(); });
+  onValue(ref(db,'staffReports'),snap=>{ STAFF_REPORTS=snap.val()||{}; if(page==='staffreports') safeRender(); });
   onValue(ref(db,'shiftSlots'),snap=>{ SHIFT_SLOTS=snap.val()||{}; if(page==='calendar') safeRender(); });
   // Poison listener - real-time check if current user is poisoned
   onValue(ref(db,'contingencies/poison/'+ME),function(snap){
@@ -13434,7 +14081,7 @@ function buildSearchChannels(){
   if(!wrap) return;
   const CHANNEL_DEFS=[
     {id:'srch-players',  label:'Players',       icon:'👤', cat:'People',      always:true},
-    {id:'srch-staff',    label:'Staff',          icon:'🛡️', cat:'People',      perm:'canViewStaff'},
+    {id:'srch-staff',    label:'Staff',          icon:'🛡', cat:'People',      perm:'canViewStaff'},
     {id:'srch-modlog',   label:'Mod Log',        icon:'📋', cat:'Logs',        perm:'canViewModLog'},
     {id:'srch-susplog',  label:'Suspend Log',    icon:'⏸️', cat:'Logs',        perm:'canViewSuspendLogs'},
     {id:'srch-termlog',  label:'Terminate Log',  icon:'🚫', cat:'Logs',        perm:'canViewTerminateLogs'},
@@ -13622,14 +14269,25 @@ function setupMenus(){
     const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
     a.download=`admin-logs-${today()}.json`; a.click();
   };
-  // View menu
-  ['useradmin','accounts','staff','modlog','adminlog'].forEach(p=>{
-    const el=document.getElementById('menu-view-'+p); if(el) el.onclick=()=>nav(p);
-  });
+  // Export menu
+  var mExpSnap=document.getElementById('menu-export-snapshot'); if(mExpSnap) mExpSnap.onclick=exportSnapshot;
+  var mExpMod=document.getElementById('menu-export-modlog'); if(mExpMod) mExpMod.onclick=function(){ exportLog('modlog',MOD_LOG); };
+  var mExpStaff=document.getElementById('menu-export-staff'); if(mExpStaff) mExpStaff.onclick=function(){ exportLog('staff',STAFF); };
+  var mExpRpt=document.getElementById('menu-export-report'); if(mExpRpt) mExpRpt.onclick=generateReportCard;
+
+  // Preferences menu
+  var mPrefs=document.getElementById('menu-prefs-open'); if(mPrefs) mPrefs.onclick=openPreferences;
+
   // Tools menu
-  ['altdetect','reputation','announcements'].forEach(p=>{
-    const el=document.getElementById('menu-'+p); if(el) el.onclick=()=>nav(p);
-  });
+  var mToolRblx=document.getElementById('menu-tool-roblox'); if(mToolRblx) mToolRblx.onclick=openRobloxLookupTool;
+  var mToolTs=document.getElementById('menu-tool-timestamp'); if(mToolTs) mToolTs.onclick=openTimestampTool;
+  var mToolBan=document.getElementById('menu-tool-banduration'); if(mToolBan) mToolBan.onclick=openBanDurationTool;
+  var mToolRep=document.getElementById('menu-tool-repscore'); if(mToolRep) mToolRep.onclick=openRepScoreTool;
+  var mToolReport=document.getElementById('menu-tool-report'); if(mToolReport) mToolReport.onclick=openStaffReportFromMenu;
+
+  // Help menu
+  var mUpdateLog=document.getElementById('menu-updatelog'); if(mUpdateLog) mUpdateLog.onclick=openUpdateLog;
+
   // Help menu
   const mabout=document.getElementById('menu-about');
   if(mabout) mabout.onclick=()=>{
@@ -13774,7 +14432,7 @@ function openNotifSettings(){
   document.getElementById('notifSettingsOverlay').classList.add('show');
 }
 
-['useradmin','moderate','accounts','reputation','appeals','altdetect','staff','activity','modlog','revokelog','suspendlog','terminatelog','warnlog','loginlog','auditlog','alerts','adminlog','home','messaging','requests','userconfig','siteconfig','suggestions','staffconfig','msganalyze','statuslog','badgemgmt','wipelog','robloxlog','cflog','customfieldlog','gamelogs','gameintegration','information','leakid','clearance','samaritan','samlog','evaluations','blacklist','people','moderation','logs','configuration','machine','calendar'].forEach(p=>{
+['useradmin','moderate','accounts','reputation','appeals','altdetect','staff','activity','modlog','revokelog','suspendlog','terminatelog','warnlog','loginlog','auditlog','alerts','adminlog','home','messaging','requests','userconfig','siteconfig','suggestions','staffconfig','msganalyze','statuslog','badgemgmt','wipelog','robloxlog','cflog','customfieldlog','gamelogs','gameintegration','information','leakid','clearance','samaritan','samlog','evaluations','blacklist','people','moderation','logs','configuration','machine','calendar','discordconfig','staffreports'].forEach(p=>{
   const el=document.getElementById('nav-'+p);
   if(el) el.onclick=()=>nav(p);
 });
