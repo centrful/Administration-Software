@@ -508,16 +508,13 @@ body.sam-active .main{ background:#0d1117; }
 /* Section base */
 .ln-section{
   display:block; padding-top:0;
-  opacity:0; transform:translateY(24px);
-  transition:opacity 0.65s ease, transform 0.65s ease;
+  opacity:0; transform:translateY(20px);
+  transition:opacity 0.6s ease, transform 0.6s ease;
 }
-.ln-section.visible{
-  opacity:1; transform:none;
+.ln-section.ln-revealed{
+  opacity:1 !important; transform:none !important;
 }
-/* home section always visible */
-#ln-sec-home{ opacity:1 !important; transform:none !important; }
-/* ensure landingScreen scrolls */
-#landingScreen{ overflow-y:auto; }
+#landingScreen{ overflow-y:auto; height:100vh; }
 
 /* Hero */
 .ln-hero{
@@ -582,7 +579,8 @@ body.sam-active .main{ background:#0d1117; }
 }
 .ln-hero-btn-secondary:hover{ background:rgba(88,166,255,0.12); transform:translateY(-2px); }
 .ln-scroll-hint{
-  position:absolute; bottom:28px; left:50%; transform:translateX(-50%);
+  position:absolute; bottom:28px; left:0; right:0; margin:0 auto;
+  width:fit-content;
   display:flex; flex-direction:column; align-items:center; gap:4px;
   color:rgba(230,237,243,0.3); font-size:10px; letter-spacing:1px;
   animation:ln-bob 2s infinite;
@@ -843,23 +841,14 @@ select.ln-input{ cursor:pointer; }
 
 
 /* ── Admin panel ambient background ── */
-#adminScreen::before{
-  content:'';
-  position:fixed; inset:0; z-index:0; pointer-events:none;
-  background:
-    radial-gradient(ellipse 60% 40% at 15% 20%, rgba(88,166,255,0.04) 0%, transparent 70%),
-    radial-gradient(ellipse 50% 35% at 85% 80%, rgba(88,166,255,0.03) 0%, transparent 70%),
-    radial-gradient(ellipse 40% 30% at 70% 15%, rgba(46,160,67,0.02) 0%, transparent 70%);
-  animation:panel-ambient 18s ease-in-out infinite alternate;
-}
-@keyframes panel-ambient{
-  0%{ opacity:0.6; }
-  50%{ opacity:1; }
-  100%{ opacity:0.7; }
-}
-#adminScreen .sidebar{ position:relative; z-index:2; }
-#adminScreen #content{ position:relative; z-index:2; }
-#adminScreen .topbar{ position:relative; z-index:10; }
+#panelBgCanvas{ display:none; }
+body.gh-dark #panelBgCanvas{ display:block; }
+.topbar{ position:relative; z-index:10; }
+.sidebar{ position:relative; z-index:2; }
+#content{ position:relative; z-index:2; }
+.menubar{ position:relative; z-index:9; }
+.announcements{ position:relative; z-index:8; }
+.topinfo{ position:relative; z-index:7; }
 
 /* Stat cards glow on hover */
 .stat-card{
@@ -941,7 +930,7 @@ select.ln-input{ cursor:pointer; }
           <button class="ln-hero-btn ln-hero-btn-secondary" id="ln-hero-learn-btn">Learn More</button>
         </div>
       </div>
-      <div class="ln-scroll-hint" onclick="document.getElementById('ln-sec-about').scrollIntoView({behavior:'smooth'})" style="cursor:pointer;">
+      <div class="ln-scroll-hint" onclick="var c=document.getElementById('landingScreen');var t=document.getElementById('ln-sec-about');if(c&&t)c.scrollTo({top:t.offsetTop,behavior:'smooth'});" style="cursor:pointer;">
         <span style="letter-spacing:2px;font-size:9px;">SCROLL</span>
         <svg width="14" height="10" viewBox="0 0 14 10" fill="none" style="animation:ln-bob 1.5s infinite;"><path d="M1 1l6 6 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
       </div>
@@ -1201,6 +1190,7 @@ select.ln-input{ cursor:pointer; }
 </div>
 
 <div id="adminScreen" style="position:relative;">
+<canvas id="panelBgCanvas" style="position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0.6;"></canvas>
 <div id="toast-container"></div>
   <canvas id="shellBg" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0;transition:opacity 0.5s;"></canvas>
   <div class="shell" style="position:relative;z-index:1;">
@@ -1347,7 +1337,7 @@ select.ln-input{ cursor:pointer; }
   <div class="dialog" style="width:560px;max-width:98vw;">
     <div style="background:var(--bg-stitle);color:var(--c-stitle-text);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">
       <div style="font-size:13px;font-weight:600;">&#128269; Global Search</div>
-      <button id="searchClose" style="cursor:pointer;color:var(--c-stitle-text);opacity:0.7;font-size:18px;line-height:1;background:none;border:none;padding:0 2px;">&#10005;</button>
+      <button id="searchClose" onclick="document.getElementById('searchOverlay').classList.remove('show')" style="cursor:pointer;color:var(--c-stitle-text);opacity:0.7;font-size:18px;line-height:1;background:none;border:none;padding:0 2px;">&#10005;</button>
     </div>
     <div style="padding:12px 14px 10px;">
       <div style="display:flex;gap:6px;align-items:flex-end;margin-bottom:8px;">
@@ -2983,7 +2973,7 @@ function updateSidebar(){
     'staff-section':['staff','activity','messaging','suggestions','staffconfig','evaluations','calendar','staffreports'],
     logs:['modlog','revokelog','suspendlog','terminatelog','warnlog','loginlog','auditlog','cflog'],
     configuration:['alerts','adminlog'],
-    machine:['siteconfig','statuslog','wipelog','robloxlog','badgemgmt','leakid','clearance','samlog','blacklist','discordconfig'],
+    machine:['siteconfig','statuslog','wipelog','robloxlog','badgemgmt','leakid','clearance','samlog','blacklist','discordconfig','landingconfig','appsconfig'],
   };
   document.querySelectorAll('.sb-section-link').forEach(el=>el.classList.remove('active'));
   for(const [section, pages] of Object.entries(sectionMap)){
@@ -3013,7 +3003,7 @@ var SECTION_PAGES={
   'staff-section':['staff','activity','messaging','suggestions','staffconfig','evaluations','calendar','staffreports'],
   logs:['modlog','revokelog','suspendlog','terminatelog','warnlog','loginlog','auditlog','cflog'],
   configuration:['alerts','adminlog'],
-  machine:['siteconfig','statuslog','wipelog','robloxlog','badgemgmt','leakid','clearance','samlog','blacklist','discordconfig'],
+  machine:['siteconfig','statuslog','wipelog','robloxlog','badgemgmt','leakid','clearance','samlog','blacklist','discordconfig','landingconfig','appsconfig'],
 };
 
 // Which section a page belongs to
@@ -14350,6 +14340,7 @@ async function doLogin(){
     document.getElementById('loginScreen').style.display='none';
     document.getElementById('adminScreen').style.display='block';
     try{ wireTopbar(); }catch(e){}
+    try{ initPanelCanvas(); }catch(e){}
     document.getElementById('topbarTitle').innerHTML=`<span style='color:#58a6ff;font-weight:800;letter-spacing:-0.5px;font-size:14px;'>SAMARITAN</span><span style='color:var(--c-topbar-sub);font-weight:400;font-size:12px;'> | Internal</span> <span style='color:var(--c-topbar-sub);font-size:11px;font-weight:400;'>&mdash; ${ME}</span> <span style='color:var(--c-topbar-text);font-size:11px;font-weight:600;'>[${MY_LEVEL}]</span>`;
     startListeners();
     startHeartbeat();
@@ -16062,13 +16053,72 @@ applyTheme();
 
 try{ setupMenus(); }catch(e){ console.warn("setupMenus error:",e); }
 
+
+// ── Panel background canvas (subtle ambient effect) ──
+var _panelAnimId=null;
+function initPanelCanvas(){
+  if(_panelAnimId){ cancelAnimationFrame(_panelAnimId); _panelAnimId=null; }
+  var canvas=document.getElementById('panelBgCanvas');
+  if(!canvas) return;
+  var ctx=canvas.getContext('2d');
+  canvas.width=window.innerWidth;
+  canvas.height=window.innerHeight;
+  window.addEventListener('resize',function(){
+    canvas.width=window.innerWidth;
+    canvas.height=window.innerHeight;
+  });
+  var W=canvas.width, H=canvas.height;
+  var t=0;
+  // Very few, very subtle orbs
+  var orbs=[
+    {x:W*0.08, y:H*0.15, r:420, vx:0.08, vy:0.06, color:'88,166,255', a:0.022},
+    {x:W*0.92, y:H*0.85, r:380, vx:-0.06, vy:0.05, color:'88,166,255', a:0.018},
+    {x:W*0.55, y:H*0.08, r:300, vx:0.05, vy:0.08, color:'46,160,67',   a:0.012},
+  ];
+  // Sparse grid dots
+  var STEP=64;
+  var COLS=Math.ceil(W/STEP)+2, ROWS=Math.ceil(H/STEP)+2;
+  function drawPanel(){
+    if(!document.getElementById('adminScreen')||document.getElementById('adminScreen').style.display==='none'){
+      return;
+    }
+    ctx.clearRect(0,0,W,H);
+    // Orbs
+    orbs.forEach(function(o,i){
+      o.x+=Math.sin(t*0.15+i*1.2)*o.vx;
+      o.y+=Math.cos(t*0.12+i*0.8)*o.vy;
+      var g=ctx.createRadialGradient(o.x,o.y,0,o.x,o.y,o.r);
+      g.addColorStop(0,'rgba('+o.color+','+o.a+')');
+      g.addColorStop(0.6,'rgba('+o.color+','+(o.a*0.3)+')');
+      g.addColorStop(1,'transparent');
+      ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    });
+    // Subtle grid
+    for(var col=0;col<COLS;col++){
+      for(var row=0;row<ROWS;row++){
+        var x=col*STEP, y=row*STEP;
+        var dist=Math.sqrt((x-W*0.5)*(x-W*0.5)+(y-H*0.5)*(y-H*0.5));
+        var ripple=Math.sin(t*0.4-dist*0.008)*0.5+0.5;
+        var alpha=0.015+ripple*0.02;
+        ctx.beginPath();
+        ctx.arc(x,y,0.6,0,Math.PI*2);
+        ctx.fillStyle='rgba(88,166,255,'+alpha+')';
+        ctx.fill();
+      }
+    }
+    t+=0.006;
+    _panelAnimId=requestAnimationFrame(drawPanel);
+  }
+  drawPanel();
+}
+window.initPanelCanvas=initPanelCanvas;
+
+var _topbarWired=false;
 function wireTopbar(){
-  // Only wire things that genuinely need post-login rewiring.
-  // setupMenus() handles most wiring - we just ensure logout is fresh.
+  if(_topbarWired) return; // only wire once
+  _topbarWired=true;
   var lob=document.getElementById('logoutBtn');
   if(lob) lob.onclick=doLogout;
-  // Re-run setupMenus safely to catch anything that may have missed first time
-  try{ setupMenus(); }catch(e){}
 }
 
 
@@ -16104,6 +16154,14 @@ function showLanding(){
   if(as) as.style.display='none';
   startLandingCanvas();
   loadLandingData();
+  // Reveal sections in view and attach scroll listener
+  setTimeout(function(){
+    var container=document.getElementById('landingScreen');
+    if(container){
+      container.addEventListener('scroll', revealLandingSections, {passive:true});
+      revealLandingSections();
+    }
+  }, 100);
 }
 function hideLanding(){
   var el=document.getElementById('landingScreen');
@@ -16116,34 +16174,65 @@ window.hideLanding=hideLanding;
 document.querySelectorAll('.ln-nav-tab').forEach(function(tab){
   tab.onclick=function(){
     var sec=document.getElementById('ln-sec-'+tab.dataset.section);
-    if(sec) sec.scrollIntoView({behavior:'smooth',block:'start'});
+    var lnc=document.getElementById('landingScreen');
+    if(lnc&&sec) lnc.scrollTo({top:sec.offsetTop,behavior:'smooth'});
   };
 });
 
-// ── IntersectionObserver: highlight active tab + trigger animations ──
+// ── Scroll-based section reveal using the landingScreen container ──
 var _statsAnimated=false;
 var _careersLoaded=false;
-var _sectionObserver=new IntersectionObserver(function(entries){
-  entries.forEach(function(entry){
-    if(entry.isIntersecting){
-      // Fade in
-      entry.target.classList.add('visible');
-      // Active nav tab
-      var id=entry.target.id.replace('ln-sec-','');
-      document.querySelectorAll('.ln-nav-tab').forEach(function(t){
-        t.classList.toggle('active', t.dataset.section===id);
-      });
-      // Trigger one-shot animations
-      if(id==='stats'&&!_statsAnimated){ _statsAnimated=true; animateCounters(); }
-      if(id==='careers'&&!_careersLoaded){ _careersLoaded=true; renderLandingCareers(); }
+
+function revealLandingSections(){
+  var container=document.getElementById('landingScreen');
+  if(!container) return;
+  var scrollTop=container.scrollTop;
+  var containerH=container.clientHeight;
+  ['home','about','stats','policies','careers'].forEach(function(id){
+    var el=document.getElementById('ln-sec-'+id);
+    if(!el) return;
+    // Reveal when top of section is within 90% of container height
+    var elTop=el.offsetTop - container.offsetTop;
+    if(scrollTop + containerH * 0.9 >= elTop){
+      el.classList.add('ln-revealed');
+      // Active nav tab - use center of visible area
+      var elCenter=elTop + el.offsetHeight/2;
+      var viewCenter=scrollTop + containerH/2;
+      // Light-touch active: whichever section center is closest to view center
     }
   });
-},{ threshold:0.05, rootMargin:'0px 0px -10% 0px' });
+  // Determine active tab based on scroll position
+  var sections=['home','about','stats','policies','careers'];
+  var activeId='home';
+  for(var i=sections.length-1;i>=0;i--){
+    var el2=document.getElementById('ln-sec-'+sections[i]);
+    if(el2&&el2.offsetTop - container.offsetTop <= scrollTop + containerH*0.4){
+      activeId=sections[i]; break;
+    }
+  }
+  document.querySelectorAll('.ln-nav-tab').forEach(function(t){
+    t.classList.toggle('active', t.dataset.section===activeId);
+  });
+  // One-shot triggers
+  var statsEl=document.getElementById('ln-sec-stats');
+  if(statsEl&&statsEl.classList.contains('ln-revealed')&&!_statsAnimated){
+    _statsAnimated=true; animateCounters();
+  }
+  var careersEl=document.getElementById('ln-sec-careers');
+  if(careersEl&&careersEl.classList.contains('ln-revealed')&&!_careersLoaded){
+    _careersLoaded=true; renderLandingCareers();
+  }
+}
 
-['home','about','stats','policies','careers'].forEach(function(id){
-  var el=document.getElementById('ln-sec-'+id);
-  if(el) _sectionObserver.observe(el);
-});
+// Attach scroll listener to landingScreen container
+setTimeout(function(){
+  var container=document.getElementById('landingScreen');
+  if(container){
+    container.addEventListener('scroll', revealLandingSections, {passive:true});
+    // Reveal sections already in view on load
+    revealLandingSections();
+  }
+}, 200);
 
 // ── CTA buttons ──
 document.getElementById('ln-login-btn').onclick=function(){
