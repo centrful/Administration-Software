@@ -3033,7 +3033,11 @@ function updateAnnouncements(){
   if(!bar) return;
   const now=Date.now();
   const active=Object.values(SITE_ALERTS).filter(a=>a.active&&!(a.expiresAt&&a.expiresAt>0&&now>a.expiresAt)&&(a.visibility==='internal'||a.visibility==='all'||!a.visibility));
-  if(!active.length){ bar.style.display='none'; return; }
+  if(!active.length){
+    // Only hide if beehive is also not active
+    if(!window._beehiveBarActive) bar.style.display='none';
+    return;
+  }
   const latest=active[active.length-1];
   // Dark-mode-friendly: semi-transparent tinted backgrounds with strong colored text
   const isDark=document.body.classList.contains('gh-dark');
@@ -14840,7 +14844,7 @@ async function doLogout(fromPoison){
       window.showLanding();
     } else {
       document.getElementById('loginScreen').style.display='flex';
-      if(typeof window.initLoginBgFn==='function') setTimeout(window.initLoginBgFn,100);
+      if(typeof window.initLoginBgFn==='function') setTimeout(function(){ if(document.getElementById('loginScreen').style.display!=='none') window.initLoginBgFn(); },150);
     }
   }
 }
@@ -14869,7 +14873,7 @@ function showPoisonLockout(username){
         document.getElementById('loginScreen').style.display='flex';
         document.getElementById('loginUser').value='';
         document.getElementById('loginPass').value='';
-        if(typeof window.initLoginBgFn==='function') setTimeout(window.initLoginBgFn,100);
+        if(typeof window.initLoginBgFn==='function') setTimeout(function(){ if(document.getElementById('loginScreen').style.display!=='none') window.initLoginBgFn(); },150);
       }
     }catch(e){}
   },4000);
@@ -16399,9 +16403,9 @@ function setupMenus(){
     document.getElementById('searchOverlay').classList.add('show');
     setTimeout(()=>document.getElementById('srchQuery').focus(),100);
   };
-  document.getElementById('searchClose').onclick=()=>document.getElementById('searchOverlay').classList.remove('show');
-  document.getElementById('srchGo').onclick=runAdvancedSearch;
-  document.getElementById('srchQuery').onkeydown=e=>{ if(e.key==='Enter') runAdvancedSearch(); if(e.key==='Escape') document.getElementById('searchOverlay').classList.remove('show'); };
+  const searchCloseBtn=document.getElementById('searchClose'); if(searchCloseBtn) searchCloseBtn.onclick=()=>document.getElementById('searchOverlay').classList.remove('show');
+  const srchGoBtn=document.getElementById('srchGo'); if(srchGoBtn) srchGoBtn.onclick=runAdvancedSearch;
+  const srchQ=document.getElementById('srchQuery'); if(srchQ) srchQ.onkeydown=e=>{ if(e.key==='Enter') runAdvancedSearch(); if(e.key==='Escape') document.getElementById('searchOverlay').classList.remove('show'); };
 
   // Night mode button
   const nightBtn=document.getElementById('nightModeBtn');
@@ -16430,7 +16434,7 @@ function setupMenus(){
 
   // Update log popup
   const ulc=document.getElementById('updateLogClose'); if(ulc) ulc.onclick=()=>document.getElementById('updateLogOverlay').classList.remove('show');
-  document.getElementById('updateLogOK').onclick=()=>document.getElementById('updateLogOverlay').classList.remove('show');
+  const ulok=document.getElementById('updateLogOK'); if(ulok) ulok.onclick=()=>document.getElementById('updateLogOverlay').classList.remove('show');
   window.openUpdateLog=async function(){
     // Seed Firebase with defaults if never saved before
     const snap=await get(ref(db,'meta/updateLog'));
@@ -16659,7 +16663,7 @@ document.getElementById('ln-login-btn').onclick=function(){
   hideLanding();
   var ls=document.getElementById('loginScreen');
   if(ls){ ls.style.display='flex'; }
-  if(typeof window.initLoginBgFn==='function') setTimeout(window.initLoginBgFn,100);
+  if(typeof window.initLoginBgFn==='function') setTimeout(function(){ if(document.getElementById('loginScreen').style.display!=='none') window.initLoginBgFn(); },150);
   // Add back button to login
   if(!document.getElementById('ln-back-btn')){
     var back=document.createElement('button');
@@ -17060,14 +17064,18 @@ function loadLandingData(){
         if(a.expiresAt&&a.expiresAt>0&&now>a.expiresAt) return false;
         return a.visibility==='external'||a.visibility==='all';
       });
-      // Also check beehive alerts
-      get(ref(db,'beehiveAlerts')).then(function(bSnap){
-        var beehives=bSnap.exists()?Object.values(bSnap.val()||{}):[];
-        var activeBeehive=beehives.filter(function(b){
-          if(!b||!b.active) return false;
-          if(b.expiresAt&&b.expiresAt>0&&now>b.expiresAt) return false;
-          return b.visibility==='external'||b.visibility==='all';
-        });
+      // Also check beehive at correct Firebase path
+      get(ref(db,'contingencies/beehive')).then(function(bSnap){
+        var beehiveData=bSnap.exists()?bSnap.val():null;
+        var activeBeehive=[];
+        if(beehiveData&&beehiveData.active){
+          var bNow=Date.now();
+          if(!(beehiveData.expiresAt&&beehiveData.expiresAt>0&&bNow>beehiveData.expiresAt)){
+            if(beehiveData.visibility==='external'||beehiveData.visibility==='all'){
+              activeBeehive=[beehiveData];
+            }
+          }
+        }
         var all=[...active,...activeBeehive].sort(function(a,b){ return (b.ts||0)-(a.ts||0); });
         if(!all.length){ strip.className=''; strip.style.display='none'; return; }
         var latest=all[0];
@@ -17477,8 +17485,13 @@ if(navStaffSection) navStaffSection.onclick=()=>nav('staff-section');
     }
     draw();
   };
-  document.addEventListener('DOMContentLoaded', window.initLoginBgFn);
-  setTimeout(window.initLoginBgFn, 100);
+  // Only init login background when login screen is actually shown
+  // (not on page load since we show the landing page first)
+  window._initLoginBgOnce=function(){
+    if(document.getElementById('loginScreen').style.display!=='none'){
+      window.initLoginBgFn();
+    }
+  };
 })();
 </script>
 </body>
