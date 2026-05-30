@@ -449,9 +449,568 @@ body.sam-active .main{ background:#0d1117; }
 /* Sidebar section items - bolder than regular sb-link */
 .sb-section-link{font-weight:600 !important;letter-spacing:0.1px;}
 @media(max-width:768px){.page-tabs{gap:0;}.page-tab{padding:6px 10px;font-size:11px;}}
+
+/* ═══════════════════════════════════════════════════
+   SAMARITAN LANDING PAGE
+═══════════════════════════════════════════════════ */
+#landingScreen{
+  display:flex; flex-direction:column; min-height:100vh;
+  background:#080c14; color:#e6edf3; font-family:inherit;
+  position:relative; overflow-x:hidden;
+}
+#landingScreen *{ box-sizing:border-box; }
+
+/* Navbar */
+.ln-nav{
+  position:fixed; top:0; left:0; right:0; z-index:1000;
+  display:flex; align-items:center; padding:0 32px; height:56px;
+  background:rgba(8,12,20,0.7); backdrop-filter:blur(12px);
+  border-bottom:1px solid rgba(88,166,255,0.12);
+  transition:background 0.3s;
+}
+.ln-nav-logo{
+  display:flex; align-items:center; gap:10px;
+  font-size:14px; font-weight:800; letter-spacing:2px;
+  color:#e6edf3; text-transform:uppercase; flex-shrink:0;
+}
+.ln-nav-diamond{
+  width:22px; height:22px;
+  background:linear-gradient(135deg,#58a6ff,#a371f7);
+  transform:rotate(45deg); border-radius:2px;
+  box-shadow:0 0 12px rgba(88,166,255,0.5);
+  flex-shrink:0;
+}
+.ln-nav-tabs{
+  display:flex; align-items:center; gap:2px;
+  margin:0 auto; 
+}
+.ln-nav-tab{
+  padding:6px 16px; font-size:12px; font-weight:500;
+  color:rgba(230,237,243,0.6); cursor:pointer;
+  border-bottom:2px solid transparent;
+  transition:color 0.2s, border-color 0.2s;
+  letter-spacing:0.3px; white-space:nowrap;
+}
+.ln-nav-tab:hover{ color:#e6edf3; }
+.ln-nav-tab.active{ color:#58a6ff; border-color:#58a6ff; }
+.ln-nav-actions{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.ln-btn{
+  padding:6px 18px; font-size:12px; font-weight:600;
+  border-radius:6px; cursor:pointer; transition:all 0.2s;
+  font-family:inherit; letter-spacing:0.3px;
+}
+.ln-btn-outline{
+  background:transparent; border:1px solid rgba(88,166,255,0.4);
+  color:#58a6ff;
+}
+.ln-btn-outline:hover{ background:rgba(88,166,255,0.1); border-color:#58a6ff; }
+.ln-btn-primary{
+  background:linear-gradient(135deg,#1f6feb,#a371f7);
+  border:none; color:#fff;
+  box-shadow:0 0 20px rgba(88,166,255,0.3);
+}
+.ln-btn-primary:hover{ box-shadow:0 0 30px rgba(88,166,255,0.5); transform:translateY(-1px); }
+
+/* Section base */
+.ln-section{
+  display:none; min-height:100vh; padding-top:56px;
+}
+.ln-section.active{ display:block; }
+
+/* Hero */
+.ln-hero{
+  position:relative; height:100vh; display:flex;
+  align-items:center; justify-content:center;
+  flex-direction:column; text-align:center;
+  overflow:hidden;
+}
+#ln-hero-canvas{
+  position:absolute; inset:0; width:100%; height:100%;
+  pointer-events:none;
+}
+.ln-hero-content{ position:relative; z-index:2; padding:0 24px; }
+.ln-hero-status{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:4px 14px; border-radius:20px; font-size:11px;
+  font-weight:600; letter-spacing:0.5px; margin-bottom:24px;
+  border:1px solid; background:rgba(63,185,80,0.08);
+}
+.ln-status-dot{
+  width:7px; height:7px; border-radius:50%;
+  animation:ln-pulse 2s infinite;
+}
+@keyframes ln-pulse{
+  0%,100%{ opacity:1; box-shadow:0 0 0 0 currentColor; }
+  50%{ opacity:0.7; box-shadow:0 0 0 4px transparent; }
+}
+.ln-hero-title{
+  font-size:clamp(36px,7vw,80px); font-weight:900;
+  letter-spacing:-1px; line-height:1;
+  background:linear-gradient(135deg,#e6edf3 30%,#58a6ff 60%,#a371f7 100%);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  background-clip:text;
+  filter:drop-shadow(0 0 40px rgba(88,166,255,0.3));
+  margin-bottom:16px;
+  animation:ln-fadein 1s ease both;
+}
+.ln-hero-motto{
+  font-size:clamp(13px,2vw,18px); color:rgba(230,237,243,0.5);
+  font-style:italic; letter-spacing:1px; margin-bottom:40px;
+  animation:ln-fadein 1s ease 0.3s both;
+}
+@keyframes ln-fadein{ from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
+.ln-hero-btns{
+  display:flex; gap:12px; justify-content:center; flex-wrap:wrap;
+  animation:ln-fadein 1s ease 0.6s both;
+}
+.ln-hero-btn{
+  padding:12px 32px; font-size:14px; font-weight:700;
+  border-radius:8px; cursor:pointer; font-family:inherit;
+  transition:all 0.2s; letter-spacing:0.5px;
+}
+.ln-hero-btn-primary{
+  background:linear-gradient(135deg,#1f6feb,#a371f7);
+  border:none; color:#fff;
+  box-shadow:0 0 30px rgba(88,166,255,0.4);
+}
+.ln-hero-btn-primary:hover{ box-shadow:0 0 50px rgba(88,166,255,0.6); transform:translateY(-2px); }
+.ln-hero-btn-secondary{
+  background:rgba(88,166,255,0.06);
+  border:1px solid rgba(88,166,255,0.3); color:#58a6ff;
+}
+.ln-hero-btn-secondary:hover{ background:rgba(88,166,255,0.12); transform:translateY(-2px); }
+.ln-scroll-hint{
+  position:absolute; bottom:28px; left:50%; transform:translateX(-50%);
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+  color:rgba(230,237,243,0.3); font-size:10px; letter-spacing:1px;
+  animation:ln-bob 2s infinite;
+}
+@keyframes ln-bob{ 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(6px)} }
+
+/* Content sections */
+.ln-content{ max-width:900px; margin:0 auto; padding:80px 32px; }
+.ln-content-title{
+  font-size:32px; font-weight:800; letter-spacing:-0.5px;
+  margin-bottom:8px; color:#e6edf3;
+}
+.ln-content-title span{ color:#58a6ff; }
+.ln-content-sub{
+  font-size:14px; color:rgba(230,237,243,0.5);
+  margin-bottom:48px; line-height:1.6;
+}
+.ln-divider{
+  width:48px; height:3px; background:linear-gradient(90deg,#58a6ff,#a371f7);
+  border-radius:2px; margin-bottom:16px;
+}
+
+/* Stats */
+.ln-stats-grid{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:16px; margin-bottom:40px;
+}
+.ln-stat-card{
+  background:rgba(22,27,34,0.8);
+  border:1px solid rgba(88,166,255,0.12);
+  border-radius:10px; padding:24px 20px; text-align:center;
+  backdrop-filter:blur(8px);
+  transition:border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+  position:relative; overflow:hidden;
+}
+.ln-stat-card::before{
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(135deg,rgba(88,166,255,0.04),rgba(163,113,247,0.04));
+  pointer-events:none;
+}
+.ln-stat-card:hover{
+  border-color:rgba(88,166,255,0.3);
+  transform:translateY(-3px);
+  box-shadow:0 8px 32px rgba(88,166,255,0.1);
+}
+.ln-stat-num{
+  font-size:36px; font-weight:900; letter-spacing:-1px;
+  background:linear-gradient(135deg,#58a6ff,#a371f7);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  background-clip:text; margin-bottom:4px;
+}
+.ln-stat-label{
+  font-size:11px; color:rgba(230,237,243,0.5);
+  text-transform:uppercase; letter-spacing:1px; font-weight:600;
+}
+.ln-trust-row{
+  display:flex; gap:12px; flex-wrap:wrap; justify-content:center;
+  margin-top:32px;
+}
+.ln-trust-badge{
+  display:flex; align-items:center; gap:6px;
+  padding:6px 14px; border-radius:20px;
+  background:rgba(22,27,34,0.8); border:1px solid rgba(88,166,255,0.15);
+  font-size:11px; color:rgba(230,237,243,0.6); font-weight:500;
+  transition:border-color 0.2s, color 0.2s;
+}
+.ln-trust-badge:hover{ border-color:rgba(88,166,255,0.4); color:#e6edf3; }
+.ln-trust-badge svg{ flex-shrink:0; }
+
+/* Careers */
+.ln-role-grid{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:16px; margin-bottom:48px;
+}
+.ln-role-card{
+  background:rgba(22,27,34,0.8);
+  border:1px solid rgba(88,166,255,0.1);
+  border-radius:12px; padding:24px;
+  transition:all 0.2s; position:relative; overflow:hidden;
+}
+.ln-role-card.open{
+  border-color:rgba(63,185,80,0.3);
+}
+.ln-role-card.open:hover{
+  border-color:rgba(63,185,80,0.6);
+  box-shadow:0 8px 32px rgba(63,185,80,0.08);
+  transform:translateY(-2px);
+}
+.ln-role-card.closed{
+  opacity:0.6;
+}
+.ln-role-status{
+  display:flex; align-items:center; gap:6px;
+  font-size:11px; font-weight:700; letter-spacing:0.5px;
+  margin-bottom:12px; text-transform:uppercase;
+}
+.ln-role-title{
+  font-size:16px; font-weight:700; color:#e6edf3;
+  margin-bottom:6px;
+}
+.ln-role-rank{
+  font-size:10px; font-weight:600; letter-spacing:0.5px;
+  color:#a371f7; text-transform:uppercase; margin-bottom:10px;
+}
+.ln-role-desc{
+  font-size:12px; color:rgba(230,237,243,0.55);
+  line-height:1.6; margin-bottom:16px;
+}
+.ln-role-apply-btn{
+  width:100%; padding:8px; font-size:12px; font-weight:700;
+  border-radius:6px; cursor:pointer; font-family:inherit;
+  transition:all 0.2s; border:none;
+}
+.ln-role-apply-btn.open{
+  background:linear-gradient(135deg,#1a7f37,#2ea043);
+  color:#fff; box-shadow:0 0 16px rgba(46,160,67,0.3);
+}
+.ln-role-apply-btn.open:hover{ box-shadow:0 0 24px rgba(46,160,67,0.5); transform:translateY(-1px); }
+.ln-role-apply-btn.closed{
+  background:rgba(139,148,158,0.1);
+  color:rgba(230,237,243,0.3); cursor:not-allowed;
+}
+
+/* Staff directory */
+.ln-staff-grid{
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
+  gap:10px;
+}
+.ln-staff-card{
+  background:rgba(22,27,34,0.8); border:1px solid rgba(88,166,255,0.08);
+  border-radius:10px; padding:14px 10px; text-align:center;
+  transition:all 0.2s;
+}
+.ln-staff-card:hover{
+  border-color:rgba(88,166,255,0.25);
+  transform:translateY(-2px);
+}
+.ln-staff-avatar{
+  width:44px; height:44px; border-radius:50%; object-fit:cover;
+  margin:0 auto 8px; display:block;
+  border:2px solid rgba(88,166,255,0.2);
+}
+.ln-staff-avatar-placeholder{
+  width:44px; height:44px; border-radius:50%;
+  background:linear-gradient(135deg,#1f6feb,#a371f7);
+  display:flex; align-items:center; justify-content:center;
+  margin:0 auto 8px; font-size:16px; font-weight:800; color:#fff;
+  border:2px solid rgba(88,166,255,0.2);
+}
+.ln-staff-name{ font-size:11px; font-weight:600; color:#e6edf3; margin-bottom:3px; word-break:break-word; }
+.ln-staff-rank{ font-size:9px; color:#a371f7; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
+
+/* Policies */
+.ln-policy-section{
+  background:rgba(22,27,34,0.6); border:1px solid rgba(88,166,255,0.08);
+  border-radius:10px; padding:24px; margin-bottom:16px;
+}
+.ln-policy-title{ font-size:16px; font-weight:700; color:#e6edf3; margin-bottom:10px; }
+.ln-policy-body{ font-size:13px; color:rgba(230,237,243,0.65); line-height:1.8; }
+
+/* About */
+.ln-about-body{ font-size:14px; color:rgba(230,237,243,0.65); line-height:1.9; }
+.ln-about-banner{ width:100%; border-radius:10px; margin-bottom:32px; max-height:240px; object-fit:cover; }
+
+/* Apply overlay */
+.ln-overlay{
+  position:fixed; inset:0; background:rgba(1,4,9,0.85);
+  z-index:2000; display:none; align-items:center; justify-content:center;
+  backdrop-filter:blur(4px);
+}
+.ln-overlay.show{ display:flex; }
+.ln-modal{
+  background:#0d1117; border:1px solid rgba(88,166,255,0.2);
+  border-radius:14px; width:580px; max-width:95vw;
+  max-height:88vh; display:flex; flex-direction:column;
+  overflow:hidden; box-shadow:0 24px 80px rgba(0,0,0,0.7);
+}
+.ln-modal-header{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 20px; border-bottom:1px solid rgba(88,166,255,0.12);
+  flex-shrink:0;
+}
+.ln-modal-title{ font-size:14px; font-weight:700; color:#e6edf3; }
+.ln-modal-close{
+  background:none; border:none; color:rgba(230,237,243,0.4);
+  font-size:18px; cursor:pointer; padding:0; line-height:1;
+  transition:color 0.2s;
+}
+.ln-modal-close:hover{ color:#e6edf3; }
+.ln-modal-body{ padding:20px; overflow-y:auto; flex:1; }
+.ln-modal-footer{
+  padding:14px 20px; border-top:1px solid rgba(88,166,255,0.12);
+  display:flex; gap:8px; justify-content:flex-end; flex-shrink:0;
+}
+
+/* Progress steps */
+.ln-steps{
+  display:flex; gap:0; margin-bottom:24px; position:relative;
+}
+.ln-steps::before{
+  content:''; position:absolute; top:15px; left:15px; right:15px;
+  height:1px; background:rgba(88,166,255,0.15); z-index:0;
+}
+.ln-step{
+  flex:1; text-align:center; position:relative; z-index:1;
+}
+.ln-step-dot{
+  width:30px; height:30px; border-radius:50%;
+  border:2px solid rgba(88,166,255,0.2);
+  background:#0d1117; display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:700; color:rgba(230,237,243,0.3);
+  margin:0 auto 6px; transition:all 0.3s;
+}
+.ln-step.active .ln-step-dot{
+  border-color:#58a6ff; color:#58a6ff;
+  box-shadow:0 0 12px rgba(88,166,255,0.3);
+}
+.ln-step.done .ln-step-dot{
+  background:#1f6feb; border-color:#1f6feb; color:#fff;
+}
+.ln-step-label{ font-size:10px; color:rgba(230,237,243,0.4); letter-spacing:0.5px; }
+.ln-step.active .ln-step-label{ color:#58a6ff; }
+
+/* Form fields */
+.ln-field{ margin-bottom:14px; }
+.ln-label{
+  display:block; font-size:11px; font-weight:600;
+  color:rgba(230,237,243,0.7); margin-bottom:5px; letter-spacing:0.3px;
+}
+.ln-label .req{ color:#f85149; margin-left:2px; }
+.ln-input{
+  width:100%; padding:8px 12px; font-size:12px;
+  background:rgba(22,27,34,0.8); border:1px solid rgba(88,166,255,0.15);
+  border-radius:6px; color:#e6edf3; font-family:inherit;
+  transition:border-color 0.2s;
+  outline:none;
+}
+.ln-input:focus{ border-color:rgba(88,166,255,0.5); }
+.ln-input::placeholder{ color:rgba(230,237,243,0.25); }
+textarea.ln-input{ resize:vertical; min-height:80px; }
+select.ln-input{ cursor:pointer; }
+
+/* Access code preview */
+.ln-code-preview{
+  background:rgba(31,111,235,0.08); border:1px solid rgba(31,111,235,0.25);
+  border-radius:8px; padding:12px 16px; margin-top:8px;
+  font-size:12px; color:#58a6ff; line-height:1.8;
+}
+.ln-code-preview b{ color:#e6edf3; }
+
+/* Signup footer note */
+.ln-signup-note{
+  font-size:11px; color:rgba(230,237,243,0.35);
+  text-align:center; margin-top:12px; line-height:1.6;
+}
+.ln-signup-note a{ color:#58a6ff; cursor:pointer; text-decoration:none; }
+.ln-signup-note a:hover{ text-decoration:underline; }
+
 </style>
 </head>
 <body>
+
+
+<!-- ═══════════════════════════════════════════════════
+     SAMARITAN SYSTEMS — PUBLIC LANDING PAGE
+═══════════════════════════════════════════════════ -->
+<div id="landingScreen">
+  <canvas id="ln-hero-canvas"></canvas>
+
+  <!-- NAVBAR -->
+  <nav class="ln-nav">
+    <div class="ln-nav-logo">
+      <div class="ln-nav-diamond"></div>
+      Samaritan Systems
+    </div>
+    <div class="ln-nav-tabs">
+      <div class="ln-nav-tab active" data-section="home">Home</div>
+      <div class="ln-nav-tab" data-section="about">About</div>
+      <div class="ln-nav-tab" data-section="stats">Statistics</div>
+      <div class="ln-nav-tab" data-section="policies">Policies</div>
+      <div class="ln-nav-tab" data-section="careers">Careers</div>
+    </div>
+    <div class="ln-nav-actions">
+      <button class="ln-btn ln-btn-primary" id="ln-apply-nav-btn">Apply Now</button>
+      <button class="ln-btn ln-btn-outline" id="ln-signup-nav-btn" onclick="openSignupOverlay()">Sign Up</button><button class="ln-btn ln-btn-outline" id="ln-login-btn">Log In</button>
+    </div>
+  </nav>
+
+  <!-- HOME SECTION -->
+  <section class="ln-section active" id="ln-sec-home">
+    <div class="ln-hero">
+      <div class="ln-hero-content">
+        <div class="ln-hero-status" id="ln-status-badge" style="border-color:rgba(63,185,80,0.4);color:#3fb950;">
+          <span class="ln-status-dot" style="background:#3fb950;"></span>
+          <span id="ln-status-text">OPERATIONAL</span>
+        </div>
+        <div class="ln-hero-title">SAMARITAN<br>SYSTEMS</div>
+        <div class="ln-hero-motto">"To fall is to once have soared"</div>
+        <div class="ln-hero-btns">
+          <button class="ln-hero-btn ln-hero-btn-primary" id="ln-hero-apply-btn">Apply Now</button>
+          <button class="ln-hero-btn ln-hero-btn-secondary" id="ln-hero-learn-btn">Learn More</button>
+        </div>
+      </div>
+      <div class="ln-scroll-hint">
+        <span>SCROLL</span>
+        <svg width="12" height="8" viewBox="0 0 12 8" fill="none"><path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT SECTION -->
+  <section class="ln-section" id="ln-sec-about">
+    <div class="ln-content">
+      <div class="ln-divider"></div>
+      <div class="ln-content-title">About <span>Us</span></div>
+      <div class="ln-content-sub" id="ln-about-sub">Keeping our community safe, fair, and fun.</div>
+      <div id="ln-about-banner-wrap"></div>
+      <div class="ln-about-body" id="ln-about-body">
+        Samaritan Systems is a moderation and administration platform dedicated to maintaining a safe, fair, and enjoyable experience for all players. Our team of trained moderators works around the clock to review reports, process appeals, and uphold the community standards we all share.<br><br>
+        We believe in transparency, accountability, and giving every player a fair hearing. Our appeal system ensures that no decision is final without review, and our staff are held to the same standards we enforce.
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS SECTION -->
+  <section class="ln-section" id="ln-sec-stats">
+    <div class="ln-content">
+      <div class="ln-divider"></div>
+      <div class="ln-content-title">By the <span>Numbers</span></div>
+      <div class="ln-content-sub">Live statistics pulled directly from our systems.</div>
+      <div class="ln-stats-grid" id="ln-stats-grid">
+        <div class="ln-stat-card"><div class="ln-stat-num" data-target="0" id="lnstat-moderated">0</div><div class="ln-stat-label">Players Moderated</div></div>
+        <div class="ln-stat-card"><div class="ln-stat-num" data-target="0" id="lnstat-thismonth">0</div><div class="ln-stat-label">Actions This Month</div></div>
+        <div class="ln-stat-card"><div class="ln-stat-num" data-target="0" id="lnstat-appeals">0</div><div class="ln-stat-label">Appeals Resolved</div></div>
+        <div class="ln-stat-card"><div class="ln-stat-num" data-target="0" id="lnstat-staff">0</div><div class="ln-stat-label">Staff Members</div></div>
+        <div class="ln-stat-card"><div class="ln-stat-num" data-target="0" id="lnstat-online">0</div><div class="ln-stat-label">Staff Active Today</div></div>
+        <div class="ln-stat-card"><div class="ln-stat-num" data-target="0" id="lnstat-days">0</div><div class="ln-stat-label">Days Operational</div></div>
+        <div class="ln-stat-card"><div class="ln-stat-num" id="lnstat-approval">—%</div><div class="ln-stat-label">Appeal Approval Rate</div></div>
+        <div class="ln-stat-card">
+          <div class="ln-stat-num" id="lnstat-status" style="font-size:18px;padding-top:8px;">● OPERATIONAL</div>
+          <div class="ln-stat-label">System Status</div>
+        </div>
+      </div>
+      <div class="ln-trust-row">
+        <div class="ln-trust-badge"><svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M7 1L12 3.5v4C12 10.5 9.5 12.5 7 13.5 4.5 12.5 2 10.5 2 7.5v-4L7 1z" stroke="#58a6ff" stroke-width="1.2"/></svg> Firebase Secured</div>
+        <div class="ln-trust-badge"><svg width="12" height="12" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="#58a6ff" stroke-width="1.2"/><path d="M4.5 7l2 2 3-3" stroke="#58a6ff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg> Human Reviewed Appeals</div>
+        <div class="ln-trust-badge"><svg width="12" height="12" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="#58a6ff" stroke-width="1.2"/><line x1="4.5" y1="4.5" x2="9.5" y2="9.5" stroke="#58a6ff" stroke-width="1.3" stroke-linecap="round"/><line x1="9.5" y1="4.5" x2="4.5" y2="9.5" stroke="#58a6ff" stroke-width="1.3" stroke-linecap="round"/></svg> Zero Data Selling</div>
+        <div class="ln-trust-badge"><svg width="12" height="12" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="2.5" stroke="#58a6ff" stroke-width="1.2"/><path d="M2 12c0-3 2-4.5 5-4.5s5 1.5 5 4.5" stroke="#58a6ff" stroke-width="1.2" stroke-linecap="round"/></svg> 24/7 Moderation</div>
+        <div class="ln-trust-badge"><svg width="12" height="12" viewBox="0 0 14 14" fill="none"><polyline points="1,7 4,4 6,9 9,3 12,6 13,5" stroke="#58a6ff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg> Live Statistics</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- POLICIES SECTION -->
+  <section class="ln-section" id="ln-sec-policies">
+    <div class="ln-content">
+      <div class="ln-divider"></div>
+      <div class="ln-content-title">Our <span>Policies</span></div>
+      <div class="ln-content-sub">These guidelines govern how we moderate, how appeals work, and how our staff conduct themselves.</div>
+      <div id="ln-policies-body">
+        <div class="ln-policy-section">
+          <div class="ln-policy-title">Moderation Policy</div>
+          <div class="ln-policy-body">All moderation actions are taken in good faith and with reference to our community guidelines. Moderators are required to document reasons for every action. Actions may be appealed through our formal appeals process.</div>
+        </div>
+        <div class="ln-policy-section">
+          <div class="ln-policy-title">Appeals Policy</div>
+          <div class="ln-policy-body">Any player who has received a moderation action may submit an appeal. Appeals are reviewed by a senior moderator not involved in the original action. We aim to respond to all appeals within 72 hours.</div>
+        </div>
+        <div class="ln-policy-section">
+          <div class="ln-policy-title">Staff Conduct Policy</div>
+          <div class="ln-policy-body">Staff members are held to the highest standards of conduct. Abuse of power, harassment, or misuse of tools results in immediate suspension pending investigation. We take reports against staff seriously.</div>
+        </div>
+        <div class="ln-policy-section">
+          <div class="ln-policy-title">Privacy Notice</div>
+          <div class="ln-policy-body">We collect only the information necessary to operate our moderation systems. We do not sell user data to third parties. Moderation records are retained for audit purposes only.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CAREERS SECTION -->
+  <section class="ln-section" id="ln-sec-careers">
+    <div class="ln-content" style="max-width:1000px;">
+      <div class="ln-divider"></div>
+      <div class="ln-content-title">Join the <span>Team</span></div>
+      <div class="ln-content-sub">We are always looking for dedicated, fair-minded individuals to join our moderation team. Browse open positions below.</div>
+      <div class="ln-role-grid" id="ln-role-grid">
+        <!-- populated by JS -->
+      </div>
+      <div id="ln-staff-dir-wrap">
+        <div style="margin-bottom:16px;">
+          <div class="ln-divider"></div>
+          <div class="ln-content-title" style="font-size:22px;">Current <span>Staff</span></div>
+          <div class="ln-content-sub" style="margin-bottom:24px;">Our team, from highest to lowest rank.</div>
+        </div>
+        <div class="ln-staff-grid" id="ln-staff-grid"><!-- populated by JS --></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer style="text-align:center;padding:32px;border-top:1px solid rgba(88,166,255,0.08);font-size:11px;color:rgba(230,237,243,0.25);letter-spacing:0.5px;">
+    SAMARITAN SYSTEMS &nbsp;·&nbsp; AUTHORIZED ACCESS ONLY &nbsp;·&nbsp;
+    <span id="ln-footer-status" style="color:rgba(63,185,80,0.6);">● OPERATIONAL</span>
+  </footer>
+</div>
+
+<!-- APPLY NOW OVERLAY -->
+<div class="ln-overlay" id="ln-apply-overlay">
+  <div class="ln-modal">
+    <div class="ln-modal-header">
+      <div class="ln-modal-title" id="ln-apply-title">Apply Now</div>
+      <button class="ln-modal-close" id="ln-apply-close">&#10005;</button>
+    </div>
+    <div class="ln-modal-body" id="ln-apply-body"></div>
+    <div class="ln-modal-footer" id="ln-apply-footer"></div>
+  </div>
+</div>
+
+<!-- SIGN UP OVERLAY -->
+<div class="ln-overlay" id="ln-signup-overlay">
+  <div class="ln-modal">
+    <div class="ln-modal-header">
+      <div class="ln-modal-title">Create Account</div>
+      <button class="ln-modal-close" id="ln-signup-close">&#10005;</button>
+    </div>
+    <div class="ln-modal-body" id="ln-signup-body"></div>
+    <div class="ln-modal-footer" id="ln-signup-footer"></div>
+  </div>
+</div>
 
 <div id="loginScreen" style="position:relative;overflow:hidden;">
   <!-- Animated grid background -->
@@ -2348,7 +2907,9 @@ function updateSidebar(){
 
   // Highlight active section
   const sectionMap={
-    people:['useradmin','moderate','accounts','requests','userconfig'],
+    people:
+
+['useradmin','moderate','accounts','requests','userconfig'],
     moderation:['reputation','appeals','altdetect','msganalyze'],
     'staff-section':['staff','activity','messaging','suggestions','staffconfig','evaluations','calendar','staffreports'],
     logs:['modlog','revokelog','suspendlog','terminatelog','warnlog','loginlog','auditlog'],
@@ -2376,7 +2937,9 @@ var SECTION_TABS={
 
 // Section → list of valid tab pages
 var SECTION_PAGES={
-  people:['useradmin','moderate','accounts','requests','userconfig'],
+  people:
+
+['useradmin','moderate','accounts','requests','userconfig'],
   moderation:['reputation','appeals','altdetect','msganalyze'],
   'staff-section':['staff','activity','messaging','suggestions','staffconfig','evaluations','calendar','staffreports'],
   logs:['modlog','revokelog','suspendlog','terminatelog','warnlog','loginlog','auditlog'],
@@ -15032,7 +15595,7 @@ function applyTheme(){
 }
 applyTheme();
 
-setupMenus();
+try{ setupMenus(); }catch(e){ console.warn("setupMenus error:",e); }
 
 function openNotifSettings(){
   const avail=ALL_NOTIF_EVENTS.filter(ev=>!ev.perm||canDo(ev.perm));
@@ -15046,6 +15609,604 @@ function openNotifSettings(){
   }
   document.getElementById('notifSettingsOverlay').classList.add('show');
 }
+
+
+
+
+
+// ══════════════════════════════════════════════════════
+// SAMARITAN LANDING PAGE CONTROLLER
+// ══════════════════════════════════════════════════════
+(function(){
+
+// ── Hide landing when logged in, show when logged out ──
+function showLanding(){
+  var el=document.getElementById('landingScreen');
+  if(el) el.style.display='flex';
+  var ls=document.getElementById('loginScreen');
+  if(ls) ls.style.display='none';
+  var as=document.getElementById('adminScreen');
+  if(as) as.style.display='none';
+  startLandingCanvas();
+  loadLandingData();
+}
+function hideLanding(){
+  var el=document.getElementById('landingScreen');
+  if(el) el.style.display='none';
+}
+window.showLanding=showLanding;
+window.hideLanding=hideLanding;
+
+// ── Nav tab switching ──
+document.querySelectorAll('.ln-nav-tab').forEach(function(tab){
+  tab.onclick=function(){
+    document.querySelectorAll('.ln-nav-tab').forEach(function(t){ t.classList.remove('active'); });
+    document.querySelectorAll('.ln-section').forEach(function(s){ s.classList.remove('active'); });
+    tab.classList.add('active');
+    var sec=document.getElementById('ln-sec-'+tab.dataset.section);
+    if(sec) sec.classList.add('active');
+    if(tab.dataset.section==='stats') animateCounters();
+    if(tab.dataset.section==='careers') renderLandingCareers();
+  };
+});
+
+// ── CTA buttons ──
+document.getElementById('ln-login-btn').onclick=function(){
+  hideLanding();
+  var ls=document.getElementById('loginScreen');
+  if(ls){ ls.style.display='flex'; }
+  if(typeof window.initLoginBgFn==='function') setTimeout(window.initLoginBgFn,100);
+  // Add back button to login
+  if(!document.getElementById('ln-back-btn')){
+    var back=document.createElement('button');
+    back.id='ln-back-btn';
+    back.textContent='← Back';
+    back.style.cssText='position:absolute;top:16px;left:16px;background:none;border:1px solid rgba(88,166,255,0.3);color:#58a6ff;font-size:11px;padding:5px 12px;border-radius:5px;cursor:pointer;z-index:10;font-family:inherit;';
+    back.onclick=function(){ ls.style.display='none'; showLanding(); };
+    ls.appendChild(back);
+  }
+};
+document.getElementById('ln-apply-nav-btn').onclick=function(){ openApplyOverlay(); };
+document.getElementById('ln-hero-apply-btn').onclick=function(){ openApplyOverlay(); };
+document.getElementById('ln-hero-learn-btn').onclick=function(){
+  document.querySelectorAll('.ln-nav-tab').forEach(function(t){ t.classList.remove('active'); if(t.dataset.section==='about') t.classList.add('active'); });
+  document.querySelectorAll('.ln-section').forEach(function(s){ s.classList.remove('active'); });
+  var ab=document.getElementById('ln-sec-about'); if(ab) ab.classList.add('active');
+};
+
+// ── Apply overlay ──
+document.getElementById('ln-apply-close').onclick=function(){ document.getElementById('ln-apply-overlay').classList.remove('show'); };
+document.getElementById('ln-signup-close').onclick=function(){ document.getElementById('ln-signup-overlay').classList.remove('show'); };
+document.getElementById('ln-apply-overlay').onclick=function(e){ if(e.target===this) this.classList.remove('show'); };
+document.getElementById('ln-signup-overlay').onclick=function(e){ if(e.target===this) this.classList.remove('show'); };
+
+function openApplyOverlay(preselectedFormId){
+  var overlay=document.getElementById('ln-apply-overlay');
+  overlay.classList.add('show');
+  renderApplyStep1(preselectedFormId);
+}
+window.openApplyOverlay=openApplyOverlay;
+
+function openSignupOverlay(){
+  document.getElementById('ln-signup-overlay').classList.add('show');
+  renderSignupForm();
+}
+window.openSignupOverlay=openSignupOverlay;
+
+// ── Application steps ──
+var _applyFormId=null;
+var _applyAnswers={};
+
+function stepHTML(current){
+  var steps=['Select Role','Fill Out Form','Review & Submit'];
+  return '<div class="ln-steps">'+steps.map(function(s,i){
+    var state=i+1===current?'active':i+1<current?'done':'';
+    return '<div class="ln-step '+state+'"><div class="ln-step-dot">'+(i+1<current?'✓':i+1)+'</div><div class="ln-step-label">'+s+'</div></div>';
+  }).join('')+'</div>';
+}
+
+function renderApplyStep1(preselectedId){
+  _applyFormId=null; _applyAnswers={};
+  var body=document.getElementById('ln-apply-body');
+  var footer=document.getElementById('ln-apply-footer');
+  document.getElementById('ln-apply-title').textContent='Apply Now';
+
+  // Load forms from Firebase
+  window._lnGetForms(function(forms){
+    var open=forms.filter(function(f){ return f.open!==false; });
+    if(!open.length){
+      body.innerHTML=stepHTML(1)+'<div style="text-align:center;padding:32px;color:rgba(230,237,243,0.4);">No positions are currently open. Check back soon.</div>';
+      footer.innerHTML='<button class="ln-btn ln-btn-outline" onclick="document.getElementById(\'ln-apply-overlay\').classList.remove(\'show\')">Close</button>';
+      return;
+    }
+    body.innerHTML=stepHTML(1)
+      +'<div style="font-size:12px;color:rgba(230,237,243,0.5);margin-bottom:16px;">Select the position you want to apply for.</div>'
+      +'<div style="display:flex;flex-direction:column;gap:10px;">'
+      +open.map(function(f){
+        var selected=preselectedId&&f.id===preselectedId?'border-color:rgba(88,166,255,0.5);background:rgba(88,166,255,0.05);':'';
+        return '<div class="ln-apply-form-card" data-fid="'+f.id+'" style="background:rgba(22,27,34,0.8);border:1px solid rgba(88,166,255,0.12);border-radius:8px;padding:14px 16px;cursor:pointer;transition:all 0.15s;'+selected+'">'
+          +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">'
+          +'<div style="width:8px;height:8px;border-radius:50%;background:#3fb950;box-shadow:0 0 6px rgba(63,185,80,0.5);flex-shrink:0;"></div>'
+          +'<div style="font-size:13px;font-weight:700;color:#e6edf3;">'+f.title+'</div>'
+          +'<div style="margin-left:auto;font-size:10px;color:#a371f7;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;">'+f.rank+'</div>'
+          +'</div>'
+          +(f.description?'<div style="font-size:11px;color:rgba(230,237,243,0.5);line-height:1.5;padding-left:16px;">'+f.description+'</div>':'')
+          +'</div>';
+      }).join('')+'</div>';
+    footer.innerHTML='<button class="ln-btn ln-btn-outline" onclick="document.getElementById(\'ln-apply-overlay\').classList.remove(\'show\')">Cancel</button>'
+      +'<button class="ln-btn ln-btn-primary" id="ln-apply-next1" disabled style="opacity:0.5;cursor:not-allowed;">Next →</button>';
+
+    // Select card
+    body.querySelectorAll('.ln-apply-form-card').forEach(function(card){
+      card.onmouseenter=function(){ if(_applyFormId!==card.dataset.fid) card.style.borderColor='rgba(88,166,255,0.3)'; };
+      card.onmouseleave=function(){ if(_applyFormId!==card.dataset.fid) card.style.borderColor='rgba(88,166,255,0.12)'; };
+      card.onclick=function(){
+        body.querySelectorAll('.ln-apply-form-card').forEach(function(c){
+          c.style.borderColor='rgba(88,166,255,0.12)'; c.style.background='rgba(22,27,34,0.8)';
+        });
+        card.style.borderColor='rgba(88,166,255,0.5)'; card.style.background='rgba(88,166,255,0.05)';
+        _applyFormId=card.dataset.fid;
+        var btn=document.getElementById('ln-apply-next1');
+        if(btn){ btn.disabled=false; btn.style.opacity='1'; btn.style.cursor='pointer'; }
+      };
+    });
+    if(preselectedId){
+      var card=body.querySelector('[data-fid="'+preselectedId+'"]');
+      if(card) card.click();
+    }
+    document.getElementById('ln-apply-next1').onclick=function(){
+      if(!_applyFormId) return;
+      var form=open.find(function(f){ return f.id===_applyFormId; });
+      if(form) renderApplyStep2(form);
+    };
+  });
+}
+
+function renderApplyStep2(form){
+  var body=document.getElementById('ln-apply-body');
+  var footer=document.getElementById('ln-apply-footer');
+  document.getElementById('ln-apply-title').textContent=form.title;
+  var questions=form.questions||[];
+  body.innerHTML=stepHTML(2)
+    +'<div style="font-size:12px;color:rgba(230,237,243,0.5);margin-bottom:16px;">Answer all required questions honestly and thoroughly.</div>'
+    +questions.map(function(q,i){
+      var req=q.required?'<span class="req">*</span>':'';
+      var input='';
+      if(q.type==='long'||!q.type){
+        input='<textarea class="ln-input" id="apq-'+i+'" placeholder="Your answer…"'+(q.maxLen?' maxlength="'+q.maxLen+'"':'')+' rows="3"></textarea>';
+      } else if(q.type==='short'){
+        input='<input type="text" class="ln-input" id="apq-'+i+'" placeholder="Your answer…"'+(q.maxLen?' maxlength="'+q.maxLen+'"':'')+'/>';
+      } else if(q.type==='choice'&&q.options){
+        input='<select class="ln-input" id="apq-'+i+'"><option value="">Select…</option>'+q.options.map(function(o){ return '<option>'+o+'</option>'; }).join('')+'</select>';
+      } else if(q.type==='yesno'){
+        input='<select class="ln-input" id="apq-'+i+'"><option value="">Select…</option><option value="Yes">Yes</option><option value="No">No</option></select>';
+      }
+      return '<div class="ln-field"><label class="ln-label">'+q.text+req+'</label>'+input+'</div>';
+    }).join('')
+    +'<div class="ln-field"><label class="ln-label">Contact (Discord tag or email)<span class="req">*</span></label>'
+    +'<input type="text" class="ln-input" id="apq-contact" placeholder="e.g. username#0000 or you@email.com"/></div>';
+
+  footer.innerHTML='<button class="ln-btn ln-btn-outline" id="ln-apply-back2">← Back</button>'
+    +'<button class="ln-btn ln-btn-primary" id="ln-apply-next2">Review →</button>';
+  document.getElementById('ln-apply-back2').onclick=function(){ renderApplyStep1(_applyFormId); };
+  document.getElementById('ln-apply-next2').onclick=function(){
+    var answers={}; var ok=true;
+    (form.questions||[]).forEach(function(q,i){
+      var el=document.getElementById('apq-'+i);
+      if(el) answers[i]={question:q.text, answer:el.value.trim()};
+      if(q.required&&el&&!el.value.trim()){ el.style.borderColor='#f85149'; ok=false; } else if(el){ el.style.borderColor=''; }
+    });
+    var contact=document.getElementById('apq-contact');
+    if(!contact||!contact.value.trim()){ if(contact) contact.style.borderColor='#f85149'; return; }
+    if(!ok) return;
+    answers.contact=contact.value.trim();
+    _applyAnswers=answers;
+    renderApplyStep3(form);
+  };
+}
+
+function renderApplyStep3(form){
+  var body=document.getElementById('ln-apply-body');
+  var footer=document.getElementById('ln-apply-footer');
+  document.getElementById('ln-apply-title').textContent='Review Your Application';
+  var rows=Object.entries(_applyAnswers).filter(function(e){ return e[0]!=='contact'; }).map(function(e){
+    return '<div style="margin-bottom:10px;"><div style="font-size:11px;color:rgba(230,237,243,0.5);margin-bottom:3px;">'+e[1].question+'</div>'
+      +'<div style="font-size:12px;color:#e6edf3;background:rgba(22,27,34,0.6);border:1px solid rgba(88,166,255,0.1);border-radius:5px;padding:8px 10px;">'+e[1].answer+'</div></div>';
+  }).join('');
+  body.innerHTML=stepHTML(3)
+    +'<div style="background:rgba(31,111,235,0.06);border:1px solid rgba(31,111,235,0.2);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:rgba(230,237,243,0.6);">'
+    +'Applying for <b style="color:#e6edf3;">'+form.title+'</b> &nbsp;·&nbsp; <b style="color:#a371f7;">'+form.rank+'</b></div>'
+    +rows
+    +'<div style="background:rgba(22,27,34,0.6);border:1px solid rgba(88,166,255,0.1);border-radius:5px;padding:8px 10px;font-size:12px;margin-top:4px;">'
+    +'<span style="color:rgba(230,237,243,0.5);">Contact: </span><span style="color:#e6edf3;">'+_applyAnswers.contact+'</span></div>'
+    +'<div id="ln-apply-submit-msg" style="font-size:11px;margin-top:10px;min-height:14px;text-align:center;"></div>';
+
+  footer.innerHTML='<button class="ln-btn ln-btn-outline" id="ln-apply-back3">← Back</button>'
+    +'<button class="ln-btn ln-btn-primary" id="ln-apply-submit-btn">Submit Application</button>';
+  document.getElementById('ln-apply-back3').onclick=function(){
+    var form2=null;
+    window._lnGetForms(function(forms){ form2=forms.find(function(f){ return f.id===_applyFormId; }); if(form2) renderApplyStep2(form2); });
+  };
+  document.getElementById('ln-apply-submit-btn').onclick=async function(){
+    var btn=document.getElementById('ln-apply-submit-btn');
+    btn.disabled=true; btn.textContent='Submitting…';
+    var refCode='SAM-'+Math.random().toString(36).substr(2,8).toUpperCase();
+    try{
+      await push(ref(db,'applications'),{
+        formId:_applyFormId, formTitle:form.title, rank:form.rank,
+        answers:_applyAnswers, contact:_applyAnswers.contact,
+        refCode:refCode, date:new Date().toISOString(), status:'Pending', reviewed:false
+      });
+      // Success screen
+      document.getElementById('ln-apply-body').innerHTML=
+        '<div style="text-align:center;padding:32px 16px;">'
+        +'<div style="font-size:40px;margin-bottom:16px;">✓</div>'
+        +'<div style="font-size:18px;font-weight:800;color:#3fb950;margin-bottom:8px;">Application Submitted!</div>'
+        +'<div style="font-size:12px;color:rgba(230,237,243,0.5);margin-bottom:20px;line-height:1.7;">Your application for <b style="color:#e6edf3;">'+form.title+'</b> has been received. We will review it and get back to you at your contact.<br><br>Keep your reference code safe — you may need it to check your status.</div>'
+        +'<div style="background:rgba(22,27,34,0.8);border:1px solid rgba(88,166,255,0.2);border-radius:8px;padding:12px 20px;display:inline-block;margin-bottom:20px;">'
+        +'<div style="font-size:10px;color:rgba(230,237,243,0.4);margin-bottom:4px;letter-spacing:1px;text-transform:uppercase;">Reference Code</div>'
+        +'<div style="font-size:18px;font-weight:900;letter-spacing:2px;color:#58a6ff;">'+refCode+'</div>'
+        +'</div>'
+        +'<div style="font-size:11px;color:rgba(230,237,243,0.35);line-height:1.6;">If approved, you will receive a signup access code. Use it at<br>'
+        +'<a onclick="document.getElementById(\'ln-apply-overlay\').classList.remove(\'show\');openSignupOverlay();" style="color:#58a6ff;cursor:pointer;">Sign Up</a> to create your account.</div>'
+        +'</div>';
+      document.getElementById('ln-apply-footer').innerHTML='<button class="ln-btn ln-btn-outline" onclick="document.getElementById(\'ln-apply-overlay\').classList.remove(\'show\')">Close</button>';
+    }catch(e){
+      var m=document.getElementById('ln-apply-submit-msg');
+      if(m){ m.style.color='#f85149'; m.textContent='Submission failed: '+e.message; }
+      btn.disabled=false; btn.textContent='Submit Application';
+    }
+  };
+}
+
+// ── Sign Up flow ──
+function renderSignupForm(){
+  var body=document.getElementById('ln-signup-body');
+  var footer=document.getElementById('ln-signup-footer');
+  body.innerHTML=
+    '<div class="ln-field"><label class="ln-label">Username<span class="req">*</span></label>'
+    +'<input type="text" class="ln-input" id="su-username" placeholder="Your staff username" autocomplete="off"/></div>'
+    +'<div class="ln-field"><label class="ln-label">Password<span class="req">*</span></label>'
+    +'<input type="password" class="ln-input" id="su-password" placeholder="Choose a strong password"/></div>'
+    +'<div class="ln-field"><label class="ln-label">Confirm Password<span class="req">*</span></label>'
+    +'<input type="password" class="ln-input" id="su-password2" placeholder="Repeat password"/></div>'
+    +'<div class="ln-field"><label class="ln-label">Roblox Username<span class="req">*</span></label>'
+    +'<input type="text" class="ln-input" id="su-roblox" placeholder="Your Roblox username (for avatar)"/></div>'
+    +'<div class="ln-field"><label class="ln-label">Access Code<span class="req">*</span></label>'
+    +'<input type="text" class="ln-input" id="su-code" placeholder="Enter your access code" style="letter-spacing:2px;" oninput="previewAccessCode(this.value)"/>'
+    +'<div style="font-size:10px;color:rgba(230,237,243,0.3);margin-top:4px;">Don\'t have a code? <a onclick="document.getElementById(\'ln-signup-overlay\').classList.remove(\'show\');openApplyOverlay();" style="color:#58a6ff;cursor:pointer;">Apply for a position</a> first.</div>'
+    +'</div>'
+    +'<div id="su-code-preview"></div>'
+    +'<div id="su-msg" style="font-size:11px;margin-top:8px;min-height:14px;text-align:center;"></div>';
+  footer.innerHTML='<button class="ln-btn ln-btn-outline" onclick="document.getElementById(\'ln-signup-overlay\').classList.remove(\'show\')">Cancel</button>'
+    +'<button class="ln-btn ln-btn-primary" id="su-submit-btn">Create Account</button>';
+  document.getElementById('su-submit-btn').onclick=doSignup;
+}
+
+window.previewAccessCode=async function(code){
+  var preview=document.getElementById('su-code-preview');
+  if(!preview) return;
+  if(!code||code.length<6){ preview.innerHTML=''; return; }
+  preview.innerHTML='<div style="font-size:11px;color:rgba(230,237,243,0.4);">Checking code…</div>';
+  try{
+    var snap=await get(ref(db,'accessCodes/'+code.trim().toUpperCase()));
+    if(!snap.exists()){ preview.innerHTML='<div style="font-size:11px;color:#f85149;">Invalid or expired access code.</div>'; return; }
+    var c=snap.val();
+    if(c.used){ preview.innerHTML='<div style="font-size:11px;color:#f85149;">This code has already been used.</div>'; return; }
+    if(c.expires&&new Date(c.expires)<new Date()){ preview.innerHTML='<div style="font-size:11px;color:#f85149;">This code has expired.</div>'; return; }
+    preview.innerHTML='<div class="ln-code-preview">'
+      +'<b>✓ Valid Access Code</b><br>'
+      +'Grants rank: <b>'+c.rank+'</b><br>'
+      +'Issued by: <b>'+(c.issuedBy||'System')+'</b><br>'
+      +'Expires: <b>'+(c.expires?new Date(c.expires).toLocaleDateString():'Never')+'</b>'
+      +'</div>';
+  }catch(e){ preview.innerHTML=''; }
+};
+
+async function doSignup(){
+  var btn=document.getElementById('su-submit-btn');
+  var msg=document.getElementById('su-msg');
+  var username=(document.getElementById('su-username')||{}).value.trim();
+  var pass=(document.getElementById('su-password')||{}).value;
+  var pass2=(document.getElementById('su-password2')||{}).value;
+  var roblox=(document.getElementById('su-roblox')||{}).value.trim();
+  var code=(document.getElementById('su-code')||{}).value.trim().toUpperCase();
+  if(!username||!pass||!pass2||!roblox||!code){ msg.style.color='#f85149'; msg.textContent='Please fill in all fields.'; return; }
+  if(pass!==pass2){ msg.style.color='#f85149'; msg.textContent='Passwords do not match.'; return; }
+  if(pass.length<6){ msg.style.color='#f85149'; msg.textContent='Password must be at least 6 characters.'; return; }
+  btn.disabled=true; btn.textContent='Creating account…';
+  try{
+    // Validate code
+    var codeSnap=await get(ref(db,'accessCodes/'+code));
+    if(!codeSnap.exists()){ throw new Error('Invalid access code.'); }
+    var codeData=codeSnap.val();
+    if(codeData.used) throw new Error('This code has already been used.');
+    if(codeData.expires&&new Date(codeData.expires)<new Date()) throw new Error('This code has expired.');
+    // Check username not taken
+    var staffSnap=await get(ref(db,'staff'));
+    var staffObj=staffSnap.exists()?staffSnap.val():{};
+    var taken=Object.values(staffObj).some(function(s){ return s&&s.username&&s.username.toLowerCase()===username.toLowerCase(); });
+    if(taken) throw new Error('Username already taken.');
+    // Create Firebase Auth account using email workaround
+    var fakeEmail=username.toLowerCase().replace(/[^a-z0-9]/g,'')+'@samaritan.internal';
+    var {createUserWithEmailAndPassword}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+    var cred=await createUserWithEmailAndPassword(auth, fakeEmail, pass);
+    var uid=cred.user.uid;
+    // Fetch Roblox avatar
+    var avatarUrl='';
+    try{ var info=await fetchRobloxInfo(roblox); if(info&&info.avatarUrl) avatarUrl=info.avatarUrl; }catch(e){}
+    // Write staff record
+    await update(ref(db,'staff/'+uid),{
+      username:username, level:codeData.rank, joined:new Date().toISOString().split('T')[0],
+      avatarUrl:avatarUrl, avatarUser:roblox, suspended:false, notes:'',
+      lastActive:'Never', lastAction:'Account created via signup'
+    });
+    // Mark code as used
+    await update(ref(db,'accessCodes/'+code),{used:true, usedBy:username, usedAt:new Date().toISOString()});
+    // Mark application if linked
+    if(codeData.applicationId){
+      await update(ref(db,'applications/'+codeData.applicationId),{signedUp:true,signedUpAs:username});
+    }
+    auditLog('Staff Signed Up',username+' via access code '+code);
+    // Show summary
+    document.getElementById('ln-signup-body').innerHTML=
+      '<div style="text-align:center;padding:24px 16px;">'
+      +'<div style="font-size:36px;margin-bottom:12px;">🎉</div>'
+      +'<div style="font-size:18px;font-weight:800;color:#3fb950;margin-bottom:8px;">Account Created!</div>'
+      +'<div style="font-size:12px;color:rgba(230,237,243,0.5);margin-bottom:20px;line-height:1.7;">Welcome to the team, <b style="color:#e6edf3;">'+username+'</b>.</div>'
+      +'<div style="background:rgba(22,27,34,0.8);border:1px solid rgba(88,166,255,0.15);border-radius:8px;padding:14px 20px;text-align:left;margin-bottom:16px;font-size:12px;line-height:2;">'
+      +'<b style="color:rgba(230,237,243,0.5);">Username:</b> <b style="color:#e6edf3;">'+username+'</b><br>'
+      +'<b style="color:rgba(230,237,243,0.5);">Rank:</b> <b style="color:#a371f7;">'+codeData.rank+'</b><br>'
+      +(avatarUrl?'<b style="color:rgba(230,237,243,0.5);">Avatar:</b> <img src="'+avatarUrl+'" width="28" height="28" style="border-radius:50%;vertical-align:middle;margin-left:6px;"><br>':'')
+      +'</div>'
+      +'<div style="font-size:11px;color:rgba(230,237,243,0.35);">You can now log in using the Log In button.</div>'
+      +'</div>';
+    document.getElementById('ln-signup-footer').innerHTML=
+      '<button class="ln-btn ln-btn-primary" onclick="document.getElementById(\'ln-signup-overlay\').classList.remove(\'show\');document.getElementById(\'ln-login-btn\').click();">Log In Now →</button>';
+  }catch(e){
+    msg.style.color='#f85149'; msg.textContent=e.message||'Signup failed.';
+    btn.disabled=false; btn.textContent='Create Account';
+  }
+}
+
+// ── Firebase form loader ──
+window._lnGetForms=function(cb){
+  get(ref(db,'meta/applicationForms')).then(function(snap){
+    var forms=snap.exists()?Object.entries(snap.val()).map(function(e){
+      return Object.assign({id:e[0]},e[1]);
+    }):[];
+    // Default demo forms if none configured
+    if(!forms.length) forms=[
+      {id:'demo1',title:'Content Moderator',rank:'CONTENT MODERATOR',open:true,description:'Review reports, issue warnings and bans. First line of moderation.',questions:[
+        {text:'How old are you?',type:'short',required:true},
+        {text:'Do you have prior moderation experience?',type:'yesno',required:true},
+        {text:'Why do you want to join Samaritan Systems?',type:'long',required:true},
+        {text:'How would you handle a borderline case where a player\'s behavior was inappropriate but not clearly bannable?',type:'long',required:true},
+      ]},
+      {id:'demo2',title:'Content Reviewer',rank:'CONTENT REVIEWER',open:true,description:'Entry level role. Review content flags and assist moderators.',questions:[
+        {text:'How old are you?',type:'short',required:true},
+        {text:'Why do you want to be a Content Reviewer?',type:'long',required:true},
+        {text:'How much time per week can you commit?',type:'choice',options:['1-3 hours','3-7 hours','7-15 hours','15+ hours'],required:true},
+      ]},
+    ];
+    cb(forms);
+  }).catch(function(){ cb([]); });
+};
+
+// ── Careers page ──
+function renderLandingCareers(){
+  // Role cards
+  window._lnGetForms(function(forms){
+    var grid=document.getElementById('ln-role-grid');
+    if(!grid) return;
+    if(!forms.length){
+      grid.innerHTML='<div style="color:rgba(230,237,243,0.4);font-size:12px;">No positions configured yet.</div>';
+    } else {
+      grid.innerHTML=forms.map(function(f){
+        var open=f.open!==false;
+        return '<div class="ln-role-card '+(open?'open':'closed')+'">'
+          +'<div class="ln-role-status">'
+          +(open
+            ?'<svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7.5" fill="rgba(63,185,80,0.15)" stroke="#3fb950" stroke-width="1.2"/><path d="M5 8l2 2 4-4" stroke="#3fb950" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="color:#3fb950;">Open</span>'
+            :'<svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7.5" fill="rgba(248,81,73,0.1)" stroke="#f85149" stroke-width="1.2"/><path d="M5.5 5.5l5 5M10.5 5.5l-5 5" stroke="#f85149" stroke-width="1.5" stroke-linecap="round"/></svg><span style="color:#f85149;">Closed</span>')
+          +'</div>'
+          +'<div class="ln-role-title">'+f.title+'</div>'
+          +'<div class="ln-role-rank">→ '+f.rank+'</div>'
+          +(f.description?'<div class="ln-role-desc">'+f.description+'</div>':'')
+          +(open
+            ?'<button class="ln-role-apply-btn open" onclick="openApplyOverlay(\''+f.id+'\')">Apply Now</button>'
+            :'<button class="ln-role-apply-btn closed" disabled>Applications Closed</button>')
+          +'</div>';
+      }).join('');
+    }
+  });
+
+  // Staff directory
+  var staffGrid=document.getElementById('ln-staff-grid');
+  if(!staffGrid) return;
+  var staffArr=Object.entries(STAFF||{}).filter(function(e){ return e[1]&&e[1].username; });
+  staffArr.sort(function(a,b){ return (LEVEL_RANK[b[1].level]||0)-(LEVEL_RANK[a[1].level]||0); });
+  if(!staffArr.length){ staffGrid.innerHTML='<div style="color:rgba(230,237,243,0.4);font-size:12px;">No staff to display.</div>'; return; }
+  staffGrid.innerHTML=staffArr.map(function(e){
+    var s=e[1];
+    // Don't show suspended or software managers if configured to hide
+    var avatar=s.avatarUrl?'<img src="'+s.avatarUrl+'" class="ln-staff-avatar" onerror="this.style.display=\'none\'">':'<div class="ln-staff-avatar-placeholder">'+s.username.charAt(0).toUpperCase()+'</div>';
+    var rankLabel=s.level||'';
+    // Shorten rank for card
+    var shortRank=rankLabel.replace('CONTENT ','').replace('SENIOR ','SR. ');
+    return '<div class="ln-staff-card">'+avatar+'<div class="ln-staff-name">'+s.username+'</div><div class="ln-staff-rank">'+shortRank+'</div></div>';
+  }).join('');
+}
+
+// ── Stats loader + counter animation ──
+var _statsLoaded=false;
+function loadLandingData(){
+  // Site status
+  get(ref(db,'meta/siteStatus')).then(function(snap){
+    if(!snap.exists()) return;
+    var s=snap.val().status||'OK';
+    var colors={OK:'#3fb950',UPDATING:'#e3b341',PAUSED:'#f85149'};
+    var c=colors[s]||'#3fb950';
+    var badge=document.getElementById('ln-status-badge');
+    var dot=badge&&badge.querySelector('.ln-status-dot');
+    var txt=document.getElementById('ln-status-text');
+    if(badge) badge.style.cssText+='border-color:'+c+'40;color:'+c+';';
+    if(dot) dot.style.background=c;
+    if(txt) txt.textContent=s;
+    var footerStatus=document.getElementById('ln-footer-status');
+    if(footerStatus){ footerStatus.textContent='● '+s; footerStatus.style.color=c+'99'; }
+    var statStatus=document.getElementById('lnstat-status');
+    if(statStatus){ statStatus.textContent='● '+s; statStatus.style.color=c; }
+  }).catch(function(){});
+}
+
+function animateCounters(){
+  if(_statsLoaded) return;
+  _statsLoaded=true;
+  var now=new Date();
+  var monthStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  var modCount=Object.keys(MOD_LOG||{}).length;
+  var monthCount=Object.values(MOD_LOG||{}).filter(function(r){ return r&&r.date&&r.date.startsWith(monthStr); }).length;
+  var appealResolved=Object.values(APPEAL_LOG||{}).filter(function(a){ return a&&a.status&&a.status!=='Pending'; }).length;
+  var appealApproved=Object.values(APPEAL_LOG||{}).filter(function(a){ return a&&a.status==='Approved'; }).length;
+  var approvalRate=appealResolved>0?Math.round(appealApproved/appealResolved*100):0;
+  var staffCount=Object.keys(STAFF||{}).length;
+  var onlineToday=Object.values(STAFF||{}).filter(function(s){
+    if(!s||!s.lastActive||s.lastActive==='Never') return false;
+    return (Date.now()-new Date(s.lastActive).getTime())<86400000;
+  }).length;
+  // Days operational from Firebase config or default
+  get(ref(db,'meta/landingConfig')).then(function(snap){
+    var cfg=snap.exists()?snap.val():{};
+    var founded=cfg.foundedDate?new Date(cfg.foundedDate):new Date('2024-01-01');
+    var daysOp=Math.floor((Date.now()-founded.getTime())/86400000);
+    var targets={
+      'lnstat-moderated':modCount,
+      'lnstat-thismonth':monthCount,
+      'lnstat-appeals':appealResolved,
+      'lnstat-staff':staffCount,
+      'lnstat-online':onlineToday,
+      'lnstat-days':daysOp,
+    };
+    Object.entries(targets).forEach(function(entry){
+      var id=entry[0], target=entry[1];
+      var el=document.getElementById(id);
+      if(!el) return;
+      var start=0, dur=1200, startTime=null;
+      function step(ts){
+        if(!startTime) startTime=ts;
+        var prog=Math.min((ts-startTime)/dur,1);
+        var ease=1-Math.pow(1-prog,3);
+        el.textContent=Math.round(start+(target-start)*ease).toLocaleString()+(id==='lnstat-moderated'?'+':'');
+        if(prog<1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    });
+    var approvalEl=document.getElementById('lnstat-approval');
+    if(approvalEl) approvalEl.textContent=approvalRate+'%';
+  }).catch(function(){});
+}
+
+// ── Hero canvas (rich animated background) ──
+var _lnAnimId=null;
+function startLandingCanvas(){
+  if(_lnAnimId){ cancelAnimationFrame(_lnAnimId); _lnAnimId=null; }
+  var canvas=document.getElementById('ln-hero-canvas');
+  if(!canvas) return;
+  var ctx=canvas.getContext('2d');
+  var W=canvas.width=window.innerWidth;
+  var H=canvas.height=window.innerHeight;
+  window.addEventListener('resize',function(){
+    W=canvas.width=window.innerWidth;
+    H=canvas.height=window.innerHeight;
+  });
+  // Particles
+  var particles=Array.from({length:70},function(){
+    return {x:Math.random()*W,y:Math.random()*H,r:0.5+Math.random()*1.5,
+      vx:(Math.random()-0.5)*0.3,vy:(Math.random()-0.5)*0.3,
+      alpha:0.1+Math.random()*0.4,hue:Math.random()>0.7?260:210};
+  });
+  // Orbs
+  var orbs=[
+    {x:W*0.2,y:H*0.3,r:350,vx:0.15,vy:0.1,color:'88,166,255',alpha:0.06},
+    {x:W*0.8,y:H*0.7,r:400,vx:-0.12,vy:0.08,color:'163,113,247',alpha:0.05},
+    {x:W*0.6,y:H*0.15,r:250,vx:0.08,vy:0.12,color:'88,166,255',alpha:0.04},
+    {x:W*0.1,y:H*0.8,r:300,vx:0.1,vy:-0.09,color:'82,168,80',alpha:0.03},
+  ];
+  var t=0;
+  var STEP=50, COLS=Math.ceil(W/STEP)+2, ROWS=Math.ceil(H/STEP)+2;
+  function draw(){
+    if(!document.getElementById('landingScreen')||document.getElementById('landingScreen').style.display==='none') return;
+    ctx.fillStyle='#080c14';
+    ctx.fillRect(0,0,W,H);
+    // Orbs
+    orbs.forEach(function(o,i){
+      o.x+=Math.sin(t*0.2+i)*o.vx;
+      o.y+=Math.cos(t*0.15+i)*o.vy;
+      var g=ctx.createRadialGradient(o.x,o.y,0,o.x,o.y,o.r);
+      g.addColorStop(0,'rgba('+o.color+','+o.alpha+')');
+      g.addColorStop(0.5,'rgba('+o.color+','+(o.alpha*0.3)+')');
+      g.addColorStop(1,'transparent');
+      ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    });
+    // Grid
+    for(var col=0;col<COLS;col++){
+      for(var row=0;row<ROWS;row++){
+        var x=col*STEP,y=row*STEP;
+        var dist=Math.sqrt((x-W/2)*(x-W/2)+(y-H/2)*(y-H/2));
+        var ripple=Math.sin(t*0.8-dist*0.01)*0.5+0.5;
+        var alpha=0.04+ripple*0.06;
+        ctx.beginPath();
+        ctx.arc(x,y,0.7+ripple*0.5,0,Math.PI*2);
+        ctx.fillStyle='rgba(88,166,255,'+alpha+')';
+        ctx.fill();
+      }
+    }
+    // Particles
+    particles.forEach(function(p){
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0) p.x=W; if(p.x>W) p.x=0;
+      if(p.y<0) p.y=H; if(p.y>H) p.y=0;
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle='hsla('+p.hue+',80%,75%,'+p.alpha+')';
+      ctx.fill();
+    });
+    // Vignette
+    var vig=ctx.createRadialGradient(W/2,H/2,H*0.3,W/2,H/2,H*0.85);
+    vig.addColorStop(0,'transparent');
+    vig.addColorStop(1,'rgba(8,12,20,0.7)');
+    ctx.fillStyle=vig; ctx.fillRect(0,0,W,H);
+    // Horizon glow
+    var hg=ctx.createLinearGradient(0,H*0.7,0,H);
+    hg.addColorStop(0,'transparent');
+    hg.addColorStop(1,'rgba(88,166,255,0.03)');
+    ctx.fillStyle=hg; ctx.fillRect(0,H*0.7,W,H*0.3);
+    t+=0.01;
+    _lnAnimId=requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// ── Boot: show landing if not logged in ──
+// Intercept original doLogin to hide landing on success
+var _origDoLogin=window.doLogin;
+window.doLogin=async function(){
+  await (_origDoLogin||function(){})();
+  // If login succeeded, adminScreen will be visible
+  setTimeout(function(){
+    var as=document.getElementById('adminScreen');
+    if(as&&as.style.display!=='none'){
+      hideLanding();
+    }
+  },500);
+};
+
+// On page load — show landing instead of login
+document.getElementById('loginScreen').style.display='none';
+showLanding();
+
+})();
 
 ['useradmin','moderate','accounts','reputation','appeals','altdetect','staff','activity','modlog','revokelog','suspendlog','terminatelog','warnlog','loginlog','auditlog','alerts','adminlog','home','messaging','requests','userconfig','siteconfig','suggestions','staffconfig','msganalyze','statuslog','badgemgmt','wipelog','robloxlog','cflog','customfieldlog','gamelogs','gameintegration','information','leakid','clearance','samaritan','samlog','evaluations','blacklist','people','moderation','logs','configuration','machine','calendar','discordconfig','staffreports'].forEach(p=>{
   const el=document.getElementById('nav-'+p);
