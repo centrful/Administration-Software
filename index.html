@@ -710,22 +710,27 @@ body.sam-active .main{ background:#0d1117; }
 
 /* Staff directory */
 .ln-staff-grid{
-  display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
-  gap:10px;
+  display:flex; flex-direction:column; gap:10px;
 }
-.ln-staff-card{
-  background:rgba(13,17,23,0.85); border:1px solid rgba(88,166,255,0.1);
-  border-radius:12px; padding:18px 14px; text-align:center;
+.ln-staff-card-wide{
+  background:rgba(13,17,23,0.88);
+  border:1px solid rgba(88,166,255,0.1);
+  border-radius:14px; padding:18px 20px;
   transition:all 0.25s; cursor:default;
   position:relative; overflow:hidden;
 }
-.ln-staff-card::before{
-  content:''; position:absolute; inset:0; border-radius:12px;
-  background:radial-gradient(ellipse at 50% 0%,var(--card-glow,#58a6ff),transparent 70%);
-  opacity:0; transition:opacity 0.3s; pointer-events:none;
+.ln-staff-card-wide::before{
+  content:''; position:absolute; inset:0; border-radius:14px; pointer-events:none;
+  background:linear-gradient(120deg, var(--card-glow,#58a6ff) 0%, transparent 60%);
+  opacity:0; transition:opacity 0.3s;
 }
-.ln-staff-card:hover{ transform:translateY(-4px); border-color:var(--card-glow,#58a6ff); box-shadow:0 8px 32px color-mix(in srgb,var(--card-glow,#58a6ff) 25%,transparent); }
-.ln-staff-card:hover::before{ opacity:0.08; }
+.ln-staff-card-wide:hover{
+  transform:translateY(-3px);
+  border-color:var(--card-glow,#58a6ff);
+  box-shadow:0 6px 40px rgba(var(--card-glow-rgb,88,166,255),0.18);
+}
+.ln-staff-card-wide:hover::before{ opacity:0.06; }
+.ln-staff-card-wide:hover img{ border-color:var(--card-glow,#58a6ff) !important; }
 .ln-staff-avatar{
   width:44px; height:44px; border-radius:50%; object-fit:cover;
   margin:0 auto 8px; display:block;
@@ -2507,6 +2512,19 @@ function userBadges(u){
   return b.length?`<span style="margin-left:3px;display:inline-flex;gap:2px;vertical-align:middle;">${b.join('')}</span>`:'';
 }
 
+function staffBadges(s){
+  if(!s||!CUSTOM_BADGES.length) return '';
+  const b=[];
+  CUSTOM_BADGES.forEach(cb=>{
+    const usage=cb.usage||'both';
+    if(usage==='players') return; // skip player-only badges
+    if(s.customBadges&&s.customBadges[cb.key]){
+      b.push(`<span title="${cb.desc||cb.label}" style="font-size:9px;font-weight:bold;padding:1px 4px;border:1px solid ${cb.borderColor||'#808080'};background:${cb.bgColor||'#e0e0e0'};color:${cb.textColor||'#000'};border-radius:3px;cursor:default;letter-spacing:0.3px;">${cb.label}</span>`);
+    }
+  });
+  return b.length?`<span style="display:inline-flex;gap:2px;flex-wrap:wrap;vertical-align:middle;margin-left:4px;">${b.join('')}</span>`:'';
+}
+
 function auditLog(action, detail){
   push(ref(db,'logs/audit'), {action, detail, by:ME, date:nowStr()});
 }
@@ -3419,6 +3437,7 @@ async function renderLandingConfig(c){
     +'<input type="checkbox" id="lc-hide-sm" '+(cfg.hideSMFromDir?'checked':'')+' style="width:13px;height:13px;"/>'
     +'<label style="font-size:11px;color:var(--c-text);">Hide Software Managers from directory</label></div>'
     +'<button class="btn" id="lc-save-careers" style="width:100%;">Save Careers Config</button>'
+    +'<button class="btn" id="lc-manage-staff-btn" style="width:100%;margin-top:6px;background:rgba(88,166,255,0.08);border-color:var(--c-link);color:var(--c-link);">Manage Staff Directory →</button>'
     +'<div id="lc-careers-msg" style="font-size:11px;margin-top:4px;color:var(--c-ok);min-height:14px;"></div>'
     +'</div></div>'
     +'</div>'
@@ -3479,7 +3498,139 @@ async function renderLandingConfig(c){
     });
     msg('lc-careers-msg','Careers config saved!');
   };
+
+  // Staff directory management button
+  var viewStaffBtn=document.getElementById('lc-manage-staff-btn');
+  if(viewStaffBtn) viewStaffBtn.onclick=function(){
+    openLandingStaffPanel(c);
+  };
 }
+
+function openLandingStaffPanel(container){
+  // Create fullscreen overlay panel
+  var overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(1,4,9,0.85);z-index:9500;display:flex;align-items:center;justify-content:center;';
+  var panel=document.createElement('div');
+  panel.style.cssText='background:var(--bg-sbox);border:1px solid var(--c-border);border-radius:10px;width:860px;max-width:96vw;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.6);';
+  panel.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--c-border);flex-shrink:0;">'
+    +'<div style="font-size:14px;font-weight:700;color:var(--c-text);">Staff Directory Management</div>'
+    +'<button id="lsp-close" style="background:none;border:none;color:var(--c-text2);font-size:18px;cursor:pointer;padding:0;">&#10005;</button>'
+    +'</div>'
+    +'<div style="padding:14px 18px;font-size:11px;color:var(--c-text2);border-bottom:1px solid var(--c-border);flex-shrink:0;">'
+    +'Each card below shows exactly how that staff member appears on the public landing page. Click any card to edit their public display settings.'
+    +'</div>'
+    +'<div id="lsp-cards" style="flex:1;overflow-y:auto;padding:14px 18px;display:flex;flex-direction:column;gap:8px;">'
+    +'<div style="font-size:11px;color:var(--c-text2);">Loading...</div>'
+    +'</div>';
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
+
+  panel.querySelector('#lsp-close').onclick=function(){ overlay.remove(); };
+  overlay.onclick=function(e){ if(e.target===overlay) overlay.remove(); };
+
+  // Load and render staff cards
+  var rankColors={'CONTENT REVIEWER':'#58a6ff','CONTENT MODERATOR':'#58a6ff','CONTENT ADMINISTRATOR':'#a371f7','SENIOR CONTENT ADMINISTRATOR':'#a371f7','CONTENT MANAGER':'#e3b341','SOFTWARE MANAGER':'#f85149'};
+  var rankShort={'CONTENT REVIEWER':'Reviewer','CONTENT MODERATOR':'Moderator','CONTENT ADMINISTRATOR':'Administrator','SENIOR CONTENT ADMINISTRATOR':'Sr. Administrator','CONTENT MANAGER':'Content Manager','SOFTWARE MANAGER':'Software Manager'};
+
+  function renderLSPCards(){
+    var cards=document.getElementById('lsp-cards');
+    if(!cards) return;
+    var staffArr=Object.entries(STAFF).filter(function(e){ return e[1]&&e[1].username; });
+    staffArr.sort(function(a,b){ return (LEVEL_RANK[b[1].level]||0)-(LEVEL_RANK[a[1].level]||0); });
+    if(!staffArr.length){ cards.innerHTML='<div style="font-size:11px;color:var(--c-text2);">No staff registered.</div>'; return; }
+    cards.innerHTML=staffArr.map(function(e){
+      var sid=e[0],s=e[1];
+      var pd=s.publicDisplay||{};
+      var rc=rankColors[s.level]||'#58a6ff';
+      var shortRank=rankShort[s.level]||s.level||'';
+      var badgesHtml=staffBadges(s);
+      var nameLine='<b style="font-size:13px;color:var(--c-text);">'+s.username+'</b>';
+      if(pd.showRobloxUser&&s.avatarUser) nameLine+=' <span style="font-size:11px;color:var(--c-text2);">— '+s.avatarUser+'</span>';
+      if(!pd.hideBadges) nameLine+=badgesHtml;
+      var avatar=s.avatarUrl?'<img src="'+s.avatarUrl+'" width="48" height="48" style="border-radius:50%;object-fit:cover;border:2px solid '+rc+'30;flex-shrink:0;">':'<div style="width:48px;height:48px;border-radius:50%;background:'+rc+'20;border:2px solid '+rc+'40;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:'+rc+';flex-shrink:0;">'+s.username.charAt(0).toUpperCase()+'</div>';
+      var visIcon=pd.hidden?'<span style="font-size:10px;background:rgba(248,81,73,0.12);color:var(--c-ban);padding:2px 6px;border-radius:10px;border:1px solid var(--c-ban);">Hidden</span>':'<span style="font-size:10px;background:rgba(63,185,80,0.1);color:var(--c-ok);padding:2px 6px;border-radius:10px;border:1px solid var(--c-ok);">Visible</span>';
+      return '<div class="lsp-card" data-sid="'+sid+'" data-rc="'+rc+'" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--c-border);border-left:3px solid '+rc+';border-radius:8px;background:var(--bg-tbl-odd);cursor:pointer;transition:border-color 0.15s;">'+
+        avatar+
+        '<div style="flex:1;min-width:0;">'+
+        '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px;">'+nameLine+'</div>'+
+        '<div style="font-size:10px;color:'+rc+';font-weight:700;letter-spacing:0.5px;text-transform:uppercase;">'+shortRank+'</div>'+
+        '</div>'+
+        visIcon+
+        '<span style="font-size:12px;color:var(--c-text2);margin-left:8px;">&#8250;</span>'+
+        '</div>';
+    }).join('');
+    cards.querySelectorAll('.lsp-card').forEach(function(card){
+      var rc2=card.dataset.rc||'#58a6ff';
+      card.onmouseenter=function(){ card.style.borderColor=rc2; };
+      card.onmouseleave=function(){ card.style.borderColor=rc2+'30'; };
+      card.onclick=function(){ openStaffCardEditor(card.dataset.sid, overlay, renderLSPCards); };
+    });
+  }
+  renderLSPCards();
+}
+
+function openStaffCardEditor(sid, parentOverlay, onSave){
+  var s=STAFF[sid]; if(!s) return;
+  var pd=s.publicDisplay||{};
+  var editor=document.createElement('div');
+  editor.style.cssText='position:absolute;inset:0;background:var(--bg-sbox);z-index:10;display:flex;flex-direction:column;overflow:hidden;border-radius:10px;';
+  editor.innerHTML='<div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--c-border);flex-shrink:0;">'
+    +'<button id="sce-back" style="background:none;border:1px solid var(--c-border);color:var(--c-text2);font-size:12px;cursor:pointer;padding:4px 10px;border-radius:5px;">← Back</button>'
+    +'<div style="font-size:13px;font-weight:700;color:var(--c-text);">Editing: '+s.username+'</div>'
+    +'</div>'
+    +'<div style="flex:1;overflow-y:auto;padding:18px;">'
+    // Preview
+    +'<div style="font-size:11px;font-weight:700;color:var(--c-text);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Preview</div>'
+    +'<div id="sce-preview" style="background:rgba(13,17,23,0.88);border:1px solid var(--c-border);border-radius:10px;padding:16px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px;">'
+    +(s.avatarUrl?'<img src="'+s.avatarUrl+'" width="56" height="56" style="border-radius:50%;object-fit:cover;border:2px solid rgba(88,166,255,0.3);flex-shrink:0;">'
+      :'<div style="width:56px;height:56px;border-radius:50%;background:rgba(88,166,255,0.15);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#58a6ff;flex-shrink:0;">'+s.username.charAt(0).toUpperCase()+'</div>')
+    +'<div id="sce-preview-text" style="flex:1;"><b>'+s.username+'</b></div>'
+    +'</div>'
+    // Options
+    +'<div style="font-size:11px;font-weight:700;color:var(--c-text);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">Display Settings</div>'
+    +'<div style="display:flex;flex-direction:column;gap:8px;">'
+    +'<label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--c-text);cursor:pointer;">'
+    +'<input type="checkbox" id="sce-hidden" '+(pd.hidden?'checked':'')+' style="width:14px;height:14px;"/>'
+    +'<span>Hide from public staff directory</span></label>'
+    +'<label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--c-text);cursor:pointer;">'
+    +'<input type="checkbox" id="sce-show-roblox" '+(pd.showRobloxUser?'checked':'')+' style="width:14px;height:14px;"/>'
+    +'<span>Show Roblox username ('+(s.avatarUser||'not set')+')</span></label>'
+    +'<label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--c-text);cursor:pointer;">'
+    +'<input type="checkbox" id="sce-hide-badges" '+(pd.hideBadges?'checked':'')+' style="width:14px;height:14px;"/>'
+    +'<span>Hide badges on public card</span></label>'
+    +'<div style="display:flex;align-items:center;gap:8px;">'
+    +'<label style="font-size:12px;color:var(--c-text);">Display order (lower = higher):</label>'
+    +'<input type="number" id="sce-order" value="'+(pd.displayOrder||999)+'" min="1" max="999" style="width:60px;"/>'
+    +'</div>'
+    +'</div>'
+    +'<div style="margin-top:14px;display:flex;gap:8px;">'
+    +'<button class="btn" id="sce-save" style="flex:1;">Save</button>'
+    +'</div>'
+    +'<div id="sce-msg" style="font-size:11px;margin-top:6px;color:var(--c-ok);min-height:14px;"></div>'
+    +'</div>';
+
+  var parentPanel=parentOverlay.querySelector('div');
+  parentPanel.style.position='relative';
+  parentPanel.appendChild(editor);
+
+  editor.querySelector('#sce-back').onclick=function(){ editor.remove(); };
+  editor.querySelector('#sce-save').onclick=async function(){
+    var newPD={
+      hidden:document.getElementById('sce-hidden').checked,
+      showRobloxUser:document.getElementById('sce-show-roblox').checked,
+      hideBadges:document.getElementById('sce-hide-badges').checked,
+      displayOrder:parseInt(document.getElementById('sce-order').value)||999,
+    };
+    await update(ref(db,'staff/'+sid+'/publicDisplay'),newPD);
+    if(STAFF[sid]) STAFF[sid].publicDisplay=newPD;
+    auditLog('Staff Public Display Updated',s.username+' by '+ME);
+    var msg=document.getElementById('sce-msg');
+    if(msg){ msg.textContent='Saved!'; setTimeout(function(){ editor.remove(); if(onSave) onSave(); },800); }
+  };
+}
+window.openLandingStaffPanel=openLandingStaffPanel;
+window.openStaffCardEditor=openStaffCardEditor;
+
 
 // ══════════════════════════════════════════════════════
 // APPLICATIONS CONFIG (Machine Management)
@@ -15591,11 +15742,12 @@ function renderBadgeMgmt(c){
     <div style="font-size:11px;color:var(--c-text2);margin-bottom:6px;">Create custom badges that appear on player profiles. Set the label, colors, and which staff level can assign/remove the badge.</div>
     ${CUSTOM_BADGES.length===0?'<i style="color:var(--c-text2);font-size:11px;">No custom badges yet.</i>':`
     <div class="tbl-wrap"><table class="tbl" style="margin-bottom:8px;">
-      <tr><th>Preview</th><th>Label</th><th>Key</th><th>Assign Level</th><th>Actions</th></tr>
+      <tr><th>Preview</th><th>Label</th><th>Key</th><th>Usage</th><th>Assign Level</th><th>Actions</th></tr>
       ${CUSTOM_BADGES.map((b,i)=>`<tr>
         <td><span style="font-size:10px;font-weight:bold;padding:1px 4px;border:1px solid ${b.borderColor||'#808080'};background:${b.bgColor||'#e0e0e0'};color:${b.textColor||'#000'};">${b.label}</span></td>
         <td><b>${b.label}</b></td>
         <td><code style="font-size:10px;">${b.key}</code></td>
+        <td style="font-size:10px;color:var(--c-text2);">${b.usage||'both'}</td>
         <td>${levelBadge(b.assignLevel||'MODERATOR')}</td>
         <td style="display:flex;gap:3px;">
           <button class="btn small edit-badge-btn" data-idx="${i}">Edit</button>
@@ -15611,6 +15763,8 @@ function renderBadgeMgmt(c){
           <input type="text" id="nb-label" style="width:100%;" placeholder="e.g. DONOR" maxlength="10"/></div>
         <div style="margin-bottom:4px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;font-weight:bold;">Key (internal, no spaces):</label>
           <input type="text" id="nb-key" style="width:100%;" placeholder="e.g. donor" maxlength="20"/></div>
+        <div style="margin-bottom:4px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;font-weight:bold;">Usage — who can have this badge:</label>
+          <select id="nb-usage" style="width:100%;"><option value="players">Players only</option><option value="staff">Staff only</option><option value="both" selected>Players &amp; Staff</option></select></div>
         <div style="margin-bottom:4px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;font-weight:bold;">Min. Level to Assign:</label>
           <select id="nb-level" style="width:100%;">${LEVEL_OPTIONS.map(l=>`<option value="${l}">${l}</option>`).join('')}</select></div>
       </div>
@@ -15660,13 +15814,14 @@ function renderBadgeMgmt(c){
     const textColor=document.getElementById('nb-text-hex').value.trim()||'#553300';
     const borderColor=document.getElementById('nb-border-hex').value.trim()||'#c0a060';
     const desc=document.getElementById('nb-desc').value.trim();
+    const usage=(document.getElementById('nb-usage')||{value:'both'}).value||'both';
     const msgEl=document.getElementById('badgeMsg');
     if(!label){ msgEl.style.color='var(--c-ban)'; msgEl.textContent='Label required.'; return; }
     if(!key){ msgEl.style.color='var(--c-ban)'; msgEl.textContent='Key required.'; return; }
     if(CUSTOM_BADGES.find(b=>b.key===key)){ msgEl.style.color='var(--c-ban)'; msgEl.textContent='A badge with that key already exists.'; return; }
     const builtinKeys=['protected','vip','watched','muted'];
     if(builtinKeys.includes(key)){ msgEl.style.color='var(--c-ban)'; msgEl.textContent='That key conflicts with a built-in badge.'; return; }
-    const newBadges=[...CUSTOM_BADGES,{label,key,assignLevel:level,bgColor,textColor,borderColor,desc}];
+    const newBadges=[...CUSTOM_BADGES,{label,key,assignLevel:level,bgColor,textColor,borderColor,desc,usage}];
     await set(ref(db,'meta/customBadges'),newBadges);
     CUSTOM_BADGES=newBadges;
     auditLog('Custom Badge Added',`${label} (${key}) by ${ME}`);
