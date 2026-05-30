@@ -2447,8 +2447,11 @@ function showBeehiveOverlay(alertData){
         if(isUrgent){
           window._beehiveBarFlash=setInterval(function(){
             bar.style.boxShadow=bar.style.boxShadow===glowIntense?glowNorm:glowIntense;
-          },600);
-          setTimeout(function(){ if(window._beehiveBarFlash){ clearInterval(window._beehiveBarFlash); window._beehiveBarFlash=null; } bar.style.boxShadow=''; },30000);
+          },400);
+        } else {
+          window._beehiveBarFlash=setInterval(function(){
+            bar.style.boxShadow=bar.style.boxShadow===glowIntense?glowNorm:glowIntense;
+          },900);
         }
       }
     },580);
@@ -7773,6 +7776,12 @@ function renderAlerts(c){
             </div>
           </div>
         </div>
+        <div style="margin-bottom:4px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;">Visibility:</label>
+          <select id="alertVisibility" style="width:100%;font-family:inherit;font-size:11px;">
+            <option value="internal">Internal only (staff panel)</option>
+            <option value="external">External only (landing page)</option>
+            <option value="all">Show to all (internal + external)</option>
+          </select></div>
         <div style="margin-bottom:4px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:2px;">Message:</label>
           <textarea id="newAlertMsg" style="width:100%;height:50px;" placeholder="Alert message visible to all staff..."></textarea></div>
         <div style="display:flex;gap:4px;margin-top:2px;">
@@ -9201,6 +9210,8 @@ function renderBeehive(panel){
     +'</div></div>'
     +'<div style="margin-bottom:8px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:3px;">Message</label>'
     +'<textarea id="beehive-msg-txt" style="width:100%;height:60px;" placeholder="Alert message displayed to all staff…"></textarea></div>'
+    +'<div style="margin-bottom:8px;"><label style="font-size:11px;color:var(--c-text);display:block;margin-bottom:3px;">Visibility</label>'
+    +'<select id="beehive-visibility" style="width:100%;"><option value="internal">Internal only (staff panel)</option><option value="external">External only (landing page)</option><option value="all">All (internal + external)</option></select></div>'
     +expiryInput('beehive')
     +'<div style="display:flex;gap:8px;margin-top:6px;">'
     +'<button class="btn" id="beehive-enable" style="background:#d29922;color:#fff;border-color:#d29922;">Broadcast Beehive</button>'
@@ -15162,6 +15173,29 @@ function startListeners(){
   onValue(ref(db,'staff'),snap=>{
     const raw=snap.val()||{};
     STAFF=Object.fromEntries(Object.entries(raw).filter(([,v])=>v&&v.username));
+    // Write public mirror to meta/staffMirror (readable without auth)
+    if(ME){
+      try{
+        const mirror={};
+        Object.entries(STAFF).forEach(([sid,s])=>{
+          if(!s||!s.username) return;
+          const pd=s.publicDisplay||{};
+          mirror[sid]={
+            username:s.username,
+            level:s.level||'',
+            avatarUrl:s.avatarUrl||'',
+            suspended:s.suspended||false,
+            robloxDisplayName:pd.robloxDisplayName||s.avatarUser||'',
+            showRobloxUser:pd.showRobloxUser||false,
+            customBadges:s.customBadges||{},
+            hideBadges:pd.hideBadges||false,
+            displayOrder:pd.displayOrder||999,
+            hidden:pd.hidden||false,
+          };
+        });
+        update(ref(db,'meta/staffMirror'),mirror).catch(()=>{});
+      }catch(ex){}
+    }
     // Only re-render pages that actually show staff data
     const staffPages=['staff','activity','home','adminlog','accounts','warnlog','staffconfig','evaluations','messaging','suggestions','calendar','staffreports'];
     if(staffPages.includes(page)||document.getElementById('monitor-tiles-wrap')) { safeRender(); if(document.getElementById('monitor-tiles-wrap')) renderMonitorTiles(); }
@@ -16351,9 +16385,9 @@ function setupMenus(){
     document.getElementById('notifDropdown').style.display='none';
     openNotifSettings();
   };
-  document.getElementById('notifSettingsClose').onclick=()=>document.getElementById('notifSettingsOverlay').classList.remove('show');
-  document.getElementById('notifSettingsCancel').onclick=()=>document.getElementById('notifSettingsOverlay').classList.remove('show');
-  document.getElementById('notifSettingsSave').onclick=()=>{ saveNotifPrefs(); document.getElementById('notifSettingsOverlay').classList.remove('show'); };
+  const nsc=document.getElementById('notifSettingsClose'); if(nsc) nsc.onclick=()=>document.getElementById('notifSettingsOverlay').classList.remove('show');
+  const nscan=document.getElementById('notifSettingsCancel'); if(nscan) nscan.onclick=()=>document.getElementById('notifSettingsOverlay').classList.remove('show');
+  const nss=document.getElementById('notifSettingsSave'); if(nss) nss.onclick=()=>{ saveNotifPrefs(); document.getElementById('notifSettingsOverlay').classList.remove('show'); };
 
   // Advanced Search
   const searchBtn=document.getElementById('searchBtn');
@@ -16395,7 +16429,7 @@ function setupMenus(){
   }
 
   // Update log popup
-  document.getElementById('updateLogClose').onclick=()=>document.getElementById('updateLogOverlay').classList.remove('show');
+  const ulc=document.getElementById('updateLogClose'); if(ulc) ulc.onclick=()=>document.getElementById('updateLogOverlay').classList.remove('show');
   document.getElementById('updateLogOK').onclick=()=>document.getElementById('updateLogOverlay').classList.remove('show');
   window.openUpdateLog=async function(){
     // Seed Firebase with defaults if never saved before
