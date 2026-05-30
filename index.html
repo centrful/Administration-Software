@@ -473,13 +473,7 @@ body.sam-active .main{ background:#0d1117; }
   font-size:14px; font-weight:800; letter-spacing:2px;
   color:#e6edf3; text-transform:uppercase; flex-shrink:0;
 }
-.ln-nav-diamond{
-  width:22px; height:22px;
-  background:linear-gradient(135deg,#58a6ff,#a371f7);
-  transform:rotate(45deg); border-radius:2px;
-  box-shadow:0 0 12px rgba(88,166,255,0.5);
-  flex-shrink:0;
-}
+.ln-nav-diamond{ display:none; }
 .ln-nav-tabs{
   display:flex; align-items:center; gap:2px;
   margin:0 auto; 
@@ -505,7 +499,7 @@ body.sam-active .main{ background:#0d1117; }
 }
 .ln-btn-outline:hover{ background:rgba(88,166,255,0.1); border-color:#58a6ff; }
 .ln-btn-primary{
-  background:linear-gradient(135deg,#1f6feb,#a371f7);
+  background:linear-gradient(135deg,#1f6feb,#2188ff);
   border:none; color:#fff;
   box-shadow:0 0 20px rgba(88,166,255,0.3);
 }
@@ -513,9 +507,15 @@ body.sam-active .main{ background:#0d1117; }
 
 /* Section base */
 .ln-section{
-  display:none; min-height:100vh; padding-top:56px;
+  display:block; padding-top:56px;
+  opacity:0; transform:translateY(30px);
+  transition:opacity 0.7s ease, transform 0.7s ease;
 }
-.ln-section.active{ display:block; }
+.ln-section.visible{
+  opacity:1; transform:none;
+}
+/* home section starts visible */
+#ln-sec-home{ opacity:1; transform:none; }
 
 /* Hero */
 .ln-hero{
@@ -546,10 +546,10 @@ body.sam-active .main{ background:#0d1117; }
 .ln-hero-title{
   font-size:clamp(36px,7vw,80px); font-weight:900;
   letter-spacing:-1px; line-height:1;
-  background:linear-gradient(135deg,#e6edf3 30%,#58a6ff 60%,#a371f7 100%);
+  background:linear-gradient(180deg,#ffffff 0%,#c9e0ff 50%,#58a6ff 100%);
   -webkit-background-clip:text; -webkit-text-fill-color:transparent;
   background-clip:text;
-  filter:drop-shadow(0 0 40px rgba(88,166,255,0.3));
+  filter:drop-shadow(0 0 60px rgba(88,166,255,0.25));
   margin-bottom:16px;
   animation:ln-fadein 1s ease both;
 }
@@ -569,7 +569,7 @@ body.sam-active .main{ background:#0d1117; }
   transition:all 0.2s; letter-spacing:0.5px;
 }
 .ln-hero-btn-primary{
-  background:linear-gradient(135deg,#1f6feb,#a371f7);
+  background:linear-gradient(135deg,#1f6feb,#2188ff);
   border:none; color:#fff;
   box-shadow:0 0 30px rgba(88,166,255,0.4);
 }
@@ -853,7 +853,11 @@ select.ln-input{ cursor:pointer; }
   <!-- NAVBAR -->
   <nav class="ln-nav">
     <div class="ln-nav-logo">
-      <div class="ln-nav-diamond"></div>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 680" width="22" height="22" style="flex-shrink:0;filter:drop-shadow(0 0 8px rgba(88,166,255,0.6));">
+  <line x1="340" y1="602" x2="340" y2="622" stroke="#58a6ff" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
+  <circle cx="340" cy="168" r="64" fill="#58a6ff"/>
+  <polygon points="340,630 224,288 456,288" fill="#58a6ff"/>
+</svg>
       Samaritan Systems
     </div>
     <div class="ln-nav-tabs">
@@ -870,7 +874,7 @@ select.ln-input{ cursor:pointer; }
   </nav>
 
   <!-- HOME SECTION -->
-  <section class="ln-section active" id="ln-sec-home">
+  <section class="ln-section visible" id="ln-sec-home">
     <div class="ln-hero">
       <div class="ln-hero-content">
         <div class="ln-hero-status" id="ln-status-badge" style="border-color:rgba(63,185,80,0.4);color:#3fb950;">
@@ -884,12 +888,15 @@ select.ln-input{ cursor:pointer; }
           <button class="ln-hero-btn ln-hero-btn-secondary" id="ln-hero-learn-btn">Learn More</button>
         </div>
       </div>
-      <div class="ln-scroll-hint">
-        <span>SCROLL</span>
-        <svg width="12" height="8" viewBox="0 0 12 8" fill="none"><path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <div class="ln-scroll-hint" onclick="document.getElementById('ln-sec-about').scrollIntoView({behavior:'smooth'})" style="cursor:pointer;">
+        <span style="letter-spacing:2px;font-size:9px;">SCROLL</span>
+        <svg width="14" height="10" viewBox="0 0 14 10" fill="none" style="animation:ln-bob 1.5s infinite;"><path d="M1 1l6 6 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
       </div>
     </div>
   </section>
+
+  <!-- SECTION DIVIDER -->
+  <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(88,166,255,0.15),transparent);margin:0 5%;"></div>
 
   <!-- ABOUT SECTION -->
   <section class="ln-section" id="ln-sec-about">
@@ -904,6 +911,9 @@ select.ln-input{ cursor:pointer; }
       </div>
     </div>
   </section>
+
+  <!-- SECTION DIVIDER -->
+  <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(88,166,255,0.15),transparent);margin:0 5%;"></div>
 
   <!-- STATS SECTION -->
   <section class="ln-section" id="ln-sec-stats">
@@ -934,6 +944,9 @@ select.ln-input{ cursor:pointer; }
     </div>
   </section>
 
+  <!-- SECTION DIVIDER -->
+  <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(88,166,255,0.15),transparent);margin:0 5%;"></div>
+
   <!-- POLICIES SECTION -->
   <section class="ln-section" id="ln-sec-policies">
     <div class="ln-content">
@@ -960,6 +973,9 @@ select.ln-input{ cursor:pointer; }
       </div>
     </div>
   </section>
+
+  <!-- SECTION DIVIDER -->
+  <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(88,166,255,0.15),transparent);margin:0 5%;"></div>
 
   <!-- CAREERS SECTION -->
   <section class="ln-section" id="ln-sec-careers">
@@ -3207,7 +3223,6 @@ function render(){
       {id:'appsconfig', label:'<svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;"><rect x="2" y="1" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.2"/><line x1="4.5" y1="4.5" x2="9.5" y2="4.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><line x1="4.5" y1="7" x2="9.5" y2="7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><path d="M4.5 9.5l1.5 1.5 3-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Applications', smOnly:true},
       {id:'discordconfig', label:'<svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;"><path d="M6.5 7.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2M9.5 7.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2" fill="currentColor"/><path d="M13.5 1.5A2 2 0 0 0 11.5 0h-7A2 2 0 0 0 2.5 2v8a2 2 0 0 0 2 2h7l-1-3 2.5 2.5V1.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" fill="none"/></svg>Discord Config', smOnly:true},
     ], inner=>{
-      if(!isSoftwareManager()){ inner.innerHTML=denied; return; }
       if(page==='siteconfig') renderSiteConfig(inner);
       else if(page==='statuslog') renderStatusLog(inner);
       else if(page==='wipelog') renderWipeLog(inner);
@@ -16061,17 +16076,37 @@ function hideLanding(){
 window.showLanding=showLanding;
 window.hideLanding=hideLanding;
 
-// ── Nav tab switching ──
+// ── Nav tab clicking scrolls to section ──
 document.querySelectorAll('.ln-nav-tab').forEach(function(tab){
   tab.onclick=function(){
-    document.querySelectorAll('.ln-nav-tab').forEach(function(t){ t.classList.remove('active'); });
-    document.querySelectorAll('.ln-section').forEach(function(s){ s.classList.remove('active'); });
-    tab.classList.add('active');
     var sec=document.getElementById('ln-sec-'+tab.dataset.section);
-    if(sec) sec.classList.add('active');
-    if(tab.dataset.section==='stats') animateCounters();
-    if(tab.dataset.section==='careers') renderLandingCareers();
+    if(sec) sec.scrollIntoView({behavior:'smooth',block:'start'});
   };
+});
+
+// ── IntersectionObserver: highlight active tab + trigger animations ──
+var _statsAnimated=false;
+var _careersLoaded=false;
+var _sectionObserver=new IntersectionObserver(function(entries){
+  entries.forEach(function(entry){
+    if(entry.isIntersecting){
+      // Fade in
+      entry.target.classList.add('visible');
+      // Active nav tab
+      var id=entry.target.id.replace('ln-sec-','');
+      document.querySelectorAll('.ln-nav-tab').forEach(function(t){
+        t.classList.toggle('active', t.dataset.section===id);
+      });
+      // Trigger one-shot animations
+      if(id==='stats'&&!_statsAnimated){ _statsAnimated=true; animateCounters(); }
+      if(id==='careers'&&!_careersLoaded){ _careersLoaded=true; renderLandingCareers(); }
+    }
+  });
+},{ threshold:0.15, rootMargin:'-56px 0px 0px 0px' });
+
+['home','about','stats','policies','careers'].forEach(function(id){
+  var el=document.getElementById('ln-sec-'+id);
+  if(el) _sectionObserver.observe(el);
 });
 
 // ── CTA buttons ──
