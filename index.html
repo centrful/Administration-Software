@@ -507,15 +507,17 @@ body.sam-active .main{ background:#0d1117; }
 
 /* Section base */
 .ln-section{
-  display:block; padding-top:56px;
-  opacity:0; transform:translateY(30px);
-  transition:opacity 0.7s ease, transform 0.7s ease;
+  display:block; padding-top:0;
+  opacity:0; transform:translateY(24px);
+  transition:opacity 0.65s ease, transform 0.65s ease;
 }
 .ln-section.visible{
   opacity:1; transform:none;
 }
-/* home section starts visible */
-#ln-sec-home{ opacity:1; transform:none; }
+/* home section always visible */
+#ln-sec-home{ opacity:1 !important; transform:none !important; }
+/* ensure landingScreen scrolls */
+#landingScreen{ overflow-y:auto; }
 
 /* Hero */
 .ln-hero{
@@ -838,6 +840,57 @@ select.ln-input{ cursor:pointer; }
 }
 .ln-signup-note a{ color:#58a6ff; cursor:pointer; text-decoration:none; }
 .ln-signup-note a:hover{ text-decoration:underline; }
+
+
+/* ── Admin panel ambient background ── */
+#adminScreen::before{
+  content:'';
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(ellipse 60% 40% at 15% 20%, rgba(88,166,255,0.04) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 35% at 85% 80%, rgba(88,166,255,0.03) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 30% at 70% 15%, rgba(46,160,67,0.02) 0%, transparent 70%);
+  animation:panel-ambient 18s ease-in-out infinite alternate;
+}
+@keyframes panel-ambient{
+  0%{ opacity:0.6; }
+  50%{ opacity:1; }
+  100%{ opacity:0.7; }
+}
+#adminScreen .sidebar{ position:relative; z-index:2; }
+#adminScreen #content{ position:relative; z-index:2; }
+#adminScreen .topbar{ position:relative; z-index:10; }
+
+/* Stat cards glow on hover */
+.stat-card{
+  transition:border-color 0.2s, transform 0.2s, box-shadow 0.2s !important;
+}
+.stat-card:hover{
+  box-shadow:0 4px 24px rgba(88,166,255,0.12) !important;
+}
+
+/* sbox subtle border glow on hover */
+.sbox{
+  transition:border-color 0.2s;
+}
+.sbox:hover{
+  border-color:rgba(88,166,255,0.18);
+}
+
+/* Page tabs active indicator glow */
+.page-tab.active{
+  text-shadow:0 0 12px rgba(88,166,255,0.3);
+}
+
+/* Sidebar active item glow */
+.sb-link.active{
+  box-shadow:inset 2px 0 0 var(--c-link);
+}
+
+/* Badge subtle glow */
+.badge.softwaremanager{
+  box-shadow:0 0 8px rgba(88,166,255,0.3);
+}
 
 </style>
 </head>
@@ -1168,7 +1221,7 @@ select.ln-input{ cursor:pointer; }
         <div style="position:relative;display:inline-block;">
           <button class="logout-btn" id="notifBtn" style="width:22px;padding:0;font-size:12px;" title="Notifications">&#128276;</button>
           <span id="notifBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:#cc0000;color:#fff;font-size:8px;font-weight:bold;border-radius:50%;width:12px;height:12px;line-height:12px;text-align:center;pointer-events:none;"></span>
-          <div id="notifDropdown" style="display:none;position:absolute;top:100%;right:0;background:var(--bg-dialog);border:1px solid var(--c-border);z-index:600;width:260px;box-shadow:0 8px 24px rgba(1,4,9,0.15);border-radius:6px;overflow:hidden;">
+          <div id="notifDropdown" onclick="event.stopPropagation();" style="display:none;position:absolute;top:100%;right:0;background:var(--bg-dialog);border:1px solid var(--c-border);z-index:600;width:260px;box-shadow:0 8px 24px rgba(1,4,9,0.15);border-radius:6px;overflow:hidden;">
             <div style="background:var(--bg-stitle);color:var(--c-stitle-text);font-size:12px;font-weight:600;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;">
               <span>Notifications</span>
               <span id="notifSettingsLink" style="font-size:10px;cursor:pointer;text-decoration:underline;color:var(--c-topbar-text);opacity:0.8;">Settings</span>
@@ -1294,7 +1347,7 @@ select.ln-input{ cursor:pointer; }
   <div class="dialog" style="width:560px;max-width:98vw;">
     <div style="background:var(--bg-stitle);color:var(--c-stitle-text);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">
       <div style="font-size:13px;font-weight:600;">&#128269; Global Search</div>
-      <div id="searchClose" style="cursor:pointer;color:var(--c-stitle-text);opacity:0.7;font-size:16px;line-height:1;">&#10005;</div>
+      <button id="searchClose" style="cursor:pointer;color:var(--c-stitle-text);opacity:0.7;font-size:18px;line-height:1;background:none;border:none;padding:0 2px;">&#10005;</button>
     </div>
     <div style="padding:12px 14px 10px;">
       <div style="display:flex;gap:6px;align-items:flex-end;margin-bottom:8px;">
@@ -1688,8 +1741,8 @@ function localDateShort(str){
   }catch(e){ return str; }
 }
 function rankOf(l){ if(l==='- NONE -') return 999; return LEVEL_RANK[l]||0; }
-function isSoftwareManager(){ return MY_LEVEL==='SOFTWARE MANAGER'; }
-function isContentManager(){ return MY_LEVEL==='CONTENT MANAGER'||isSoftwareManager(); }
+function isSoftwareManager(){ return (MY_LEVEL||'').toUpperCase().trim()==='SOFTWARE MANAGER'; }
+function isContentManager(){ return (MY_LEVEL||'').toUpperCase().trim()==='CONTENT MANAGER'||isSoftwareManager(); }
 function isSuperAdmin(){ return MY_LEVEL==='SENIOR CONTENT ADMINISTRATOR'||isContentManager(); }
 // SOFTWARE MANAGER bypasses all permission checks; '- NONE -' means no one can access
 function canDo(k){
@@ -16010,29 +16063,12 @@ applyTheme();
 try{ setupMenus(); }catch(e){ console.warn("setupMenus error:",e); }
 
 function wireTopbar(){
-  var nb=document.getElementById('nightModeBtn');
-  if(nb) nb.onclick=function(){ darkMode=!darkMode; applyTheme(); };
-  var rb=document.getElementById('refreshBtn');
-  if(rb) rb.onclick=function(){
-    lastRefreshed=nowStr(); rb.style.opacity='0.5';
-    render(); updateAnnouncements(); updateTopInfo();
-    setTimeout(function(){ rb.style.opacity='1'; },600);
-  };
-  var sb=document.getElementById('searchBtn');
-  if(sb) sb.onclick=function(){ var o=document.getElementById('searchOverlay'); if(o) o.classList.toggle('show'); };
+  // Only wire things that genuinely need post-login rewiring.
+  // setupMenus() handles most wiring - we just ensure logout is fresh.
   var lob=document.getElementById('logoutBtn');
   if(lob) lob.onclick=doLogout;
-  // Notif bell
-  var notifBtn=document.getElementById('notifBtn');
-  var notifDrop=document.getElementById('notifDropdown');
-  if(notifBtn&&notifDrop){
-    notifBtn.onclick=function(e){
-      e.stopPropagation();
-      var isOpen=notifDrop.style.display==='block';
-      notifDrop.style.display=isOpen?'none':'block';
-      if(!isOpen) renderNotifDropdown();
-    };
-  }
+  // Re-run setupMenus safely to catch anything that may have missed first time
+  try{ setupMenus(); }catch(e){}
 }
 
 
@@ -16102,7 +16138,7 @@ var _sectionObserver=new IntersectionObserver(function(entries){
       if(id==='careers'&&!_careersLoaded){ _careersLoaded=true; renderLandingCareers(); }
     }
   });
-},{ threshold:0.15, rootMargin:'-56px 0px 0px 0px' });
+},{ threshold:0.05, rootMargin:'0px 0px -10% 0px' });
 
 ['home','about','stats','policies','careers'].forEach(function(id){
   var el=document.getElementById('ln-sec-'+id);
