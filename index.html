@@ -457,12 +457,13 @@ body.sam-active .main{ background:#0d1117; }
   display:flex; flex-direction:column; min-height:100vh;
   background:#080c14; color:#e6edf3; font-family:inherit;
   position:relative; overflow-x:hidden;
+  overflow-y:auto; height:100vh;
 }
 #landingScreen *{ box-sizing:border-box; }
 
 /* Navbar */
 .ln-nav{
-  position:fixed; top:0; left:0; right:0; z-index:1000;
+  position:fixed; top:0; left:0; right:0; z-index:1001;
   display:flex; align-items:center; padding:0 32px; height:56px;
   background:rgba(8,12,20,0.7); backdrop-filter:blur(12px);
   border-bottom:1px solid rgba(88,166,255,0.12);
@@ -510,6 +511,7 @@ body.sam-active .main{ background:#0d1117; }
   display:block; padding-top:0;
   opacity:0; transform:translateY(20px);
   transition:opacity 0.6s ease, transform 0.6s ease;
+  position:relative; z-index:1;
 }
 .ln-section.ln-revealed{
   opacity:1 !important; transform:none !important;
@@ -524,8 +526,8 @@ body.sam-active .main{ background:#0d1117; }
   overflow:hidden;
 }
 #ln-hero-canvas{
-  position:absolute; inset:0; width:100%; height:100%;
-  pointer-events:none;
+  position:fixed; inset:0; width:100%; height:100%;
+  pointer-events:none; z-index:0;
 }
 .ln-hero-content{ position:relative; z-index:2; padding:0 24px; }
 .ln-hero-status{
@@ -579,12 +581,13 @@ body.sam-active .main{ background:#0d1117; }
 }
 .ln-hero-btn-secondary:hover{ background:rgba(88,166,255,0.12); transform:translateY(-2px); }
 .ln-scroll-hint{
-  position:absolute; bottom:28px; left:0; right:0; margin:0 auto;
-  width:fit-content;
-  display:flex; flex-direction:column; align-items:center; gap:4px;
-  color:rgba(230,237,243,0.3); font-size:10px; letter-spacing:1px;
-  animation:ln-bob 2s infinite;
+  position:absolute; bottom:32px; left:50%; transform:translateX(-50%);
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+  color:rgba(230,237,243,0.35); font-size:9px; letter-spacing:3px;
+  text-transform:uppercase; cursor:pointer;
+  animation:ln-bob 2s ease-in-out infinite;
 }
+.ln-scroll-hint:hover{ color:rgba(230,237,243,0.6); }
 @keyframes ln-bob{ 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(6px)} }
 
 /* Content sections */
@@ -710,14 +713,18 @@ body.sam-active .main{ background:#0d1117; }
   gap:10px;
 }
 .ln-staff-card{
-  background:rgba(22,27,34,0.8); border:1px solid rgba(88,166,255,0.08);
-  border-radius:10px; padding:14px 10px; text-align:center;
-  transition:all 0.2s;
+  background:rgba(13,17,23,0.85); border:1px solid rgba(88,166,255,0.1);
+  border-radius:12px; padding:18px 14px; text-align:center;
+  transition:all 0.25s; cursor:default;
+  position:relative; overflow:hidden;
 }
-.ln-staff-card:hover{
-  border-color:rgba(88,166,255,0.25);
-  transform:translateY(-2px);
+.ln-staff-card::before{
+  content:''; position:absolute; inset:0; border-radius:12px;
+  background:radial-gradient(ellipse at 50% 0%,var(--card-glow,#58a6ff),transparent 70%);
+  opacity:0; transition:opacity 0.3s; pointer-events:none;
 }
+.ln-staff-card:hover{ transform:translateY(-4px); border-color:var(--card-glow,#58a6ff); box-shadow:0 8px 32px color-mix(in srgb,var(--card-glow,#58a6ff) 25%,transparent); }
+.ln-staff-card:hover::before{ opacity:0.08; }
 .ln-staff-avatar{
   width:44px; height:44px; border-radius:50%; object-fit:cover;
   margin:0 auto 8px; display:block;
@@ -735,14 +742,30 @@ body.sam-active .main{ background:#0d1117; }
 
 /* Policies */
 .ln-policy-section{
-  background:rgba(22,27,34,0.6); border:1px solid rgba(88,166,255,0.08);
-  border-radius:10px; padding:24px; margin-bottom:16px;
+  padding:28px 0; margin-bottom:0;
+  border-bottom:1px solid rgba(88,166,255,0.08);
+  display:flex; gap:32px; align-items:flex-start;
 }
-.ln-policy-title{ font-size:16px; font-weight:700; color:#e6edf3; margin-bottom:10px; }
-.ln-policy-body{ font-size:13px; color:rgba(230,237,243,0.65); line-height:1.8; }
+.ln-policy-section:last-child{ border-bottom:none; }
+.ln-policy-num{
+  font-size:11px; font-weight:800; color:rgba(88,166,255,0.4);
+  letter-spacing:2px; text-transform:uppercase; min-width:32px;
+  padding-top:3px; font-family:monospace;
+}
+.ln-policy-content{ flex:1; }
+.ln-policy-title{
+  font-size:18px; font-weight:700; color:#e6edf3;
+  margin-bottom:10px; letter-spacing:-0.3px;
+}
+.ln-policy-title::before{
+  content:''; display:inline-block; width:4px; height:16px;
+  background:linear-gradient(180deg,#58a6ff,rgba(88,166,255,0.3));
+  border-radius:2px; margin-right:10px; vertical-align:middle;
+}
+.ln-policy-body{ font-size:13px; color:rgba(230,237,243,0.58); line-height:1.9; }
 
 /* About */
-.ln-about-body{ font-size:14px; color:rgba(230,237,243,0.65); line-height:1.9; }
+.ln-about-body{ font-size:15px; color:rgba(230,237,243,0.68); line-height:2; }
 .ln-about-banner{ width:100%; border-radius:10px; margin-bottom:32px; max-height:240px; object-fit:cover; }
 
 /* Apply overlay */
@@ -997,20 +1020,32 @@ body.gh-dark #panelBgCanvas{ display:block; }
       <div class="ln-content-sub">These guidelines govern how we moderate, how appeals work, and how our staff conduct themselves.</div>
       <div id="ln-policies-body">
         <div class="ln-policy-section">
+          <div class="ln-policy-num">01</div>
+          <div class="ln-policy-content">
           <div class="ln-policy-title">Moderation Policy</div>
           <div class="ln-policy-body">All moderation actions are taken in good faith and with reference to our community guidelines. Moderators are required to document reasons for every action. Actions may be appealed through our formal appeals process.</div>
+          </div>
         </div>
         <div class="ln-policy-section">
+          <div class="ln-policy-num">02</div>
+          <div class="ln-policy-content">
           <div class="ln-policy-title">Appeals Policy</div>
           <div class="ln-policy-body">Any player who has received a moderation action may submit an appeal. Appeals are reviewed by a senior moderator not involved in the original action. We aim to respond to all appeals within 72 hours.</div>
+          </div>
         </div>
         <div class="ln-policy-section">
+          <div class="ln-policy-num">03</div>
+          <div class="ln-policy-content">
           <div class="ln-policy-title">Staff Conduct Policy</div>
           <div class="ln-policy-body">Staff members are held to the highest standards of conduct. Abuse of power, harassment, or misuse of tools results in immediate suspension pending investigation. We take reports against staff seriously.</div>
+          </div>
         </div>
         <div class="ln-policy-section">
+          <div class="ln-policy-num">04</div>
+          <div class="ln-policy-content">
           <div class="ln-policy-title">Privacy Notice</div>
           <div class="ln-policy-body">We collect only the information necessary to operate our moderation systems. We do not sell user data to third parties. Moderation records are retained for audit purposes only.</div>
+          </div>
         </div>
       </div>
     </div>
@@ -16649,19 +16684,30 @@ function animateCounters(){
   _statsLoaded=true;
   var now=new Date();
   var monthStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-  var modCount=Object.keys(MOD_LOG||{}).length;
-  var monthCount=Object.values(MOD_LOG||{}).filter(function(r){ return r&&r.date&&r.date.startsWith(monthStr); }).length;
-  var appealResolved=Object.values(APPEAL_LOG||{}).filter(function(a){ return a&&a.status&&a.status!=='Pending'; }).length;
-  var appealApproved=Object.values(APPEAL_LOG||{}).filter(function(a){ return a&&a.status==='Approved'; }).length;
-  var approvalRate=appealResolved>0?Math.round(appealApproved/appealResolved*100):0;
-  var staffCount=Object.keys(STAFF||{}).length;
-  var onlineToday=Object.values(STAFF||{}).filter(function(s){
-    if(!s||!s.lastActive||s.lastActive==='Never') return false;
-    return (Date.now()-new Date(s.lastActive).getTime())<86400000;
-  }).length;
-  // Days operational from Firebase config or default
-  get(ref(db,'meta/landingConfig')).then(function(snap){
-    var cfg=snap.exists()?snap.val():{};
+  // Fetch all stats directly from Firebase (no auth needed for public data)
+  Promise.all([
+    get(ref(db,'logs/moderation')).catch(function(){ return {val:function(){return null;},exists:function(){return false;}}; }),
+    get(ref(db,'logs/appeals')).catch(function(){ return {val:function(){return null;},exists:function(){return false;}}; }),
+    get(ref(db,'staff')).catch(function(){ return {val:function(){return null;},exists:function(){return false;}}; }),
+    get(ref(db,'meta/landingConfig')).catch(function(){ return {val:function(){return null;},exists:function(){return false;}}; }),
+  ]).then(function(results){
+    var modSnap=results[0], appealSnap=results[1], staffSnap=results[2], cfgSnap=results[3];
+    var modData=modSnap.exists()?modSnap.val():{};
+    var appealData=appealSnap.exists()?appealSnap.val():{};
+    var staffData=staffSnap.exists()?staffSnap.val():{};
+    var cfg=cfgSnap.exists()?cfgSnap.val():{};
+    var modCount=Object.keys(modData).length;
+    var monthCount=Object.values(modData).filter(function(r){ return r&&r.date&&r.date.startsWith(monthStr); }).length;
+    var appealArr=Object.values(appealData);
+    var appealResolved=appealArr.filter(function(a){ return a&&a.status&&a.status!=='Pending'; }).length;
+    var appealApproved=appealArr.filter(function(a){ return a&&a.status==='Approved'; }).length;
+    var approvalRate=appealResolved>0?Math.round(appealApproved/appealResolved*100):0;
+    var staffArr2=Object.values(staffData).filter(function(s){ return s&&s.username; });
+    var staffCount=staffArr2.length;
+    var onlineToday=staffArr2.filter(function(s){
+      if(!s.lastActive||s.lastActive==='Never') return false;
+      return (Date.now()-new Date(s.lastActive).getTime())<86400000;
+    }).length;
     var founded=cfg.foundedDate?new Date(cfg.foundedDate):new Date('2024-01-01');
     var daysOp=Math.floor((Date.now()-founded.getTime())/86400000);
     var targets={
@@ -16672,23 +16718,25 @@ function animateCounters(){
       'lnstat-online':onlineToday,
       'lnstat-days':daysOp,
     };
-    Object.entries(targets).forEach(function(entry){
-      var id=entry[0], target=entry[1];
+    function countUp(id, target, suffix){
       var el=document.getElementById(id);
       if(!el) return;
-      var start=0, dur=1200, startTime=null;
+      var dur=1400, startTime=null;
       function step(ts){
         if(!startTime) startTime=ts;
         var prog=Math.min((ts-startTime)/dur,1);
         var ease=1-Math.pow(1-prog,3);
-        el.textContent=Math.round(start+(target-start)*ease).toLocaleString()+(id==='lnstat-moderated'?'+':'');
+        el.textContent=Math.round(target*ease).toLocaleString()+(suffix||'');
         if(prog<1) requestAnimationFrame(step);
       }
       requestAnimationFrame(step);
+    }
+    Object.entries(targets).forEach(function(e){
+      countUp(e[0], e[1], e[0]==='lnstat-moderated'?'+':'');
     });
     var approvalEl=document.getElementById('lnstat-approval');
-    if(approvalEl) approvalEl.textContent=approvalRate+'%';
-  }).catch(function(){});
+    if(approvalEl){ approvalEl.textContent=approvalRate+'%'; }
+  }).catch(function(e){ console.warn('Stats fetch error:',e); });
 }
 
 // ── Hero canvas (rich animated background) ──
@@ -16721,8 +16769,7 @@ function startLandingCanvas(){
   var STEP=50, COLS=Math.ceil(W/STEP)+2, ROWS=Math.ceil(H/STEP)+2;
   function draw(){
     if(!document.getElementById('landingScreen')||document.getElementById('landingScreen').style.display==='none') return;
-    ctx.fillStyle='#080c14';
-    ctx.fillRect(0,0,W,H);
+    ctx.clearRect(0,0,W,H);
     // Orbs
     orbs.forEach(function(o,i){
       o.x+=Math.sin(t*0.2+i)*o.vx;
