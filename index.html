@@ -39,7 +39,7 @@ body.gh-dark {
   --bg-page:#080c14; --bg-shell:#080c14; --bg-topbar:#0d1117; --bg-topbar2:#080c14;
   --bg-sidebar:#0d1117; --bg-sb-root:#111827; --bg-sb-hdr:#111827; --bg-sb-hdr-hover:#1a2234;
   --bg-sb-body:#161b22; --bg-sb-active:#1f3a5f;
-  --bg-content:#0d1117; --bg-menubar:#161b22; --bg-topinfo:#1c2128;
+  --bg-content:#080c14; --bg-menubar:#0d1117; --bg-topinfo:#0d1117;
   --bg-sbox:#161b22; --bg-stitle:#1f6feb; --bg-sbody:#161b22;
   --bg-input:#0d1117; --bg-tbl-odd:#161b22; --bg-tbl-even:#0d1117; --bg-tbl-hover:#1f3a5f;
   --bg-tbl-th:#1f6feb; --bg-dialog:#161b22; --bg-announce:#2d2a00;
@@ -906,6 +906,7 @@ body.gh-dark .badge.superadmin{ box-shadow:0 0 6px rgba(227,179,65,0.3); }
 .menubar{ position:relative; z-index:9; }
 .announcements{ position:relative; z-index:8; }
 .topinfo{ position:relative; z-index:7; }
+body.gh-dark .topinfo{ background:rgba(9,13,22,0.95); border-bottom-color:rgba(88,166,255,0.1); }
 
 /* Stat cards glow on hover */
 .stat-card{
@@ -965,6 +966,25 @@ body.gh-dark .badge.superadmin{ box-shadow:0 0 6px rgba(227,179,65,0.3); }
   .ln-step-label{ display:none; }
 }
 
+
+/* ── External alert/beehive strip on landing page ── */
+#ln-external-strip{
+  position:sticky; top:56px; left:0; right:0; z-index:999;
+  display:none; align-items:center; gap:10px;
+  padding:8px 24px; font-size:12px; font-weight:600;
+  transition:all 0.3s; backdrop-filter:blur(8px);
+}
+#ln-external-strip.show{ display:flex; }
+#ln-external-strip.type-info{ background:rgba(9,105,218,0.3); border-bottom:1px solid #58a6ff; color:#c9e0ff; }
+#ln-external-strip.type-warning{ background:rgba(154,103,0,0.35); border-bottom:1px solid #e3b341; color:#ffe08a; }
+#ln-external-strip.type-critical{ background:rgba(207,34,46,0.3); border-bottom:1px solid #f85149; color:#ffb3b3; animation:strip-pulse 1.5s ease-in-out infinite; }
+#ln-external-strip.type-emergency{ background:rgba(207,34,46,0.45); border-bottom:2px solid #ff2020; color:#fff; animation:strip-pulse 0.8s ease-in-out infinite; }
+#ln-external-strip.type-beehive{ background:rgba(154,103,0,0.4); border-bottom:1px solid #e3b341; color:#ffe08a; }
+@keyframes strip-pulse{ 0%,100%{opacity:1;} 50%{opacity:0.7;} }
+.ln-strip-icon{ font-size:14px; flex-shrink:0; }
+.ln-strip-msg{ flex:1; }
+.ln-strip-by{ font-size:10px; opacity:0.6; font-weight:400; flex-shrink:0; }
+
 </style>
 </head>
 <body>
@@ -998,6 +1018,13 @@ body.gh-dark .badge.superadmin{ box-shadow:0 0 6px rgba(227,179,65,0.3); }
       <button class="ln-btn ln-btn-outline" id="ln-signup-nav-btn" onclick="openSignupOverlay()">Sign Up</button><button class="ln-btn ln-btn-outline" id="ln-login-btn">Log In</button>
     </div>
   </nav>
+
+  <!-- EXTERNAL ALERT STRIP -->
+  <div id="ln-external-strip">
+    <span class="ln-strip-icon" id="ln-strip-icon">⚠</span>
+    <span class="ln-strip-msg" id="ln-strip-msg"></span>
+    <span class="ln-strip-by" id="ln-strip-by"></span>
+  </div>
 
   <!-- HOME SECTION -->
   <section class="ln-section visible" id="ln-sec-home">
@@ -2295,9 +2322,8 @@ function showBeehiveOverlay(alertData){
   var existing=document.getElementById('beehive-overlay');
   if(existing) existing.remove();
   var bar=document.getElementById('announceBar');
-  // Reset bar from any previous beehive
+  // Stop any previous flash interval but keep the bar visible
   if(bar){
-    bar.style.boxShadow='';
     bar.style.animation='';
     bar.style.transition='';
     if(window._beehiveBarFlash){ clearInterval(window._beehiveBarFlash); window._beehiveBarFlash=null; }
@@ -7792,6 +7818,7 @@ function renderAlerts(c){
         expiryMins=d*1440+h*60+m;
       } else { expiryMins=parseInt(expiryVal)||0; }
       if(!msg) return;
+      const alertVis2=(document.getElementById('alertVisibility')||{value:'internal'}).value||'internal';
       // Deactivate previous alerts (preserve history), then post new one
       const deactivateUpdates={};
       Object.keys(SITE_ALERTS).forEach(lid=>{ deactivateUpdates[`siteAlerts/${lid}/active`]=false; });
@@ -9198,7 +9225,8 @@ function renderBeehive(panel){
       active: true,
       message: msg,
       beehiveLevel: type,
-      by: ME, date: nowStr(), expiresAt: expTs, ts: Date.now()
+      by: ME, date: nowStr(), expiresAt: expTs, ts: Date.now(),
+      visibility:(document.getElementById('beehive-visibility')||{value:'internal'}).value||'internal'
     });
     document.getElementById('beehive-output').textContent='Beehive ['+type.toUpperCase()+'] broadcast sent.';
     auditLog('Beehive Alert',type+': '+msg);
@@ -14478,7 +14506,7 @@ document.getElementById('dlgOK').onclick=async()=>{
 document.getElementById('loginBtn').onclick=doLogin;
 document.getElementById('loginPass').onkeydown=e=>{ if(e.key==='Enter') doLogin(); };
 document.getElementById('loginUser').onkeydown=e=>{ if(e.key==='Enter') doLogin(); };
-document.getElementById('logoutBtn').onclick=doLogout;
+// logoutBtn wired post-login in wireTopbar()
 document.getElementById('suspOKBtn').onclick=()=>document.getElementById('suspOverlay').classList.remove('show');
 
 // Warning popup wiring
@@ -14794,12 +14822,15 @@ async function doLogout(fromPoison){
     window._pendingPoisonLogout=false;
     showPoisonLockout(wasMe);
   } else {
-    // Clean up poison running state only when NOT showing lockout
     window._poisonRunning=false;
-    document.getElementById('loginScreen').style.display='flex';
-    document.getElementById('loginUser').value='';
-    document.getElementById('loginPass').value='';
-    if(typeof window.initLoginBgFn==='function') setTimeout(window.initLoginBgFn,100);
+    // Show landing page instead of raw login screen
+    document.getElementById('loginScreen').style.display='none';
+    if(typeof window.showLanding==='function'){
+      window.showLanding();
+    } else {
+      document.getElementById('loginScreen').style.display='flex';
+      if(typeof window.initLoginBgFn==='function') setTimeout(window.initLoginBgFn,100);
+    }
   }
 }
 
@@ -16468,12 +16499,12 @@ function initPanelCanvas(){
 }
 window.initPanelCanvas=initPanelCanvas;
 
-var _topbarWired=false;
 function wireTopbar(){
-  if(_topbarWired) return; // only wire once
-  _topbarWired=true;
+  // Always re-wire topbar after login — safe because setupMenus has its own guard
   var lob=document.getElementById('logoutBtn');
   if(lob) lob.onclick=doLogout;
+  _setupMenusDone=false; // reset so setupMenus re-wires properly after login
+  try{ setupMenus(); }catch(e){ console.warn('setupMenus:',e); }
 }
 
 
@@ -16980,6 +17011,52 @@ function renderLandingCareers(){
 // ── Stats loader + counter animation ──
 var _statsLoaded=false;
 function loadLandingData(){
+  // External alert/beehive strip
+  function checkExternalStrip(){
+    var strip=document.getElementById('ln-external-strip');
+    if(!strip) return;
+    // Check site alerts
+    get(ref(db,'siteAlerts')).then(function(snap){
+      if(!snap.exists()){ strip.className=''; strip.style.display='none'; return; }
+      var alerts=Object.values(snap.val()||{});
+      var now=Date.now();
+      // Find active external/all alerts
+      var active=alerts.filter(function(a){
+        if(!a||!a.active) return false;
+        if(a.expiresAt&&a.expiresAt>0&&now>a.expiresAt) return false;
+        return a.visibility==='external'||a.visibility==='all';
+      });
+      // Also check beehive alerts
+      get(ref(db,'beehiveAlerts')).then(function(bSnap){
+        var beehives=bSnap.exists()?Object.values(bSnap.val()||{}):[];
+        var activeBeehive=beehives.filter(function(b){
+          if(!b||!b.active) return false;
+          if(b.expiresAt&&b.expiresAt>0&&now>b.expiresAt) return false;
+          return b.visibility==='external'||b.visibility==='all';
+        });
+        var all=[...active,...activeBeehive].sort(function(a,b){ return (b.ts||0)-(a.ts||0); });
+        if(!all.length){ strip.className=''; strip.style.display='none'; return; }
+        var latest=all[0];
+        var isBeehive=!!latest.beehiveLevel;
+        var typeMap={'WARNING':'type-warning','CRITICAL':'type-critical','EMERGENCY':'type-emergency','INFO':'type-info'};
+        var typeClass=isBeehive?'type-beehive':(typeMap[(latest.type||'').toUpperCase()]||'type-info');
+        var iconMap={warning:'⚠',critical:'🔴',emergency:'🚨',info:'ℹ',beehive:'🐝'};
+        var icon=isBeehive?'🐝':(iconMap[(latest.type||'').toLowerCase()]||'⚠');
+        strip.className='show '+typeClass;
+        strip.style.display='flex';
+        var msgEl=document.getElementById('ln-strip-msg');
+        var byEl=document.getElementById('ln-strip-by');
+        var iconEl=document.getElementById('ln-strip-icon');
+        if(iconEl) iconEl.textContent=icon;
+        if(msgEl) msgEl.textContent=latest.message||'';
+        if(byEl) byEl.textContent='— '+(latest.by||'System');
+      }).catch(function(){});
+    }).catch(function(){});
+  }
+  checkExternalStrip();
+  // Re-check every minute
+  setInterval(checkExternalStrip, 60000);
+
   // Site status
   get(ref(db,'meta/siteStatus')).then(function(snap){
     if(!snap.exists()) return;
