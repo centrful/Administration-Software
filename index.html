@@ -588,7 +588,8 @@ body.sam-active .main{ background:#0d1117; }
   animation:ln-bob 2s ease-in-out infinite;
 }
 .ln-scroll-hint:hover{ color:rgba(230,237,243,0.6); }
-@keyframes ln-bob{ 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(6px)} }
+@keyframes ln-bob{ 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(7px)} }
+@keyframes ln-bob-svg{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(7px)} }
 
 /* Content sections */
 .ln-content{ max-width:900px; margin:0 auto; padding:80px 32px; }
@@ -844,7 +845,7 @@ body.sam-active .main{ background:#0d1117; }
 .ln-input:focus{ border-color:rgba(88,166,255,0.5); }
 .ln-input::placeholder{ color:rgba(230,237,243,0.25); }
 textarea.ln-input{ resize:vertical; min-height:80px; }
-select.ln-input{ cursor:pointer; }
+select.ln-input{ cursor:pointer; height:38px; padding:8px 12px; -webkit-appearance:none; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2358a6ff' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:32px; }
 
 /* Access code preview */
 .ln-code-preview{
@@ -904,6 +905,33 @@ body.gh-dark #panelBgCanvas{ display:block; }
   box-shadow:0 0 8px rgba(88,166,255,0.3);
 }
 
+
+/* ── Landing page responsive ── */
+@media(max-width:768px){
+  .ln-nav{ padding:0 16px; }
+  .ln-nav-tabs{ display:none; }
+  .ln-nav-logo{ font-size:12px; }
+  .ln-nav-actions{ gap:6px; }
+  .ln-btn{ padding:5px 12px; font-size:11px; }
+  .ln-hero-title{ font-size:clamp(32px,12vw,64px) !important; }
+  .ln-hero-motto{ font-size:13px !important; }
+  .ln-content{ padding:48px 20px; }
+  .ln-stats-grid{ grid-template-columns:1fr 1fr; }
+  .ln-role-grid{ grid-template-columns:1fr; }
+  .ln-staff-grid{ grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); }
+  .ln-modal{ width:95vw !important; }
+  .ln-policy-section{ flex-direction:column; gap:8px; }
+  .ln-policy-num{ min-width:auto; }
+  .ln-hero-btns{ flex-direction:column; align-items:center; }
+  .ln-hero-btn{ width:200px; }
+}
+@media(max-width:480px){
+  .ln-nav-actions .ln-btn-outline:first-child{ display:none; }
+  .ln-stats-grid{ grid-template-columns:1fr; }
+  .ln-steps{ gap:0; }
+  .ln-step-label{ display:none; }
+}
+
 </style>
 </head>
 <body>
@@ -955,7 +983,7 @@ body.gh-dark #panelBgCanvas{ display:block; }
       </div>
       <div class="ln-scroll-hint" onclick="var c=document.getElementById('landingScreen');var t=document.getElementById('ln-sec-about');if(c&&t)c.scrollTo({top:t.offsetTop,behavior:'smooth'});" style="cursor:pointer;">
         <span style="letter-spacing:2px;font-size:9px;">SCROLL</span>
-        <svg width="14" height="10" viewBox="0 0 14 10" fill="none" style="animation:ln-bob 1.5s infinite;"><path d="M1 1l6 6 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <svg width="14" height="10" viewBox="0 0 14 10" fill="none"><path d="M1 1l6 6 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
       </div>
     </div>
   </section>
@@ -3482,7 +3510,7 @@ async function renderAppsConfig(c){
           +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">'
           +'<div style="flex:1;">'
           +'<div style="font-size:12px;font-weight:700;color:var(--c-text);">'+a.formTitle+'</div>'
-          +'<div style="font-size:10px;color:var(--c-text2);">'+a.contact+' &bull; '+(a.date?a.date.split('T')[0]:'?')+'</div>'
+          +'<div style="font-size:10px;color:var(--c-text2);">'+((a.contact&&a.contact.length>1)?a.contact:(a.answers&&a.answers.contact?a.answers.contact:'Unknown'))+' &bull; '+(a.date?a.date.split('T')[0]:'?')+'</div>'
           +'</div>'
           +'<span style="font-size:10px;font-weight:700;color:'+statusColor+';">'+status+'</span>'
           +'</div>'
@@ -3491,7 +3519,7 @@ async function renderAppsConfig(c){
           +(!a.reviewed?'<button class="btn small approve-app-btn" data-aid="'+aid+'" style="background:rgba(26,127,55,0.15);border-color:var(--c-ok);color:var(--c-ok);">Approve + Issue Code</button>'
             +'<button class="btn small deny-app-btn" data-aid="'+aid+'" style="background:rgba(248,81,73,0.08);border-color:var(--c-ban);color:var(--c-ban);">Deny</button>'
             :'<span style="font-size:10px;color:var(--c-text2);">Reviewed by '+a.reviewedBy+'</span>'
-            +(a.accessCode?'<div style="margin-top:4px;font-size:10px;">Access Code: <code style="color:var(--c-link);">'+a.accessCode+'</code></div>':''))
+            +(a.accessCode?'<div style="margin-top:4px;font-size:10px;color:var(--c-text2);">Access Code: <code style="color:var(--c-link);font-size:11px;letter-spacing:1px;">'+a.accessCode+'</code></div>':''))
           +'</div>';
       }).join(''))
     +'</div></div>'
@@ -3627,6 +3655,14 @@ async function renderAppsConfig(c){
       +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">'
       +'<input type="checkbox" id="fe-open" '+(f.open!==false?'checked':'')+' style="width:13px;height:13px;"/>'
       +'<label style="font-size:11px;color:var(--c-text);">Open for applications</label></div>'
+      +'<div style="border:1px solid var(--c-border);border-radius:6px;padding:8px;margin-bottom:10px;">'
+      +'<div style="font-size:11px;font-weight:700;color:var(--c-text);margin-bottom:6px;">Contact Field</div>'
+      +'<div style="display:flex;gap:6px;">'
+      +'<div style="flex:1;"><label style="font-size:10px;color:var(--c-text2);display:block;margin-bottom:2px;">Label text</label>'
+      +'<input type="text" id="fe-contact-label" style="width:100%;" value="'+(f.contactLabel||'Contact (Discord tag or email)')+'" placeholder="Contact label..."/></div>'
+      +'<div style="flex:1;"><label style="font-size:10px;color:var(--c-text2);display:block;margin-bottom:2px;">Placeholder</label>'
+      +'<input type="text" id="fe-contact-placeholder" style="width:100%;" value="'+(f.contactPlaceholder||'e.g. username#0000 or you@email.com')+'" placeholder="Placeholder text..."/></div>'
+      +'</div></div>'
       +'<div style="font-size:11px;font-weight:700;color:var(--c-text);margin-bottom:6px;">Questions</div>'
       +'<div id="fe-questions">'
       +questions.map(function(q,i){
@@ -3684,12 +3720,16 @@ async function renderAppsConfig(c){
         }
         newQ.push(q);
       });
+      var contactLabelEl=document.getElementById('fe-contact-label');
+      var contactPlaceholderEl=document.getElementById('fe-contact-placeholder');
       var formData={
         title:title,
         description:document.getElementById('fe-desc').value.trim(),
         rank:document.getElementById('fe-rank').value,
         open:document.getElementById('fe-open').checked,
         questions:newQ,
+        contactLabel:contactLabelEl?contactLabelEl.value.trim():'',
+        contactPlaceholder:contactPlaceholderEl?contactPlaceholderEl.value.trim():'',
         updatedBy:ME, updatedAt:nowStr(),
       };
       if(fid){
@@ -16402,8 +16442,8 @@ function renderApplyStep2(form){
       }
       return '<div class="ln-field"><label class="ln-label">'+q.text+req+'</label>'+input+'</div>';
     }).join('')
-    +'<div class="ln-field"><label class="ln-label">Contact (Discord tag or email)<span class="req">*</span></label>'
-    +'<input type="text" class="ln-input" id="apq-contact" placeholder="e.g. username#0000 or you@email.com"/></div>';
+    +'<div class="ln-field"><label class="ln-label">'+(form.contactLabel||'Contact (Discord tag or email)')+'<span class="req">*</span></label>'
+    +'<input type="text" class="ln-input" id="apq-contact" placeholder="'+(form.contactPlaceholder||'e.g. username#0000 or you@email.com')+'"/></div>';
 
   footer.innerHTML='<button class="ln-btn ln-btn-outline" id="ln-apply-back2">← Back</button>'
     +'<button class="ln-btn ln-btn-primary" id="ln-apply-next2">Review →</button>';
