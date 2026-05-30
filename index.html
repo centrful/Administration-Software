@@ -3031,11 +3031,12 @@ function updateTopInfo(){
 function updateAnnouncements(){
   const bar=document.getElementById('announceBar');
   if(!bar) return;
+  // Never touch the bar when beehive is active — it owns the bar
+  if(window._beehiveBarActive) return;
   const now=Date.now();
   const active=Object.values(SITE_ALERTS).filter(a=>a.active&&!(a.expiresAt&&a.expiresAt>0&&now>a.expiresAt)&&(a.visibility==='internal'||a.visibility==='all'||!a.visibility));
   if(!active.length){
-    // Only hide if beehive is also not active
-    if(!window._beehiveBarActive) bar.style.display='none';
+    bar.style.display='none';
     return;
   }
   const latest=active[active.length-1];
@@ -16602,6 +16603,12 @@ document.querySelectorAll('.ln-nav-tab').forEach(function(tab){
     if(lnc&&sec) lnc.scrollTo({top:sec.offsetTop,behavior:'smooth'});
   };
 });
+
+// Import signInAnonymously for public staff reads
+var signInAnonymously;
+import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js').then(function(m){
+  signInAnonymously=m.signInAnonymously;
+}).catch(function(){});
 
 // ── Scroll-based section reveal using the landingScreen container ──
 var _statsAnimated=false;
