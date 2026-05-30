@@ -36,8 +36,8 @@
   --c-pm:#555; --bg-pm:#fff;
 }
 body.gh-dark {
-  --bg-page:#0d1117; --bg-shell:#0d1117; --bg-topbar:#161b22; --bg-topbar2:#0d1117;
-  --bg-sidebar:#161b22; --bg-sb-root:#1c2128; --bg-sb-hdr:#1c2128; --bg-sb-hdr-hover:#21262d;
+  --bg-page:#080c14; --bg-shell:#080c14; --bg-topbar:#0d1117; --bg-topbar2:#080c14;
+  --bg-sidebar:#0d1117; --bg-sb-root:#111827; --bg-sb-hdr:#111827; --bg-sb-hdr-hover:#1a2234;
   --bg-sb-body:#161b22; --bg-sb-active:#1f3a5f;
   --bg-content:#0d1117; --bg-menubar:#161b22; --bg-topinfo:#1c2128;
   --bg-sbox:#161b22; --bg-stitle:#1f6feb; --bg-sbody:#161b22;
@@ -872,6 +872,34 @@ select.ln-input{ cursor:pointer; height:38px; padding:8px 12px; -webkit-appearan
 /* ── Admin panel ambient background ── */
 #panelBgCanvas{ display:none; }
 body.gh-dark #panelBgCanvas{ display:block; }
+body.gh-dark #adminScreen{
+  background:
+    radial-gradient(ellipse 80% 50% at 10% 5%, rgba(88,166,255,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 90% 95%, rgba(88,166,255,0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 60% at 80% 10%, rgba(46,160,67,0.03) 0%, transparent 55%),
+    #080c14;
+}
+body.gh-dark .topbar{ background:rgba(13,17,27,0.95); border-bottom:1px solid rgba(88,166,255,0.12); backdrop-filter:blur(8px); }
+body.gh-dark .menubar{ background:rgba(10,14,22,0.9); border-bottom:1px solid rgba(88,166,255,0.08); }
+body.gh-dark .sidebar{
+  background:linear-gradient(180deg,#0d1117 0%,#0a0f1a 100%);
+  border-right:1px solid rgba(88,166,255,0.1);
+}
+body.gh-dark .sb-section-link.active{ background:rgba(88,166,255,0.1); box-shadow:inset 3px 0 0 #58a6ff; }
+body.gh-dark .sb-link:hover{ background:rgba(88,166,255,0.06); }
+body.gh-dark .sbox{
+  background:rgba(13,20,36,0.85);
+  border-color:rgba(88,166,255,0.1);
+  backdrop-filter:blur(6px);
+  transition:border-color 0.2s, box-shadow 0.2s;
+}
+body.gh-dark .sbox:hover{ border-color:rgba(88,166,255,0.2); box-shadow:0 4px 20px rgba(1,4,9,0.4); }
+body.gh-dark .stitle{ background:rgba(88,166,255,0.06); border-bottom:1px solid rgba(88,166,255,0.1); }
+body.gh-dark .tbl tr:hover td{ background:rgba(88,166,255,0.04); }
+body.gh-dark .page-tab.active{ border-bottom-color:#58a6ff; text-shadow:0 0 16px rgba(88,166,255,0.4); }
+body.gh-dark .page-tabs{ border-bottom-color:rgba(88,166,255,0.15); }
+body.gh-dark .badge.softwaremanager{ box-shadow:0 0 8px rgba(248,81,73,0.4); }
+body.gh-dark .badge.superadmin{ box-shadow:0 0 6px rgba(227,179,65,0.3); }
 .topbar{ position:relative; z-index:10; }
 .sidebar{ position:relative; z-index:2; }
 #content{ position:relative; z-index:2; }
@@ -1258,7 +1286,7 @@ body.gh-dark #panelBgCanvas{ display:block; }
 </div>
 
 <div id="adminScreen" style="position:relative;">
-<canvas id="panelBgCanvas" style="position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0.6;"></canvas>
+<canvas id="panelBgCanvas" style="position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0.8;"></canvas>
 <div id="toast-container"></div>
   <canvas id="shellBg" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0;transition:opacity 0.5s;"></canvas>
   <div class="shell" style="position:relative;z-index:1;">
@@ -2441,9 +2469,9 @@ function restoreBeehiveBar(a){
     +'<span style="font-size:12px;font-weight:600;color:'+p.text+';flex:1;">'+(a.message||'')+'</span>'
     +(isUrgent?'<span style="font-size:9px;font-weight:900;letter-spacing:2px;color:'+p.text+';">&#9888; URGENT</span>':'');
   window._beehiveBarActive=true;
-  if(isUrgent){
-    window._beehiveBarFlash=setInterval(function(){ bar.style.boxShadow=bar.style.boxShadow===glowIntense?glowNorm:glowIntense; },600);
-  }
+  // Always pulse the glow, faster for urgent
+  var flashSpeed=isUrgent?400:900;
+  window._beehiveBarFlash=setInterval(function(){ bar.style.boxShadow=bar.style.boxShadow===glowIntense?glowNorm:glowIntense; },flashSpeed);
 }
 window.restoreBeehiveBar=restoreBeehiveBar;
 
@@ -2462,6 +2490,16 @@ function showToast(message, type='info', duration=3000){
   }, duration);
 }
 window.showToast=showToast;
+
+// Auto-clear expired site alerts every 30 seconds
+setInterval(function(){
+  if(!db) return;
+  var now=Date.now();
+  var needsClear=Object.entries(SITE_ALERTS).some(function(e){
+    var a=e[1]; return a.active&&a.expiresAt&&a.expiresAt>0&&now>a.expiresAt;
+  });
+  if(needsClear) updateAnnouncements();
+},30000);
 
 // ── BAN TEMPLATE VARIABLE SUBSTITUTION ──
 function applyTemplateVars(text, username, reason){
@@ -2965,7 +3003,7 @@ function updateAnnouncements(){
   const bar=document.getElementById('announceBar');
   if(!bar) return;
   const now=Date.now();
-  const active=Object.values(SITE_ALERTS).filter(a=>a.active&&!(a.expiresAt&&a.expiresAt>0&&now>a.expiresAt));
+  const active=Object.values(SITE_ALERTS).filter(a=>a.active&&!(a.expiresAt&&a.expiresAt>0&&now>a.expiresAt)&&(a.visibility==='internal'||a.visibility==='all'||!a.visibility));
   if(!active.length){ bar.style.display='none'; return; }
   const latest=active[active.length-1];
   // Dark-mode-friendly: semi-transparent tinted backgrounds with strong colored text
@@ -7758,7 +7796,8 @@ function renderAlerts(c){
       const deactivateUpdates={};
       Object.keys(SITE_ALERTS).forEach(lid=>{ deactivateUpdates[`siteAlerts/${lid}/active`]=false; });
       if(Object.keys(deactivateUpdates).length>0) await update(ref(db,'/'),deactivateUpdates);
-      await push(ref(db,'siteAlerts'),{message:msg,type,by:ME,date:nowStr(),active:true,expiresAt:expiryMins>0?Date.now()+expiryMins*60000:0});
+      const alertVis=(document.getElementById('alertVisibility')||{value:'internal'}).value||'internal';
+      await push(ref(db,'siteAlerts'),{message:msg,type,by:ME,date:nowStr(),active:true,expiresAt:expiryMins>0?Date.now()+expiryMins*60000:0,visibility:alertVis});
       auditLog('Site Alert Posted',`[${type}] ${msg.substring(0,50)}`);
       document.getElementById('newAlertMsg').value='';
       const el=document.getElementById('alertMsg');
@@ -9165,9 +9204,7 @@ function renderBeehive(panel){
     auditLog('Beehive Alert',type+': '+msg);
     samAuditLog('Beehive','Broadcast','All Staff',type.toUpperCase()+': '+msg,expTs);
     showToast('Beehive broadcast: '+typeInfo.icon+' '+type.toUpperCase(),'warning');
-    // Clear announce bar glow from previous beehive
-    var barEl=document.getElementById('announceBar');
-    if(barEl){ barEl.style.boxShadow=''; barEl.style.background=''; }
+    // Preserve beehive glow — don't clear it here
     if(window._beehiveBarFlash){ clearInterval(window._beehiveBarFlash); window._beehiveBarFlash=null; }
     // Show the animated overlay on the broadcaster's screen immediately
     showBeehiveOverlay({message:msg, beehiveLevel:type, beehiveIcon:typeInfo.icon});
@@ -16188,7 +16225,9 @@ function runAdvancedSearch(){
   },10);
 }
 
+var _setupMenusDone=false;
 function setupMenus(){
+  if(_setupMenusDone) return; _setupMenusDone=true;
   const menus=[['file','drop-file'],['view','drop-view'],['export','drop-export'],['prefs','drop-prefs'],['tools','drop-tools'],['help','drop-help']];
   menus.forEach(([name,dropId])=>{
     const trigger=document.getElementById('menu-'+name);
